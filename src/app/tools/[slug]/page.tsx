@@ -1,10 +1,9 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { TOOLS, getToolBySlug } from '@/lib/tools';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { MergePdfTool } from '@/components/MergePdfTool';
-import { ShieldCheck, Lock, Info, ArrowRight } from 'lucide-react';
+import { ToolDispatcher } from '@/components/ToolDispatcher';
+import { ShieldCheck, Lock } from 'lucide-react';
 
 interface ToolPageProps {
   params: {
@@ -96,30 +95,7 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
 
         {/* Functional Tool Workspace */}
         <div className="mb-16">
-          {tool.slug === 'merge-pdf' ? (
-            <MergePdfTool />
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-10 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-brand-600 mb-4">
-                <Info className="h-7 w-7" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900">
-                {tool.title} is coming in the next milestone
-              </h2>
-              <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
-                We are building this tool with the same client-side, zero-upload standard as Merge PDF. In the meantime, try our live Merge PDF tool!
-              </p>
-              <div className="mt-6">
-                <Link
-                  href="/tools/merge-pdf"
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
-                >
-                  <span>Use Merge PDF Tool</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          )}
+          <ToolDispatcher tool={tool} />
         </div>
 
         {/* SEO How-To & Feature Explanations */}
