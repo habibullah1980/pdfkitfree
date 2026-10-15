@@ -1,0 +1,15 @@
+# Production .dockerignore
+node_modules
+.next
+.git
+.data
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+docker/backups

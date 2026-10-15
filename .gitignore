@@ -42,3 +42,5 @@ next-env.d.ts
 
 # local persistent database
 .data/
+
+!.env.example

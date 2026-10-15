@@ -1,0 +1,131 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Next.js Application Runner
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pdfkitfree_app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://pdfkitfree.com}
+      - NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN:-pdfkitfree.com}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - SUPERADMIN_EMAIL=${SUPERADMIN_EMAIL:-habibullah}
+      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD:-habib8963}
+      - DATA_DIR=/app/.data
+      - DB_FILE=/app/.data/freepdfkit-db.json
+      # PostgreSQL Database Connection
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-pdfkituser}:${POSTGRES_PASSWORD:-pdfkitpass}@postgres:5432/${POSTGRES_DB:-pdfkitdb}?sslmode=disable
+      # Payment Gateway Config (Default to safe sandbox/test)
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_WEBHOOK_ID=${PAYPAL_WEBHOOK_ID:-}
+      - PAYPAL_ENV=${PAYPAL_ENV:-sandbox}
+      # Email & SMS Provider Config
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-mock_console}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - FROM_EMAIL=${FROM_EMAIL:-pdfkitfree <noreply@pdfkitfree.com>}
+      - SMS_PROVIDER=${SMS_PROVIDER:-mock_console}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
+      # AI Provider Config
+      - AI_PROVIDER=${AI_PROVIDER:-mock_local}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-gpt-4o-mini}
+    volumes:
+      # Persistent storage volume for user data, signed document metadata & settings
+      - app_data:/app/.data
+    networks:
+      - pdfkit_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Relational Database Service
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: pdfkitfree_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pdfkituser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pdfkitpass}
+      POSTGRES_DB: ${POSTGRES_DB:-pdfkitdb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - pdfkit_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pdfkituser} -d ${POSTGRES_DB:-pdfkitdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # Nginx Reverse Proxy with TLS/SSL & Security Headers
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: pdfkitfree_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certs_data:/etc/nginx/certs:ro
+      - certbot_data:/var/www/certbot:ro
+    networks:
+      - pdfkit_network
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # Certbot (Automated Let's Encrypt TLS Certificate Renewal)
+  # ----------------------------------------------------------------------------
+  certbot:
+    image: certbot/certbot
+    container_name: pdfkitfree_certbot
+    volumes:
+      - certs_data:/etc/letsencrypt
+      - certbot_data:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - pdfkit_network
+
+# ------------------------------------------------------------------------------
+# Persistent Docker Volumes
+# ------------------------------------------------------------------------------
+volumes:
+  app_data:
+    name: pdfkitfree_app_data
+  postgres_data:
+    name: pdfkitfree_postgres_data
+  certs_data:
+    name: pdfkitfree_certs_data
+  certbot_data:
+    name: pdfkitfree_certbot_data
+
+# ------------------------------------------------------------------------------
+# Isolated Internal Network
+# ------------------------------------------------------------------------------
+networks:
+  pdfkit_network:
+    name: pdfkitfree_network
+    driver: bridge
