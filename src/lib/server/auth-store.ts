@@ -133,6 +133,7 @@ export interface SigningRequest {
   disclosingParty?: string;
   receivingParty?: string;
   fileName: string;
+  storagePath?: string;
   fileSize: number;
   pageCount: number;
   signedAt: string | null;
@@ -793,6 +794,7 @@ export function createSigningRequest(
     disclosingParty?: string;
     receivingParty?: string;
     fileName: string;
+    storagePath?: string;
     fileSize: number;
     pageCount: number;
   }
@@ -807,6 +809,7 @@ export function createSigningRequest(
     disclosingParty: data.disclosingParty,
     receivingParty: data.receivingParty,
     fileName: data.fileName,
+    storagePath: data.storagePath,
     fileSize: data.fileSize,
     pageCount: data.pageCount,
     signedAt: data.status === 'signed' ? new Date().toISOString() : null,

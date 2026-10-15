@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       disclosingParty,
       receivingParty,
       fileName,
+      storagePath,
       fileSize = 0,
       pageCount = 1,
     } = body;
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
       disclosingParty,
       receivingParty,
       fileName,
+      storagePath,
       fileSize: Number(fileSize),
       pageCount: Number(pageCount),
     });
