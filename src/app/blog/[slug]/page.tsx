@@ -26,7 +26,7 @@ export function generateMetadata({ params }: ArticlePageProps): Metadata {
   }
 
   return {
-    title: `${post.title} | FreePDFKit Blog`,
+    title: `${post.title} | pdfkitfree Blog`,
     description: post.excerpt,
     alternates: {
       canonical: `/blog/${post.slug}`,
@@ -37,7 +37,7 @@ export function generateMetadata({ params }: ArticlePageProps): Metadata {
       type: 'article',
       publishedTime: post.date,
       authors: [post.author],
-      url: `https://freepdfkit.com/blog/${post.slug}`,
+      url: `https://pdfkitfree.com/blog/${post.slug}`,
     },
   };
 }
@@ -62,8 +62,8 @@ export default function ArticleTemplatePage({ params }: ArticlePageProps) {
     },
     publisher: {
       '@type': 'Organization',
-      name: 'FreePDFKit',
-      url: 'https://freepdfkit.com',
+      name: 'pdfkitfree',
+      url: 'https://pdfkitfree.com',
     },
   };
 

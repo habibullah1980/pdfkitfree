@@ -3,15 +3,17 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { WebsiteChatbot } from '@/components/WebsiteChatbot';
 import { SITE_CONFIG } from '@/lib/site-config';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.url),
   title: {
-    default: 'FreePDFKit - Fast, Secure & Private PDF Tools SaaS',
-    template: '%s | FreePDFKit',
+    default: 'pdfkitfree - Fast, Secure & Private PDF Tools SaaS',
+    template: '%s | pdfkitfree',
   },
   description: SITE_CONFIG.description,
   keywords: [
@@ -24,8 +26,8 @@ export const metadata: Metadata = {
     'NDA generator',
     'private PDF tools',
   ],
-  authors: [{ name: 'FreePDFKit Team' }],
-  creator: 'FreePDFKit',
+  authors: [{ name: 'pdfkitfree Team' }],
+  creator: 'pdfkitfree',
   alternates: {
     canonical: '/',
   },
@@ -33,7 +35,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: SITE_CONFIG.url,
-    title: 'FreePDFKit - All-In-One PDF Utilities & Electronic Document SaaS',
+    title: 'pdfkitfree - All-In-One PDF Utilities & Electronic Document SaaS',
     description: SITE_CONFIG.description,
     siteName: SITE_CONFIG.name,
     images: [
@@ -41,13 +43,13 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'FreePDFKit Tools & Signatures',
+        alt: 'pdfkitfree Tools & Signatures',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FreePDFKit - All-In-One PDF Utilities & Electronic Document SaaS',
+    title: 'pdfkitfree - All-In-One PDF Utilities & Electronic Document SaaS',
     description: SITE_CONFIG.description,
     creator: SITE_CONFIG.creator,
     images: ['/og-image.png'],
@@ -65,6 +67,7 @@ export const metadata: Metadata = {
   },
 };
 
+
 export default function RootLayout({
   children,
 }: {
@@ -80,9 +83,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col bg-white text-slate-900 antialiased font-sans">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <WebsiteChatbot />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -17,11 +17,11 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-03-15',
     readTime: '4 min read',
     category: 'Privacy & Security',
-    author: 'FreePDFKit Security Team',
+    author: 'pdfkitfree Security Team',
     content: [
       'Every time you upload a financial statement, legal contract, or medical report to a typical online PDF converter, that document is transmitted over the internet and processed on a cloud server.',
       'Even if a service promises immediate file deletion, temporary storage, cache logs, and potential multi-tenant leakage remain valid compliance and security concerns under GDPR, HIPAA, and CCPA standards.',
-      'FreePDFKit is built with a browser-first architecture. When you combine, reorder, or edit files with tools like Merge PDF, the processing is performed using high-performance JavaScript engines (such as pdf-lib) directly inside your browser tab. Your files never touch our servers.',
+      'pdfkitfree is built with a browser-first architecture. When you combine, reorder, or edit files with tools like Merge PDF, the processing is performed using high-performance JavaScript engines (such as pdf-lib) directly inside your browser tab. Your files never touch our servers.',
       'This zero-upload approach guarantees immediate processing speeds without upload latency and provides peace of mind when handling confidential client records or personal identifiable information (PII).'
     ]
   },
@@ -50,7 +50,7 @@ export const BLOG_POSTS: BlogPost[] = [
     content: [
       'Consolidating multiple project deliverables into a unified deliverable keeps stakeholders aligned and ensures no critical pages get lost in email threads.',
       'When merging PDF documents, verify consistent page sizing and orientations before finalizing. Using an interactive merge preview lets you easily reorder files before generating the final combined asset.',
-      'FreePDFKit provides seamless drag-and-drop merging that lets you combine documents in seconds with zero waiting queue or upload bottlenecks.'
+      'pdfkitfree provides seamless drag-and-drop merging that lets you combine documents in seconds with zero waiting queue or upload bottlenecks.'
     ]
   }
 ];

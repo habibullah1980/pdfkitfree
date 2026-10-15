@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     canonical: '/sign-pdf',
   },
   openGraph: {
-    title: 'Sign PDF Online - Free Electronic Document Signer | FreePDFKit',
+    title: 'Sign PDF Online - Free Electronic Document Signer | pdfkitfree',
     description:
       'Fast, legally binding electronic signatures. 100% private browser-based document signing.',
   },
@@ -98,7 +98,7 @@ export default function SignPdfPage() {
         {/* Step by Step Workflow */}
         <div className="py-16">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl text-center mb-12">
-            How Electronic Signing Works on FreePDFKit
+            How Electronic Signing Works on pdfkitfree
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

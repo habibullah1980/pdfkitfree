@@ -5,6 +5,14 @@
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
+
+  /* Centralized Brand Design Tokens */
+  --primary: #4b49ac;
+  --light-blue: #98dbff;
+  --supporting-blue: #7DA0FA;
+  --lavender: #7978e3;
+  --coral: #f3797e;
+  --primary-hover: #413e96;
 }
 
 body {
@@ -13,8 +21,15 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+/* Accessible visible keyboard focus */
+:focus-visible {
+  outline: 2px solid #4b49ac;
+  outline-offset: 2px;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 }
+

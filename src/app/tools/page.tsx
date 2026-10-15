@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     canonical: '/tools',
   },
   openGraph: {
-    title: 'PDF Tools Directory - FreePDFKit',
+    title: 'PDF Tools Directory - pdfkitfree',
     description: 'Explore the fast, private suite of PDF tools and digital document workflows.',
   },
 };

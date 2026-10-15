@@ -146,7 +146,7 @@ export function ConvertFromPdfTool({ targetFormat }: ConvertFromPdfToolProps) {
         const { PDFDocument } = await import('pdf-lib');
         const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
         pdfDoc.setTitle(`${base} (Archival PDF/A Compliance)`);
-        pdfDoc.setProducer('FreePDFKit ISO Archival Engine');
+        pdfDoc.setProducer('pdfkitfree ISO Archival Engine');
         const bytes = await pdfDoc.save();
         const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);

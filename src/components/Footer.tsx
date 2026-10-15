@@ -16,7 +16,7 @@ export function Footer() {
                 <FileText className="h-4 w-4" />
               </div>
               <span className="text-lg font-bold text-slate-900">
-                FreePDF<span className="text-brand-600">Kit</span>
+                pdfkit<span className="text-[#4b49ac]">free</span>
               </span>
             </Link>
             <p className="text-sm text-slate-600 leading-relaxed">
@@ -98,7 +98,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-slate-200 pt-8 sm:flex sm:items-center sm:justify-between">
           <p className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} FreePDFKit. All rights reserved. Built for security, performance, and legal compliance.
+            &copy; {new Date().getFullYear()} pdfkitfree. All rights reserved. Built for security, performance, and legal compliance.
           </p>
           <div className="mt-4 flex space-x-6 sm:mt-0">
             <Link href="/privacy" className="text-xs text-slate-500 hover:text-slate-700">

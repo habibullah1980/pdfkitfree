@@ -36,7 +36,7 @@ export function generateMetadata({ params }: ToolPageProps): Metadata {
       title: tool.metaTitle,
       description: tool.metaDescription,
       type: 'website',
-      url: `https://freepdfkit.com/tools/${tool.slug}`,
+      url: `https://pdfkitfree.com/tools/${tool.slug}`,
     },
   };
 }
@@ -101,7 +101,7 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
         {/* SEO How-To & Feature Explanations */}
         <div className="border-t border-slate-200 pt-12">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            How to use {tool.title} on FreePDFKit
+            How to use {tool.title} on pdfkitfree
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -146,7 +146,7 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
                   Are your PDF files safe?
                 </h3>
                 <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                  Yes, absolutely. Unlike other PDF converters that stream your files to remote cloud servers, FreePDFKit executes the file manipulation right in your browser through client-side WebAssembly and JavaScript primitives. Your sensitive data never leaves your computer or smartphone.
+                  Yes, absolutely. Unlike other PDF converters that stream your files to remote cloud servers, pdfkitfree executes the file manipulation right in your browser through client-side WebAssembly and JavaScript primitives. Your sensitive data never leaves your computer or smartphone.
                 </p>
               </div>
             </div>

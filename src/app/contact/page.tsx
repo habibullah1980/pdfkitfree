@@ -110,7 +110,7 @@ export default function ContactPage() {
                     rows={4}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Tell us what you think or how we can improve FreePDFKit..."
+                    placeholder="Tell us what you think or how we can improve pdfkitfree..."
                     className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
                 </div>
@@ -135,7 +135,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-900">Direct Inquiries</h4>
-                  <p className="text-xs text-slate-500">support@freepdfkit.com</p>
+                  <p className="text-xs text-slate-500">support@pdfkitfree.com</p>
                 </div>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">

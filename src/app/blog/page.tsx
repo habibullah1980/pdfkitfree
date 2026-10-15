@@ -5,14 +5,14 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Blog & Document Security Insights - FreePDFKit',
+  title: 'Blog & Document Security Insights - pdfkitfree',
   description:
     'Articles and best practices on PDF security, digital signatures, legal frameworks (ESIGN, eIDAS), and browser-based document productivity.',
   alternates: {
     canonical: '/blog',
   },
   openGraph: {
-    title: 'FreePDFKit Blog - Document Security & PDF Guides',
+    title: 'pdfkitfree Blog - Document Security & PDF Guides',
     description: 'Learn how to handle, convert, and sign confidential documents privately.',
   },
 };

@@ -121,7 +121,7 @@ export function MergePdfTool() {
       const url = URL.createObjectURL(blob);
 
       setDownloadUrl(url);
-      setDownloadName(`freepdfkit-merged-${Date.now()}.pdf`);
+      setDownloadName(`pdfkitfree-merged-${Date.now()}.pdf`);
       setSuccessInfo({
         pageCount: totalPageCount,
         sizeBytes: blob.size,

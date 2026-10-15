@@ -4,14 +4,14 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ShieldCheck, Cpu, Lock, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'About Us - Fast & Private PDF Tools | FreePDFKit',
+  title: 'About Us - Fast & Private PDF Tools | pdfkitfree',
   description:
-    'FreePDFKit was founded to eliminate the privacy vulnerabilities of cloud-based PDF conversion. Learn how our browser-first architecture protects your sensitive documents.',
+    'pdfkitfree was founded to eliminate the privacy vulnerabilities of cloud-based PDF conversion. Learn how our browser-first architecture protects your sensitive documents.',
   alternates: {
     canonical: '/about',
   },
   openGraph: {
-    title: 'About FreePDFKit - Browser-First Document SaaS',
+    title: 'About pdfkitfree - Browser-First Document SaaS',
     description: 'Learn why zero-upload PDF processing is the future of document security.',
   },
 };
@@ -31,7 +31,7 @@ export default function AboutPage() {
             Building the Most Private, High-Performance Document SaaS
           </h1>
           <p className="mt-4 text-lg text-slate-600 leading-relaxed">
-            FreePDFKit is engineered on an unapologetic belief: your confidential legal documents, bank statements, and tax declarations should never have to be transmitted to unknown cloud servers to be merged, edited, or signed.
+            pdfkitfree is engineered on an unapologetic belief: your confidential legal documents, bank statements, and tax declarations should never have to be transmitted to unknown cloud servers to be merged, edited, or signed.
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export default function AboutPage() {
             While convenient, this model represents a glaring compliance failure for legal practitioners, healthcare providers, and privacy-conscious enterprises. Temporary disk caches, access logs, and malicious server compromises put your most sensitive records at risk.
           </p>
 
-          <h2 className="text-2xl font-bold text-slate-900 mt-10">The FreePDFKit Browser-First Breakthrough</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mt-10">The pdfkitfree Browser-First Breakthrough</h2>
           <p>
             Thanks to modern WebAssembly (Wasm) runtimes and high-performance JavaScript engines like <code>pdf-lib</code>, full PDF parsing, page manipulation, encryption, and visual signing can happen locally within your web browser sandbox.
           </p>

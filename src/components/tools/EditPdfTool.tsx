@@ -23,7 +23,7 @@ interface EditPdfToolProps {
 export function EditPdfTool({ toolType }: EditPdfToolProps) {
   const [file, setFile] = useState<File | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
-  const [customText, setCustomText] = useState<string>('FreePDFKit Document Note');
+  const [customText, setCustomText] = useState<string>('pdfkitfree Document Note');
   const [watermarkText, setWatermarkText] = useState<string>('CONFIDENTIAL');
   const [watermarkOpacity, setWatermarkOpacity] = useState<number>(0.3);
   const [imageFile, setImageFile] = useState<File | null>(null);

@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE_CONFIG } from '@/lib/site-config';
 
 export default function robots(): Metadata['robots'] | {
   rules: {
@@ -13,9 +14,9 @@ export default function robots(): Metadata['robots'] | {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/'],
+        disallow: ['/api/', '/admin'],
       },
     ],
-    sitemap: 'https://freepdfkit.com/sitemap.xml',
+    sitemap: `${SITE_CONFIG.url}/sitemap.xml`,
   };
 }

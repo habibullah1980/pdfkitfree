@@ -2,9 +2,9 @@ import { Metadata } from 'next';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Zero File Retention Commitment | FreePDFKit',
+  title: 'Privacy Policy - Zero File Retention Commitment | pdfkitfree',
   description:
-    'FreePDFKit is built with a zero-knowledge, browser-first architecture. Read our commitment to document confidentiality and data protection.',
+    'pdfkitfree is built with a zero-knowledge, browser-first architecture. Read our commitment to document confidentiality and data protection.',
   alternates: {
     canonical: '/privacy',
   },
@@ -27,12 +27,12 @@ export default function PrivacyPolicyPage() {
 
         <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed space-y-6">
           <div className="rounded-xl border border-teal-200 bg-teal-50/70 p-5 text-sm text-teal-900 font-medium">
-            Summary: FreePDFKit processes your PDF files locally on your computer or mobile device. We do not store, view, transmit, or retain your documents on any server.
+            Summary: pdfkitfree processes your PDF files locally on your computer or mobile device. We do not store, view, transmit, or retain your documents on any server.
           </div>
 
           <h2 className="text-xl font-bold text-slate-900">1. Document Processing & Zero-Upload Model</h2>
           <p>
-            When you use FreePDFKit tools such as Merge PDF, Split PDF, or NDA Generator, all document manipulation takes place directly inside your client web browser memory (RAM) using JavaScript and WebAssembly runtimes. Files are not uploaded to our servers or third-party cloud infrastructure.
+            When you use pdfkitfree tools such as Merge PDF, Split PDF, or NDA Generator, all document manipulation takes place directly inside your client web browser memory (RAM) using JavaScript and WebAssembly runtimes. Files are not uploaded to our servers or third-party cloud infrastructure.
           </p>
 
           <h2 className="text-xl font-bold text-slate-900">2. Personal Information Collected</h2>
@@ -40,9 +40,12 @@ export default function PrivacyPolicyPage() {
             Because we do not require account registration or credit card billing for our core utility suite, we do not collect personal names, home addresses, or billing details. When you reach out via our contact form, we only receive the name, email address, and message content you explicitly provide.
           </p>
 
-          <h2 className="text-xl font-bold text-slate-900">3. Analytics and Cookies</h2>
+          <h2 className="text-xl font-bold text-slate-900">3. Analytics, Cookies &amp; Approximate Location</h2>
           <p>
             We may collect anonymous, aggregated technical metrics (e.g. browser type, operating system, and general referrer) solely to maintain application reliability, prevent abuse, and optimize performance across device types. We do not use cross-site tracking cookies.
+          </p>
+          <p>
+            For cybersecurity protection (DDoS mitigation and brute-force account defense), we may infer coarse, country-level geolocation from legitimate HTTP network headers. We never collect precise GPS coordinates or device hardware location, nor do we prompt for location browser permissions. Operational activity telemetry is labeled as approximate and retained for a maximum retention period of 90 days.
           </p>
 
           <h2 className="text-xl font-bold text-slate-900">4. Compliance with International Standards (GDPR & CCPA)</h2>
@@ -52,7 +55,7 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-xl font-bold text-slate-900">5. Contact Information</h2>
           <p>
-            For privacy inquiries or compliance verification, contact our data protection representative at: <code>privacy@freepdfkit.com</code>.
+            For privacy inquiries or compliance verification, contact our data protection representative at: <code>privacy@pdfkitfree.com</code>.
           </p>
         </div>
       </div>
