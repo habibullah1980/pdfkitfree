@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import Stripe from 'stripe';
-import { PlanTier, changeUserSubscription } from './auth-store';
+import { PlanTier, changeUserSubscription, getPlansConfig } from './auth-store';
 
 export type PaymentMethodChoice = 'stripe' | 'paypal';
 
@@ -47,6 +47,32 @@ export interface WebhookVerificationResult {
 }
 
 const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || 'fpk_webhook_secret_sign_2026_xyz';
+
+// In-memory set to prevent replay attacks / duplicate submission of the same nonce
+const processedNonces = new Set<string>();
+
+/**
+ * Creates a deterministic canonical JSON string where object keys are sorted alphabetically.
+ */
+function serializeCanonicalJson(obj: Record<string, unknown>): string {
+  const sortedKeys = Object.keys(obj).sort();
+  const sortedObj: Record<string, unknown> = {};
+  for (const k of sortedKeys) {
+    sortedObj[k] = obj[k];
+  }
+  return JSON.stringify(sortedObj);
+}
+
+/**
+ * Perform constant-time string comparison to defend against timing attacks.
+ */
+function constantTimeCompare(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const aBuf = Buffer.from(a, 'utf-8');
+  const bBuf = Buffer.from(b, 'utf-8');
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
 
 // Stripe client lazy initializer
 function getStripeClient(): Stripe | null {
@@ -235,23 +261,26 @@ export class PaymentGateway {
 
     // 3. Cryptographically Signed Sandbox Session (when live API keys are not supplied)
     // Uses HMAC-SHA256 signature to guarantee server verification before any subscription grant
-    const payload = JSON.stringify({
-      userId: opts.userId,
-      userEmail: opts.userEmail,
-      planId: opts.planId,
-      billingInterval: opts.billingInterval,
+    const canonicalPayloadString = serializeCanonicalJson({
       amount: opts.amount,
-      provider: choice,
-      nonce: crypto.randomBytes(16).toString('hex'),
+      billingInterval: opts.billingInterval,
+      currency: 'USD',
       exp: Date.now() + 15 * 60 * 1000, // 15 mins validity
+      nonce: crypto.randomBytes(16).toString('hex'),
+      planId: opts.planId,
+      provider: choice,
+      userEmail: opts.userEmail,
+      userId: opts.userId,
     });
+
+    const payloadBase64Url = Buffer.from(canonicalPayloadString, 'utf-8').toString('base64url');
 
     const signature = crypto
       .createHmac('sha256', WEBHOOK_SECRET)
-      .update(payload)
+      .update(payloadBase64Url)
       .digest('hex');
 
-    const sandboxToken = `${Buffer.from(payload).toString('base64url')}.${signature}`;
+    const sandboxToken = `${payloadBase64Url}.${signature}`;
 
     return {
       provider: 'sandbox',
@@ -477,15 +506,48 @@ export class PaymentGateway {
   ): WebhookVerificationResult {
     try {
       if (tokenOrPayload.includes('.')) {
-        const [base64, sig] = tokenOrPayload.split('.');
-        const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(base64).digest('hex');
-        if (expected !== sig) {
+        const parts = tokenOrPayload.split('.');
+        if (parts.length !== 2) {
+          return { isValid: false, provider: 'sandbox', error: 'Malformed verification token format.' };
+        }
+        const [base64, sig] = parts;
+
+        const expected = crypto
+          .createHmac('sha256', WEBHOOK_SECRET)
+          .update(base64)
+          .digest('hex');
+
+        // Constant-time signature comparison to prevent timing side-channel attacks
+        if (!constantTimeCompare(expected, sig)) {
           return { isValid: false, provider: 'sandbox', error: 'Cryptographic signature mismatch.' };
         }
 
         const data = JSON.parse(Buffer.from(base64, 'base64url').toString('utf-8'));
-        if (data.exp < Date.now()) {
+
+        // Validate expiration timestamp
+        if (typeof data.exp !== 'number' || data.exp < Date.now()) {
           return { isValid: false, provider: 'sandbox', error: 'Checkout session expired.' };
+        }
+
+        // Replay attack prevention: verify and consume single-use nonce
+        if (!data.nonce || typeof data.nonce !== 'string') {
+          return { isValid: false, provider: 'sandbox', error: 'Missing security nonce.' };
+        }
+        if (processedNonces.has(data.nonce)) {
+          return { isValid: false, provider: 'sandbox', error: 'Transaction token already used (replay detected).' };
+        }
+        processedNonces.add(data.nonce);
+
+        // Server-side Plan & Price Validation: Never trust client amount
+        const plans = getPlansConfig();
+        const plan = plans.find((p) => p.id === data.planId);
+        if (!plan) {
+          return { isValid: false, provider: 'sandbox', error: 'Invalid plan tier in token payload.' };
+        }
+
+        const expectedPrice = data.billingInterval === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
+        if (typeof data.amount !== 'number' || Math.abs(data.amount - expectedPrice) > 0.01) {
+          return { isValid: false, provider: 'sandbox', error: 'Price tampering detected: amount mismatch.' };
         }
 
         const chosenProvider = data.provider === 'paypal' ? 'paypal' : 'mock';
@@ -501,7 +563,7 @@ export class PaymentGateway {
             billingInterval: data.billingInterval,
             subscriptionId: `sub_sandbox_${crypto.randomUUID().slice(0, 8)}`,
             customerId: `cus_sandbox_${crypto.randomUUID().slice(0, 8)}`,
-            amount: data.amount,
+            amount: expectedPrice,
             paymentMethod: data.provider === 'paypal' ? 'PayPal (Sandbox Verified)' : 'Debit/Credit Card (Sandbox Verified)',
             transactionRef: `tx_sandbox_${crypto.randomUUID().slice(0, 10)}`,
             provider: chosenProvider,
@@ -514,7 +576,8 @@ export class PaymentGateway {
           .createHmac('sha256', WEBHOOK_SECRET)
           .update(tokenOrPayload)
           .digest('hex');
-        if (expected !== signatureHeader) {
+
+        if (!constantTimeCompare(expected, signatureHeader)) {
           return { isValid: false, provider: 'sandbox', error: 'Webhook signature verification failed.' };
         }
 

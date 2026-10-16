@@ -56,6 +56,16 @@ export async function POST(req: NextRequest) {
     // Reset failed counter upon successful password check
     loginAttemptMap.delete(ip);
 
+    // Production Safety: Strictly disable demo account on production website by default
+    if (user.email.toLowerCase() === 'demo@pdfkitfree.com' && process.env.ENABLE_DEMO_ACCOUNT !== 'true') {
+      return NextResponse.json(
+        {
+          error: 'The demo account is disabled on the production website. Demo credentials are restricted to authorized testing environments.',
+        },
+        { status: 403 }
+      );
+    }
+
     if (user.accountStatus === 'suspended') {
       return NextResponse.json(
         {

@@ -38,22 +38,26 @@ export async function POST(req: NextRequest) {
     timestamps.push(now);
     userAiRateLimitMap.set(user.id, timestamps);
 
-    // Plan quota check
-    const plans = getPlansConfig();
-    const userPlan = plans.find((p) => p.id === (user.subscription?.planId || 'free'));
-    const baseQuota = userPlan?.limits.aiCreditsPerMonth || 0;
-    const customQuota = user.customQuotas?.aiCredits;
-    const effectiveLimit = customQuota !== undefined ? customQuota : baseQuota;
+    // Plan quota check: Super Administrator possesses unrestricted server-authorized access
+    const isSuperAdmin = user.role === 'superadmin';
+    let effectiveLimit = 999999;
+    if (!isSuperAdmin) {
+      const plans = getPlansConfig();
+      const userPlan = plans.find((p) => p.id === (user.subscription?.planId || 'free'));
+      const baseQuota = userPlan?.limits.aiCreditsPerMonth || 0;
+      const customQuota = user.customQuotas?.aiCredits;
+      effectiveLimit = customQuota !== undefined ? customQuota : baseQuota;
 
-    const usedCredits = user.usage?.aiCreditsUsed || 0;
-    if (effectiveLimit > 0 && usedCredits >= effectiveLimit) {
-      return NextResponse.json(
-        {
-          error: `Monthly AI document credit quota reached (${usedCredits}/${effectiveLimit}). Upgrade your plan or contact support to increase limits.`,
-          quotaExceeded: true,
-        },
-        { status: 403 }
-      );
+      const usedCredits = user.usage?.aiCreditsUsed || 0;
+      if (effectiveLimit > 0 && usedCredits >= effectiveLimit) {
+        return NextResponse.json(
+          {
+            error: `Monthly AI document credit quota reached (${usedCredits}/${effectiveLimit}). Upgrade your plan or contact support to increase limits.`,
+            quotaExceeded: true,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await req.json();

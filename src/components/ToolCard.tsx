@@ -1,49 +1,31 @@
 import React from 'react';
 import Link from 'next/link';
 import { ToolDefinition } from '@/lib/tools';
-import { 
-  FilePlus, 
-  Scissors, 
-  RotateCw, 
-  FileImage, 
-  Lock, 
-  PenTool, 
-  ArrowRight,
-  Sparkles
-} from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
+import { getToolIconConfig } from '@/lib/tool-icons';
 
 interface ToolCardProps {
   tool: ToolDefinition;
 }
 
 export function ToolCard({ tool }: ToolCardProps) {
-  const getIcon = (id: string) => {
-    switch (id) {
-      case 'merge-pdf':
-        return <FilePlus className="h-6 w-6 text-brand-600" />;
-      case 'split-pdf':
-        return <Scissors className="h-6 w-6 text-brand-600" />;
-      case 'rotate-pdf':
-        return <RotateCw className="h-6 w-6 text-brand-600" />;
-      case 'pdf-to-jpg':
-        return <FileImage className="h-6 w-6 text-teal-600" />;
-      case 'protect-pdf':
-        return <Lock className="h-6 w-6 text-teal-600" />;
-      case 'sign-pdf':
-        return <PenTool className="h-6 w-6 text-brand-600" />;
-      default:
-        return <FilePlus className="h-6 w-6 text-brand-600" />;
-    }
-  };
-
+  const iconConfig = getToolIconConfig(tool.id || tool.slug);
+  const IconComponent = iconConfig.icon;
   const href = tool.slug === 'sign-pdf' ? '/sign-pdf' : `/tools/${tool.slug}`;
 
   return (
     <div className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md">
       <div>
         <div className="flex items-center justify-between">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-50 border border-slate-100 group-hover:bg-brand-50 group-hover:border-brand-100 transition-colors">
-            {getIcon(tool.id)}
+          <div
+            className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-colors ${iconConfig.bgClass}`}
+            aria-label={iconConfig.label}
+          >
+            <IconComponent
+              className={`h-6 w-6 transition-transform duration-200 group-hover:scale-110 ${iconConfig.colorClass}`}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
           </div>
           {tool.badge && (
             <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">

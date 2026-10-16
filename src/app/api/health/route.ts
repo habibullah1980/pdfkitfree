@@ -19,6 +19,7 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     services: {
       database: dbStatus,
+      neonLakebasePostgres: process.env.DATABASE_URL ? 'connected (Lakebase Postgres)' : 'local_store',
       auth: 'operational',
       clientProcessingEngine: 'operational (in-browser sandbox)',
       aiAssistant: process.env.AI_API_KEY ? 'live_provider' : 'local_deterministic',

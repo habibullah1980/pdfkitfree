@@ -9,8 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@neon/config": "^1.9.1",
+    "@neon/env": "^1.6.2",
+    "@neondatabase/serverless": "^1.2.0",
     "@supabase/supabase-js": "^2.117.3",
     "clsx": "^2.1.1",
+    "ffprobe-static": "^3.1.0",
     "jszip": "^3.10.2",
     "lucide-react": "^1.56.0",
     "next": "14.2.15",

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { isNeonConfigured, executeNeonQuery } from './neon-db';
 
 export type PlanTier = 'free' | 'pro' | 'business';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'past_due' | 'trialing';
@@ -440,6 +441,90 @@ function migrateUsers(db: DatabaseSchema) {
         note: 'Estimated from server request headers (Approximate only)',
       };
     }
+    // Strict Demo Account Security: Enforce demo@pdfkitfree.com isolation
+    if (u.email.toLowerCase() === 'demo@pdfkitfree.com') {
+      u.role = 'user'; // NEVER allow demo account to possess superadmin role
+      // In production or when ENABLE_DEMO_ACCOUNT is not explicitly 'true', disable the demo account
+      const isDemoAllowed = process.env.ENABLE_DEMO_ACCOUNT === 'true';
+      if (!isDemoAllowed) {
+        u.accountStatus = 'suspended';
+        u.suspendedReason = 'Demo account is disabled by default in production. Set ENABLE_DEMO_ACCOUNT=true in demo environment to enable.';
+      } else if (u.suspendedReason?.includes('Demo account is disabled by default')) {
+        u.accountStatus = 'active';
+        u.suspendedReason = undefined;
+      }
+
+      // Restrict demo account to free plan or non-paying tier; never allow real/unrestricted subscription bypass
+      if (u.subscription?.planId === 'business') {
+        u.subscription.planId = 'free';
+      }
+    }
+  }
+
+  // Ensure demo@pdfkitfree.com is present in seed data if testing environment enables it, or safely disabled
+  let demoUser = db.users.find((u) => u.email.toLowerCase() === 'demo@pdfkitfree.com');
+  const isDemoAllowed = process.env.ENABLE_DEMO_ACCOUNT === 'true';
+
+  if (!demoUser) {
+    const demoPassword = process.env.DEMO_ACCOUNT_PASSWORD || 'habib8963';
+    const { hash: demoHash, salt: demoSalt } = hashPassword(demoPassword);
+    demoUser = {
+      id: 'usr_demo_pdfkitfree',
+      name: 'Demo Account (Restricted)',
+      email: 'demo@pdfkitfree.com',
+      role: 'user', // NEVER superadmin
+      passwordHash: demoHash,
+      salt: demoSalt,
+      emailVerified: true,
+      verificationCode: '',
+      verificationExpires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      resetToken: null,
+      resetTokenExpires: null,
+      createdAt: new Date().toISOString(),
+      subscription: {
+        planId: 'free', // Strictly free tier
+        status: 'active',
+        billingInterval: 'monthly',
+        startDate: new Date().toISOString(),
+        renewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        cancelAtPeriodEnd: false,
+        canceledAt: null,
+        paymentProvider: 'mock',
+        subscriptionId: null,
+        customerId: null,
+      },
+      usage: {
+        pdfProcessedCount: 3,
+        videoProcessedCount: 1,
+        aiCreditsUsed: 0,
+        storageBytesUsed: 500000,
+        lastUsageReset: new Date().toISOString(),
+      },
+      accountStatus: isDemoAllowed ? 'active' : 'suspended',
+      suspendedReason: isDemoAllowed
+        ? undefined
+        : 'Demo account is disabled by default in production. Set ENABLE_DEMO_ACCOUNT=true in demo environment to enable.',
+      approxLocation: {
+        country: 'United States',
+        city: 'Demo Sandbox',
+        note: 'Restricted demo sandbox environment',
+      },
+      lastLoginAt: new Date().toISOString(),
+    };
+    db.users.push(demoUser);
+  } else {
+    demoUser.role = 'user'; // NEVER superadmin
+    if (!isDemoAllowed) {
+      demoUser.accountStatus = 'suspended';
+      demoUser.suspendedReason =
+        'Demo account is disabled by default in production. Set ENABLE_DEMO_ACCOUNT=true in demo environment to enable.';
+    } else if (demoUser.suspendedReason?.includes('Demo account is disabled by default')) {
+      demoUser.accountStatus = 'active';
+      demoUser.suspendedReason = undefined;
+    }
+    if (demoUser.subscription?.planId !== 'free') {
+      demoUser.subscription.planId = 'free';
+    }
   }
 
   if (!db.plans || db.plans.length === 0) {
@@ -540,6 +625,51 @@ function saveDb(data: DatabaseSchema) {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
     console.error('Database save error:', err);
+  }
+
+  // Non-blocking sync to Neon Lakebase Postgres when configured
+  if (isNeonConfigured()) {
+    Promise.resolve().then(async () => {
+      try {
+        // Sync latest user count or mutations
+        const lastUser = data.users[data.users.length - 1];
+        if (lastUser) {
+          await executeNeonQuery(
+            `INSERT INTO users (
+              id, name, email, phone, role, password_hash, salt,
+              email_verified, verification_code, verification_expires,
+              account_status, subscription, usage, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ON CONFLICT (email) DO UPDATE SET
+              name = EXCLUDED.name,
+              role = EXCLUDED.role,
+              subscription = EXCLUDED.subscription,
+              usage = EXCLUDED.usage,
+              email_verified = EXCLUDED.email_verified,
+              account_status = EXCLUDED.account_status;`,
+            [
+              lastUser.id,
+              lastUser.name,
+              lastUser.email,
+              lastUser.phone || null,
+              lastUser.role,
+              lastUser.passwordHash,
+              lastUser.salt,
+              Boolean(lastUser.emailVerified),
+              lastUser.verificationCode || '',
+              lastUser.verificationExpires || null,
+              lastUser.accountStatus || 'active',
+              JSON.stringify(lastUser.subscription || {}),
+              JSON.stringify(lastUser.usage || {}),
+              lastUser.createdAt || new Date().toISOString(),
+            ]
+          );
+        }
+      } catch (err) {
+        // Silent catch for non-blocking background sync
+        console.warn('Neon background sync notification:', (err as Error).message);
+      }
+    });
   }
 }
 
@@ -1020,6 +1150,10 @@ export function changeUserSubscription(
   const plan = plans.find((p) => p.id === planId);
   if (!plan) throw new Error('Invalid plan selected.');
 
+  if (user.email.toLowerCase() === 'demo@pdfkitfree.com' && planId !== 'free') {
+    throw new Error('Demo account cannot be subscribed to paid tiers.');
+  }
+
   const price = interval === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
   const daysToAdd = interval === 'yearly' ? 365 : 30;
 
@@ -1261,6 +1395,10 @@ export function grantPromotionalAccessAdmin(
   const target = db.users.find((u) => u.id === userId && !u.isDeleted);
   if (!target) throw new Error('Target user not found.');
 
+  if (target.email.toLowerCase() === 'demo@pdfkitfree.com' && planId !== 'free') {
+    throw new Error('Demo account cannot be granted paid promotional access.');
+  }
+
   const renewalDate = new Date(Date.now() + durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString();
 
   target.subscription = {
@@ -1426,6 +1564,10 @@ export function updateUserRoleAdmin(userId: string, role: 'superadmin' | 'user')
   const db = ensureDb();
   const target = db.users.find((u) => u.id === userId);
   if (!target) return false;
+
+  if (target.email.toLowerCase() === 'demo@pdfkitfree.com' && role === 'superadmin') {
+    throw new Error('Demo account cannot be granted Super Administrator privileges.');
+  }
 
   target.role = role;
   saveDb(db);

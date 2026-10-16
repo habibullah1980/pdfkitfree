@@ -13,19 +13,42 @@ import {
   Loader2, 
   Cpu, 
   Sliders, 
-  FileVideo
+  FileVideo,
+  Server,
+  Info
 } from 'lucide-react';
 
 type CompressionPreset = 'small' | 'balanced' | 'high';
 type ResolutionPreset = 'original' | '1080p' | '720p' | '480p' | '360p';
+type OutputFormat = 'mp4' | 'webm';
+
+interface DetectedMetadata {
+  duration: number;
+  width: number;
+  height: number;
+  formatName?: string;
+  videoCodec?: string;
+  audioCodec?: string;
+  bitrate?: number;
+  isBrowserPlayable: boolean;
+  engine: 'browser-native' | 'ffmpeg-worker';
+}
 
 export function VideoCompressorTool() {
   const [file, setFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  
+  // Metadata & inspection state
+  const [isReadingMetadata, setIsReadingMetadata] = useState<boolean>(false);
+  const [metadata, setMetadata] = useState<DetectedMetadata | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [processingEngine, setProcessingEngine] = useState<'browser-native' | 'ffmpeg-worker'>('browser-native');
+
+  // Settings
   const [preset, setPreset] = useState<CompressionPreset>('balanced');
   const [resolution, setResolution] = useState<ResolutionPreset>('original');
+  const [outputFormat, setOutputFormat] = useState<OutputFormat>('mp4');
 
   // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -38,7 +61,7 @@ export function VideoCompressorTool() {
   const [compressedUrl, setCompressedUrl] = useState<string | null>(null);
   const [compressedMime, setCompressedMime] = useState<string>('video/mp4');
 
-  // Preview state
+  // References
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const processingVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -76,27 +99,31 @@ export function VideoCompressorTool() {
   };
 
   const formatDuration = (seconds: number): string => {
+    if (!seconds || isNaN(seconds) || seconds <= 0) return 'Detecting...';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // 1. Handle File Selection
-  const handleSelectFile = (selectedFile: File | null) => {
+  // 1. Robust File Selection & Multi-Stage Metadata Inspection
+  const handleSelectFile = async (selectedFile: File | null) => {
     if (!selectedFile) return;
     setErrorMessage(null);
+    setIsReadingMetadata(true);
+    setMetadata(null);
+    setDuration(0);
+    setDimensions({ width: 0, height: 0 });
 
-    // Validate video type
-    const isVideo = selectedFile.type.startsWith('video/') || 
-      /\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(selectedFile.name);
+    // Validate video container or MIME
+    const isVideo =
+      selectedFile.type.startsWith('video/') ||
+      /\.(mp4|mov|webm|mkv|avi|m4v|wmv|flv|mpeg|mpg|3gp|ts|mts)$/i.test(selectedFile.name);
 
     if (!isVideo) {
-      setErrorMessage('Please upload a valid video file (MP4, MOV, WebM, MKV).');
-      return;
-    }
-
-    if (selectedFile.size > 800 * 1024 * 1024) {
-      setErrorMessage('Video exceeds the 800 MB browser RAM threshold. Browser compression may run out of memory. Please select a smaller video.');
+      setIsReadingMetadata(false);
+      setErrorMessage(
+        'Unsupported file format. Please upload a video file (MP4, MOV, WebM, MKV, AVI, WMV, FLV, MPEG, 3GP, TS).'
+      );
       return;
     }
 
@@ -105,24 +132,87 @@ export function VideoCompressorTool() {
     setCompressedUrl(null);
     setProgress(0);
 
-    const url = URL.createObjectURL(selectedFile);
+    const localUrl = URL.createObjectURL(selectedFile);
     setFile(selectedFile);
-    setVideoUrl(url);
+    setVideoUrl(localUrl);
 
-    // Load metadata from video
-    const tempVideo = document.createElement('video');
-    tempVideo.preload = 'metadata';
-    tempVideo.src = url;
-    tempVideo.onloadedmetadata = () => {
-      setDuration(tempVideo.duration || 0);
-      setDimensions({
-        width: tempVideo.videoWidth || 1280,
-        height: tempVideo.videoHeight || 720,
+    // Multi-stage inspection: Try HTML5 video element first.
+    let resolvedDuration = 0;
+    let resolvedWidth = 0;
+    let resolvedHeight = 0;
+    let browserPlaybackOk = false;
+
+    try {
+      const probeVideo = document.createElement('video');
+      probeVideo.preload = 'metadata';
+      probeVideo.src = localUrl;
+
+      const loadedPromise = new Promise<boolean>((resolve) => {
+        probeVideo.onloadedmetadata = () => {
+          if (probeVideo.duration > 0 && probeVideo.videoWidth > 0) {
+            resolvedDuration = probeVideo.duration;
+            resolvedWidth = probeVideo.videoWidth;
+            resolvedHeight = probeVideo.videoHeight;
+            browserPlaybackOk = true;
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        };
+        probeVideo.onerror = () => resolve(false);
+        setTimeout(() => resolve(false), 2500); // Max 2.5s probe timeout
       });
-    };
-    tempVideo.onerror = () => {
-      setErrorMessage('Unable to decode video format in this browser. Please ensure the video uses standard H.264, VP8/VP9, or AV1 codecs.');
-    };
+
+      await loadedPromise;
+    } catch {
+      browserPlaybackOk = false;
+    }
+
+    if (browserPlaybackOk && resolvedWidth > 0 && resolvedHeight > 0) {
+      setDuration(resolvedDuration);
+      setDimensions({ width: resolvedWidth, height: resolvedHeight });
+      setProcessingEngine('browser-native');
+      setMetadata({
+        duration: resolvedDuration,
+        width: resolvedWidth,
+        height: resolvedHeight,
+        isBrowserPlayable: true,
+        engine: 'browser-native',
+      });
+      setIsReadingMetadata(false);
+      return;
+    }
+
+    // Browser cannot natively decode container or codec (e.g. MKV, AVI, ProRes, HEVC, MPEG-4).
+    // Automatically fallback to our server-side FFmpeg worker engine for exact metadata inspection.
+    try {
+      setProcessingStatus('Inspecting media container with FFmpeg worker...');
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const res = await fetch('/api/video/metadata', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.metadata) {
+        throw new Error(data.error || 'Failed to inspect media stream.');
+      }
+
+      const meta = data.metadata;
+      setDuration(meta.duration || 0);
+      setDimensions({ width: meta.width || 1280, height: meta.height || 720 });
+      setProcessingEngine('ffmpeg-worker');
+      setMetadata(meta);
+      setIsReadingMetadata(false);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setIsReadingMetadata(false);
+      setErrorMessage(
+        `Unable to extract video metadata: ${error.message || 'Corrupt or unsupported container'}. Please verify the file integrity.`
+      );
+    }
   };
 
   // Compute Target Bitrate & Settings based on preset and resolution
@@ -163,7 +253,7 @@ export function VideoCompressorTool() {
 
     // Apply preset multiplier
     let mult = 1.0;
-    if (preset === 'small') mult = 0.55; // Aggressive
+    if (preset === 'small') mult = 0.55;
     else if (preset === 'balanced') mult = 0.95;
     else if (preset === 'high') mult = 1.6;
 
@@ -180,12 +270,72 @@ export function VideoCompressorTool() {
     };
   }, [dimensions, resolution, preset, duration, file]);
 
-  // 2. Client-Side Video Compression Execution
+  // 2. Dual-Engine Video Compression Execution
   const handleCompressVideo = async () => {
     if (!file || !videoUrl) return;
     setErrorMessage(null);
     setIsProcessing(true);
     setProgress(0);
+
+    // If video cannot be natively rendered by the browser's video element, dispatch to the FFmpeg worker
+    if (processingEngine === 'ffmpeg-worker' || !metadata?.isBrowserPlayable) {
+      await handleServerWorkerCompression();
+    } else {
+      await handleBrowserNativeCompression();
+    }
+  };
+
+  // Server-Side FFmpeg Worker Execution
+  const handleServerWorkerCompression = async () => {
+    if (!file) return;
+    setProcessingStatus('Uploading to secure FFmpeg worker for multi-codec compression...');
+    setProgress(15);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('preset', preset);
+      formData.append('resolution', resolution);
+      formData.append('outputFormat', outputFormat);
+
+      setProgress(35);
+      setProcessingStatus('FFmpeg is transcoding and compressing audio/video streams...');
+
+      const response = await fetch('/api/video/compress', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorJson = await response.json().catch(() => ({}));
+        throw new Error(errorJson.error || `Worker transcode failed with HTTP status ${response.status}`);
+      }
+
+      setProgress(85);
+      setProcessingStatus('Receiving optimized video package...');
+
+      const blob = await response.blob();
+      const mime = outputFormat === 'webm' ? 'video/webm' : 'video/mp4';
+      const typedBlob = new Blob([blob], { type: mime });
+
+      const downloadUrl = URL.createObjectURL(typedBlob);
+      setCompressedBlob(typedBlob);
+      setCompressedUrl(downloadUrl);
+      setCompressedMime(mime);
+      setProgress(100);
+      setProcessingStatus('Compression complete!');
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error('Server FFmpeg transcode error:', error);
+      setErrorMessage(`Compression error: ${error.message || 'Worker processing failed'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Browser-Native Canvas + MediaRecorder Execution
+  const handleBrowserNativeCompression = async () => {
+    if (!file || !videoUrl) return;
     setProcessingStatus('Initializing browser media engine...');
 
     try {
@@ -202,18 +352,16 @@ export function VideoCompressorTool() {
       if (!ctx) throw new Error('Canvas 2D context unavailable.');
 
       vid.src = videoUrl;
-      vid.muted = false; // Need audio track
+      vid.muted = false;
       vid.currentTime = 0;
 
       await new Promise<void>((resolve, reject) => {
         vid.onloadeddata = () => resolve();
-        vid.onerror = () => reject(new Error('Failed to load video for processing.'));
+        vid.onerror = () => reject(new Error('Failed to load video into browser sandbox.'));
       });
 
-      // Prepare MediaStream from Canvas
       const canvasStream = canvas.captureStream(30);
 
-      // Extract & attach audio track via Web Audio API if possible
       try {
         const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (AudioCtx) {
@@ -222,7 +370,6 @@ export function VideoCompressorTool() {
           const source = audioCtx.createMediaElementSource(vid);
           const dest = audioCtx.createMediaStreamDestination();
           source.connect(dest);
-          // connect to speakers only if not muted, but here mute speakers so user isn't blasted
           const gain = audioCtx.createGain();
           gain.gain.value = 0;
           source.connect(gain);
@@ -234,14 +381,13 @@ export function VideoCompressorTool() {
           }
         }
       } catch (audioErr) {
-        console.warn('Audio capture bypassed or not permitted:', audioErr);
+        console.warn('Audio capture note:', audioErr);
       }
 
-      // Check supported recording format
       let selectedMime = 'video/webm;codecs=vp8,opus';
-      if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
+      if (outputFormat === 'mp4' && MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
         selectedMime = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
-      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+      } else if (outputFormat === 'mp4' && MediaRecorder.isTypeSupported('video/mp4')) {
         selectedMime = 'video/mp4';
       } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
         selectedMime = 'video/webm;codecs=vp9,opus';
@@ -277,17 +423,14 @@ export function VideoCompressorTool() {
         recorder.onerror = (e) => reject(e);
       });
 
-      // Start Recording
-      recorder.start(250); // Slice chunks every 250ms
-      vid.playbackRate = 1.0; // Steady playback for accurate frame capture
+      recorder.start(250);
+      vid.playbackRate = 1.0;
       await vid.play();
 
       setProcessingStatus('Compressing video frames in browser memory...');
 
-      // Render loop
       const renderFrame = () => {
         if (vid.paused || vid.ended) return;
-
         ctx.drawImage(vid, 0, 0, outWidth, outHeight);
 
         const current = vid.currentTime;
@@ -299,10 +442,8 @@ export function VideoCompressorTool() {
       };
       animFrameRef.current = requestAnimationFrame(renderFrame);
 
-      // Wait for video completion
       await new Promise<void>((resolve) => {
         vid.onended = () => resolve();
-        // Fallback safety timeout based on video length
         const maxTimeout = (vid.duration * 1.5 + 5) * 1000;
         setTimeout(() => {
           if (!vid.ended) {
@@ -319,10 +460,6 @@ export function VideoCompressorTool() {
       setProcessingStatus('Finalizing compressed container...');
       const outputBlob = await completionPromise;
 
-      if (!outputBlob || outputBlob.size === 0) {
-        throw new Error('Video compression failed to produce output.');
-      }
-
       const outUrl = URL.createObjectURL(outputBlob);
       setCompressedBlob(outputBlob);
       setCompressedUrl(outUrl);
@@ -330,8 +467,9 @@ export function VideoCompressorTool() {
       setProcessingStatus('Compression complete!');
     } catch (err: unknown) {
       const error = err as Error;
-      console.error('Video compression error:', err);
-      setErrorMessage(`Compression error: ${error.message || 'Unknown processing error. Check browser memory or format.'}`);
+      console.warn('Browser compression failed, redirecting to FFmpeg worker:', error);
+      // Auto-fallback to FFmpeg server worker if browser MediaRecorder stalls or fails
+      await handleServerWorkerCompression();
     } finally {
       setIsProcessing(false);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -342,14 +480,17 @@ export function VideoCompressorTool() {
     cleanupUrls();
     setFile(null);
     setVideoUrl(null);
+    setMetadata(null);
+    setDuration(0);
+    setDimensions({ width: 0, height: 0 });
     setCompressedBlob(null);
     setCompressedUrl(null);
     setProgress(0);
     setIsProcessing(false);
+    setIsReadingMetadata(false);
     setErrorMessage(null);
   };
 
-  // Calculate actual reduction
   const actualReduction = useMemo(() => {
     if (!file || !compressedBlob) return 0;
     const diff = file.size - compressedBlob.size;
@@ -360,13 +501,13 @@ export function VideoCompressorTool() {
   const downloadFilename = useMemo(() => {
     if (!file) return 'compressed-video.mp4';
     const base = file.name.replace(/\.[^/.]+$/, '');
-    const ext = compressedMime.includes('mp4') ? 'mp4' : 'webm';
+    const ext = compressedMime.includes('webm') ? 'webm' : 'mp4';
     return `compressed-${base}.${ext}`;
   }, [file, compressedMime]);
 
   return (
     <div className="space-y-8">
-      {/* Hidden processing video & canvas elements */}
+      {/* Hidden processing video & canvas elements for browser playback */}
       <video ref={processingVideoRef} playsInline className="hidden" />
       <canvas ref={canvasRef} className="hidden" />
 
@@ -379,7 +520,7 @@ export function VideoCompressorTool() {
       )}
 
       {/* ============================================================ */}
-      {/* 1. UPLOAD ZONE (When no file is selected) */}
+      {/* 1. UPLOAD ZONE */}
       {/* ============================================================ */}
       {!file && (
         <div
@@ -399,8 +540,8 @@ export function VideoCompressorTool() {
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
             Upload Video to Compress
           </h2>
-          <p className="mt-2 text-sm text-slate-600 max-w-lg">
-            Drag and drop your video file here, or select from your computer. Supports MP4, MOV, WebM, and MKV with 100% private in-browser compression.
+          <p className="mt-2 text-sm text-slate-600 max-w-xl">
+            Drag and drop your video file here, or select from your computer. Supports MP4, MOV, WebM, MKV, AVI, M4V, WMV, FLV, MPEG, 3GP, and TS with dual client-side &amp; FFmpeg worker processing.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -415,7 +556,7 @@ export function VideoCompressorTool() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="video/*,.mp4,.mov,.webm,.mkv"
+              accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.m4v,.wmv,.flv,.mpeg,.mpg,.3gp,.ts,.mts"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files?.[0]) {
@@ -425,20 +566,23 @@ export function VideoCompressorTool() {
             />
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-teal-800">
-            <span className="flex items-center gap-1.5 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs font-medium text-slate-600">
+            <span className="flex items-center gap-1.5 bg-teal-50 px-3 py-1 rounded-full border border-teal-200 text-teal-800">
               <ShieldCheck className="h-3.5 w-3.5 text-teal-600" />
-              Zero Cloud Uploads: Processed 100% locally in browser RAM
+              Standard Web Videos (H.264 / VP8 / VP9): 100% Client-Side In-Browser
             </span>
-            <span className="text-slate-500">Max Recommended Size: 800 MB</span>
+            <span className="flex items-center gap-1.5 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 text-indigo-800">
+              <Server className="h-3.5 w-3.5 text-indigo-600" />
+              Advanced Codecs (HEVC, MKV, AVI, ProRes): Accelerated FFmpeg Worker
+            </span>
           </div>
         </div>
       )}
 
       {/* ============================================================ */}
-      {/* 2. COMPRESSION WORKSPACE & CONTROLS (When file is loaded) */}
+      {/* 2. COMPRESSION WORKSPACE & CONTROLS */}
       {/* ============================================================ */}
-      {file && videoUrl && (
+      {file && (
         <div className="space-y-6">
           {/* File Information Card */}
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -453,11 +597,15 @@ export function VideoCompressorTool() {
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-0.5">
                   <span>Size: <strong className="text-slate-700">{formatFileSize(file.size)}</strong></span>
                   <span>•</span>
-                  <span>Duration: <strong className="text-slate-700">{formatDuration(duration)}</strong></span>
+                  <span>Duration: <strong className="text-slate-700">{isReadingMetadata ? 'Reading...' : formatDuration(duration)}</strong></span>
                   <span>•</span>
-                  <span>Resolution: <strong className="text-slate-700">{dimensions.width}x{dimensions.height}</strong></span>
+                  <span>
+                    Resolution: <strong className="text-slate-700">{isReadingMetadata ? 'Reading...' : (dimensions.width > 0 ? `${dimensions.width}x${dimensions.height}` : 'Extracting...')}</strong>
+                  </span>
                   <span>•</span>
-                  <span className="uppercase font-mono">{file.type.split('/')[1] || 'VIDEO'}</span>
+                  <span className="uppercase font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700">
+                    {metadata?.videoCodec ? `${metadata.videoCodec} (${metadata.formatName?.split(',')[0]})` : file.name.split('.').pop()?.toUpperCase()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -473,17 +621,53 @@ export function VideoCompressorTool() {
             </button>
           </div>
 
+          {/* Engine & Privacy Disclosure Pill */}
+          <div className="flex items-center gap-2 p-3 rounded-lg border text-xs bg-slate-50 border-slate-200 text-slate-700">
+            {processingEngine === 'browser-native' ? (
+              <>
+                <ShieldCheck className="h-4 w-4 text-teal-600 flex-shrink-0" />
+                <span>
+                  <strong>Browser-Native Sandbox Mode:</strong> Video is decoded and compressed 100% locally in your browser RAM without leaving your computer.
+                </span>
+              </>
+            ) : (
+              <>
+                <Info className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                <span>
+                  <strong>FFmpeg Engine Mode:</strong> Container or codec ({metadata?.videoCodec || 'unsupported native format'}) requires FFmpeg transcoding. Temporary processing occurs on our dedicated worker and is wiped immediately after conversion.
+                </span>
+              </>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left: Video Preview */}
             <div className="lg:col-span-6 space-y-4">
               <div className="rounded-xl border border-slate-200 bg-black overflow-hidden relative shadow-sm aspect-video flex items-center justify-center">
-                <video
-                  ref={previewVideoRef}
-                  src={compressedUrl || videoUrl}
-                  controls
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
+                {isReadingMetadata ? (
+                  <div className="flex flex-col items-center gap-3 text-slate-300 p-6 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-brand-400" />
+                    <p className="text-sm font-medium">Reading video information &amp; stream codecs...</p>
+                  </div>
+                ) : metadata?.isBrowserPlayable || compressedUrl ? (
+                  <video
+                    ref={previewVideoRef}
+                    src={compressedUrl || videoUrl || undefined}
+                    controls
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 text-slate-300 p-6 text-center">
+                    <FileVideo className="h-10 w-10 text-slate-400" />
+                    <div>
+                      <p className="text-sm font-semibold text-white">Non-Web Preview Format ({metadata?.videoCodec?.toUpperCase() || 'CODEC'})</p>
+                      <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                        This codec cannot be played back directly by your browser window, but will be converted into high-compatibility MP4/WebM upon compression.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {compressedUrl && (
                   <div className="absolute top-3 left-3 bg-teal-600/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs shadow">
@@ -493,11 +677,11 @@ export function VideoCompressorTool() {
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                <span>{compressedUrl ? 'Viewing compressed result' : 'Viewing original video'}</span>
+                <span>{compressedUrl ? 'Viewing compressed result' : 'Original video stream'}</span>
                 <span className="font-mono">
                   {compressedUrl
                     ? `${computedSettings.outWidth}x${computedSettings.outHeight}`
-                    : `${dimensions.width}x${dimensions.height}`}
+                    : (dimensions.width > 0 ? `${dimensions.width}x${dimensions.height}` : 'Pending...')}
                 </span>
               </div>
             </div>
@@ -560,7 +744,7 @@ export function VideoCompressorTool() {
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { id: 'original', label: `Match Original (${dimensions.width}x${dimensions.height})` },
+                      { id: 'original', label: dimensions.width > 0 ? `Match Original (${dimensions.width}x${dimensions.height})` : 'Match Original' },
                       { id: '1080p', label: '1080p (FHD)' },
                       { id: '720p', label: '720p (HD)' },
                       { id: '480p', label: '480p (SD)' },
@@ -580,6 +764,39 @@ export function VideoCompressorTool() {
                         {res.label}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Output Format Selector */}
+                <div className="pt-2">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                    Output Container Format
+                  </label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => setOutputFormat('mp4')}
+                      className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold border transition ${
+                        outputFormat === 'mp4'
+                          ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      MP4 (Universal H.264 + AAC)
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => setOutputFormat('webm')}
+                      className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold border transition ${
+                        outputFormat === 'webm'
+                          ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      WebM (VP9 + Opus)
+                    </button>
                   </div>
                 </div>
 
@@ -640,8 +857,9 @@ export function VideoCompressorTool() {
                     ) : (
                       <button
                         type="button"
+                        disabled={isReadingMetadata}
                         onClick={handleCompressVideo}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 py-3.5 px-4 text-sm font-bold text-white shadow hover:bg-brand-700 transition"
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 py-3.5 px-4 text-sm font-bold text-white shadow hover:bg-brand-700 transition disabled:opacity-50"
                       >
                         <Cpu className="h-4 w-4" />
                         <span>Compress Video Now</span>
@@ -661,12 +879,14 @@ export function VideoCompressorTool() {
                     <div>
                       <h4 className="text-base font-bold">Video Compressed Successfully!</h4>
                       <p className="text-xs text-teal-700">
-                        Processed entirely in your browser memory.
+                        {processingEngine === 'browser-native'
+                          ? 'Processed entirely in your browser memory.'
+                          : 'Processed securely via accelerated FFmpeg worker.'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Size comparison comparison */}
+                  {/* Size comparison */}
                   <div className="grid grid-cols-3 gap-3 p-3.5 rounded-lg bg-white border border-teal-200 text-center">
                     <div>
                       <span className="text-[11px] text-slate-500 block">Original</span>

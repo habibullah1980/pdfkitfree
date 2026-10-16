@@ -12,7 +12,10 @@ import {
   FileCheck2, 
   CheckCircle2, 
   ArrowRight,
-  FolderOpen
+  FolderOpen,
+  Combine,
+  PenTool,
+  Video
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -114,12 +117,17 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Merge PDF Feature Banner */}
-            <div className="rounded-2xl border border-brand-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between">
+            <div className="rounded-2xl border border-brand-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between hover:border-brand-300 hover:shadow-md transition">
               <div>
-                <span className="inline-block rounded-md bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
-                  Ready & Functional
-                </span>
-                <h2 className="mt-3 text-2xl font-bold text-slate-900">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand-600">
+                    <Combine className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
+                  </div>
+                  <span className="inline-block rounded-md bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
+                    Ready &amp; Functional
+                  </span>
+                </div>
+                <h2 className="mt-4 text-2xl font-bold text-slate-900">
                   Merge Multiple PDFs Instantly
                 </h2>
                 <p className="mt-2 text-sm text-slate-600 leading-relaxed">
@@ -139,13 +147,18 @@ export default function HomePage() {
             </div>
 
             {/* Electronic Signatures Preview */}
-            <div className="rounded-2xl border border-teal-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between">
+            <div className="rounded-2xl border border-teal-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between hover:border-teal-300 hover:shadow-md transition">
               <div>
-                <span className="inline-block rounded-md bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">
-                  Document Workflow
-                </span>
-                <h2 className="mt-3 text-2xl font-bold text-slate-900">
-                  Sign PDFs & Generate NDAs
+                <div className="flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-teal-100 bg-teal-50 text-teal-600">
+                    <PenTool className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
+                  </div>
+                  <span className="inline-block rounded-md bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">
+                    Document Workflow
+                  </span>
+                </div>
+                <h2 className="mt-4 text-2xl font-bold text-slate-900">
+                  Sign PDFs &amp; Generate NDAs
                 </h2>
                 <p className="mt-2 text-sm text-slate-600 leading-relaxed">
                   Prepare standardized agreements and collect digital signatures with tamper-evident audit trails and localized state-law compliance.
@@ -169,12 +182,17 @@ export default function HomePage() {
             </div>
           
             {/* Video Compressor & NDA eSign Banner */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition">
               <div>
-                <span className="inline-block rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                  New Tool
-                </span>
-                <h2 className="mt-3 text-2xl font-bold text-slate-900">
+                <div className="flex items-center justify-between">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-700">
+                    <Video className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
+                  </div>
+                  <span className="inline-block rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    New Tool
+                  </span>
+                </div>
+                <h2 className="mt-4 text-2xl font-bold text-slate-900">
                   Video Compressor
                 </h2>
                 <p className="mt-2 text-sm text-slate-600 leading-relaxed">
