@@ -172,10 +172,10 @@ export default function HomePage() {
                   Create Mutual NDA &rarr;
                 </Link>
                 <Link
-                  href="/sign-pdf"
+                  href="/tools/sign-pdf"
                   className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-teal-700 transition"
                 >
-                  <span>Explore Signer</span>
+                  <span>Sign PDF Online</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>

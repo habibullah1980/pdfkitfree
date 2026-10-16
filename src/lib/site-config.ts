@@ -19,10 +19,10 @@ export const SITE_CONFIG = {
   footerLinks: {
     tools: [
       { label: 'Merge PDF', href: '/tools/merge-pdf' },
+      { label: 'Sign PDF', href: '/tools/sign-pdf' },
       { label: 'All PDF Tools', href: '/tools' },
       { label: 'Video Compressor', href: '/video-compressor' },
       { label: 'NDA & eSign', href: '/nda-esign' },
-      { label: 'Sign PDF', href: '/sign-pdf' },
       { label: 'NDA Generator', href: '/nda-generator' },
     ],
     company: [

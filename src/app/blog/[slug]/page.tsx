@@ -133,19 +133,33 @@ export default function ArticleTemplatePage({ params }: ArticlePageProps) {
             <ShieldCheck className="h-6 w-6" />
           </div>
           <h3 className="text-xl font-bold text-slate-900">
-            Experience Browser-First Document Workflows
+            {post.slug === 'electronic-signature-legality-guide'
+              ? 'Sign Documents Online With Complete Privacy'
+              : 'Experience Browser-First Document Workflows'}
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
-            Test our client-side Merge PDF tool right now with zero uploads, zero installation, and no fee.
+            {post.slug === 'electronic-signature-legality-guide'
+              ? 'Upload, draw, and place legally valid electronic signatures with audit trails directly in your web browser.'
+              : 'Test our client-side Merge PDF tool right now with zero uploads, zero installation, and no fee.'}
           </p>
           <div className="mt-6 flex items-center justify-center gap-4">
-            <Link
-              href="/tools/merge-pdf"
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
-            >
-              <span>Merge PDFs For Free</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {post.slug === 'electronic-signature-legality-guide' ? (
+              <Link
+                href="/tools/sign-pdf"
+                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-teal-700 transition"
+              >
+                <span>Sign PDF Online</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                href="/tools/merge-pdf"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
+              >
+                <span>Merge PDFs For Free</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         </div>
 

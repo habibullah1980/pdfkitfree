@@ -13,8 +13,7 @@ import { ConvertFromPdfTool } from '@/components/tools/ConvertFromPdfTool';
 import { EditPdfTool } from '@/components/tools/EditPdfTool';
 import { SecurityPdfTool } from '@/components/tools/SecurityPdfTool';
 import { OtherPdfTool } from '@/components/tools/OtherPdfTool';
-import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { NdaUploadWorkspace } from '@/components/NdaUploadWorkspace';
 
 interface ToolDispatcherProps {
   tool: ToolDefinition;
@@ -110,23 +109,7 @@ export function ToolDispatcher({ tool }: ToolDispatcherProps) {
 
     // Signing
     case 'sign-pdf':
-      return (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50/60 p-8 text-center">
-          <h3 className="text-xl font-bold text-slate-900">Sign PDF & Digital Agreements</h3>
-          <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
-            Upload any PDF agreement, preview pages, draw or type signatures, and place them with client-side verification.
-          </p>
-          <div className="mt-6">
-            <Link
-              href="/nda-generator"
-              className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-teal-700 transition"
-            >
-              <span>Launch Full Document Signer</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      );
+      return <NdaUploadWorkspace />;
 
     default:
       return <MergePdfTool />;
