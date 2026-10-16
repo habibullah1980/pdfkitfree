@@ -2,11 +2,17 @@ import { Metadata } from 'next';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Zero File Retention Commitment | pdfkitfree',
+  title: 'Privacy Policy - Zero File Retention Commitment | PDFKitFree',
   description:
-    'pdfkitfree is built with a zero-knowledge, browser-first architecture. Read our commitment to document confidentiality and data protection.',
+    'PDFKitFree is built with a zero-knowledge, browser-first architecture. Read our commitment to document confidentiality and data protection.',
   alternates: {
     canonical: '/privacy',
+  },
+  openGraph: {
+    title: 'Privacy Policy & Zero-Retention Security | PDFKitFree',
+    description: 'Learn how PDFKitFree guarantees client-side document processing with zero server uploads.',
+    url: 'https://www.pdfkitfree.online/privacy',
+    type: 'website',
   },
 };
 

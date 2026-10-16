@@ -4,15 +4,17 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ShieldCheck, Cpu, Lock, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'About Us - Fast & Private PDF Tools | pdfkitfree',
+  title: 'About Us - Fast & Private PDF Tools | PDFKitFree',
   description:
-    'pdfkitfree was founded to eliminate the privacy vulnerabilities of cloud-based PDF conversion. Learn how our browser-first architecture protects your sensitive documents.',
+    'PDFKitFree was founded to eliminate the privacy vulnerabilities of cloud-based PDF conversion. Learn how our browser-first architecture protects your sensitive documents.',
   alternates: {
     canonical: '/about',
   },
   openGraph: {
-    title: 'About pdfkitfree - Browser-First Document SaaS',
+    title: 'About PDFKitFree - Browser-First Document SaaS',
     description: 'Learn why zero-upload PDF processing is the future of document security.',
+    url: 'https://www.pdfkitfree.online/about',
+    type: 'website',
   },
 };
 

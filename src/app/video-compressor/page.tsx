@@ -14,17 +14,17 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Video Compressor Online - Free Browser Video Reducer',
+  title: 'Video Compressor Online - Free Browser Video Reducer | PDFKitFree',
   description:
-    'Compress video files (MP4, MOV, WebM) directly in your browser without uploading to external servers. Reduce file size up to 80% with presets for Discord, email, and web.',
+    'Compress video files (MP4, MOV, WebM, AVI, MKV) directly in your browser without uploading to external servers. Reduce file size up to 80% with presets for Discord, email, and web.',
   alternates: {
     canonical: '/video-compressor',
   },
   openGraph: {
-    title: 'Free Online Video Compressor - 100% Private Browser Processing | pdfkitfree',
+    title: 'Free Online Video Compressor - 100% Private Browser Processing | PDFKitFree',
     description:
       'Fast, private client-side video compressor. Shrink video size with zero cloud uploads or privacy leaks.',
-    url: 'https://pdfkitfree.com/video-compressor',
+    url: 'https://www.pdfkitfree.online/video-compressor',
     type: 'website',
   },
 };

@@ -2,11 +2,17 @@ import { Metadata } from 'next';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | pdfkitfree',
+  title: 'Terms of Service | PDFKitFree',
   description:
-    'Terms and conditions governing the use of the pdfkitfree online document tools and signature utilities.',
+    'Terms and conditions governing the use of the PDFKitFree online document tools, video compressor, and electronic signature utilities.',
   alternates: {
     canonical: '/terms',
+  },
+  openGraph: {
+    title: 'Terms of Service - PDFKitFree',
+    description: 'Usage policies and terms of service for PDFKitFree.',
+    url: 'https://www.pdfkitfree.online/terms',
+    type: 'website',
   },
 };
 

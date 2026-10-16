@@ -11,16 +11,18 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Sign PDF Online - Free Electronic Signature SaaS',
+  title: 'Sign PDF Online - Free Electronic Signature SaaS | PDFKitFree',
   description:
     'Sign PDF documents online for free with legal electronic signatures. Create signatures, sign NDAs, vendor contracts, and agreements privately in your browser.',
   alternates: {
     canonical: '/sign-pdf',
   },
   openGraph: {
-    title: 'Sign PDF Online - Free Electronic Document Signer | pdfkitfree',
+    title: 'Sign PDF Online - Free Electronic Document Signer | PDFKitFree',
     description:
       'Fast, legally binding electronic signatures. 100% private browser-based document signing.',
+    url: 'https://www.pdfkitfree.online/sign-pdf',
+    type: 'website',
   },
 };
 

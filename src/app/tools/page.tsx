@@ -4,15 +4,17 @@ import { ToolCard } from '@/components/ToolCard';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'All PDF Tools & Utilities - Online & Free',
+  title: 'All PDF Tools & Utilities - Online & Free | PDFKitFree',
   description:
     'Browse our comprehensive suite of client-side PDF utilities. Merge, split, rotate, convert, protect, and sign documents securely in your browser.',
   alternates: {
     canonical: '/tools',
   },
   openGraph: {
-    title: 'PDF Tools Directory - pdfkitfree',
+    title: 'PDF Tools Directory - PDFKitFree',
     description: 'Explore the fast, private suite of PDF tools and digital document workflows.',
+    url: 'https://www.pdfkitfree.online/tools',
+    type: 'website',
   },
 };
 

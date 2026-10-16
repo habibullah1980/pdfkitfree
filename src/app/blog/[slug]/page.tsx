@@ -26,7 +26,7 @@ export function generateMetadata({ params }: ArticlePageProps): Metadata {
   }
 
   return {
-    title: `${post.title} | pdfkitfree Blog`,
+    title: `${post.title} | PDFKitFree Blog`,
     description: post.excerpt,
     alternates: {
       canonical: `/blog/${post.slug}`,
@@ -37,7 +37,7 @@ export function generateMetadata({ params }: ArticlePageProps): Metadata {
       type: 'article',
       publishedTime: post.date,
       authors: [post.author],
-      url: `https://pdfkitfree.com/blog/${post.slug}`,
+      url: `https://www.pdfkitfree.online/blog/${post.slug}`,
     },
   };
 }

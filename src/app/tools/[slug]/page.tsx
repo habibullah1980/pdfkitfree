@@ -26,17 +26,17 @@ export function generateMetadata({ params }: ToolPageProps): Metadata {
   }
 
   return {
-    title: tool.metaTitle,
+    title: `${tool.metaTitle} | PDFKitFree`,
     description: tool.metaDescription,
     keywords: tool.keywords,
     alternates: {
       canonical: `/tools/${tool.slug}`,
     },
     openGraph: {
-      title: tool.metaTitle,
+      title: `${tool.metaTitle} | PDFKitFree`,
       description: tool.metaDescription,
       type: 'website',
-      url: `https://pdfkitfree.com/tools/${tool.slug}`,
+      url: `https://www.pdfkitfree.online/tools/${tool.slug}`,
     },
   };
 }
