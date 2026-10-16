@@ -1,15 +1,47 @@
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
 import { POST } from '../src/app/api/contact/route';
-import { emailAdapter } from '../src/lib/server/email-adapter';
 
 async function runContactApiTests() {
   console.log('========================================================');
-  console.log('RUNNING CONTACT FORM API & EMAIL DISPATCH TESTS');
+  console.log('RUNNING CONTACT FORM API & RESEND SDK DISPATCH TESTS');
   console.log('========================================================\n');
 
-  // Test 1: Successful submission with valid payload
-  console.log('[Test 1] Valid submission returns success and messageId...');
+  const originalFetch = global.fetch;
+
+  // Intercept fetch to mock Resend SDK API calls
+  let interceptedUrl = '';
+  let interceptedAuth = '';
+  let interceptedBody: any = null;
+  let mockStatus = 200;
+  let mockResponseData: any = { id: 'resend_sdk_msg_12345' };
+
+  global.fetch = async (url: any, init?: any) => {
+    interceptedUrl = String(url);
+    interceptedAuth = init?.headers?.Authorization || (init?.headers instanceof Headers ? init.headers.get('Authorization') : '');
+    if (init?.body) {
+      try {
+        interceptedBody = JSON.parse(init.body);
+      } catch {
+        interceptedBody = init.body;
+      }
+    }
+    return new Response(JSON.stringify(mockResponseData), {
+      status: mockStatus,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  // Configure test environment with Resend API key
+  process.env.RESEND_API_KEY = 're_test_contact_sdk_key_456';
+  process.env.FROM_EMAIL = 'PDFKitFree Support <noreply@pdfkitfree.online>';
+  process.env.SUPPORT_RECIPIENT_EMAIL = 'support@pdfkitfree.online';
+
+  // Test 1: Successful submission with valid payload via Resend SDK
+  console.log('[Test 1] Valid submission calls Resend SDK, returns HTTP 200 and messageId...');
+  mockStatus = 200;
+  mockResponseData = { id: 'msg_resend_live_success_999' };
+
   const validReq = new NextRequest('http://localhost:3000/api/contact', {
     method: 'POST',
     headers: {
@@ -26,10 +58,15 @@ async function runContactApiTests() {
 
   const res1 = await POST(validReq);
   const data1 = await res1.json();
+
   assert.strictEqual(res1.status, 200, 'Valid request should return HTTP 200');
   assert.strictEqual(data1.success, true, 'Response should report success: true');
-  assert.ok(data1.messageId, 'Response should include generated messageId');
-  console.log('✓ Valid contact form submission handled and accepted for delivery.');
+  assert.strictEqual(data1.messageId, 'msg_resend_live_success_999', 'Response should include Resend messageId');
+  assert.match(interceptedUrl, /api\.resend\.com\/emails/, 'Must call Resend emails API');
+  assert.strictEqual(interceptedAuth, 'Bearer re_test_contact_sdk_key_456', 'Must include Resend Bearer authorization');
+  assert.deepStrictEqual(interceptedBody.to, ['support@pdfkitfree.online'], 'Must send to SUPPORT_RECIPIENT_EMAIL');
+  assert.strictEqual(interceptedBody.reply_to, 'alex@example.com', 'Must set reply_to to sender email');
+  console.log('✓ Valid contact form submission dispatched through Resend SDK successfully.');
 
   // Test 2: Validation failure on missing or short name
   console.log('\n[Test 2] Invalid name (too short) is rejected with 400...');
@@ -99,6 +136,9 @@ async function runContactApiTests() {
 
   // Test 5: Bot honeypot protection (silently discarded without sending real email)
   console.log('\n[Test 5] Honeypot spam trap silently discarded...');
+  const prevFetchCallCount = interceptedUrl;
+  interceptedUrl = '';
+
   const spamReq = new NextRequest('http://localhost:3000/api/contact', {
     method: 'POST',
     headers: {
@@ -118,7 +158,8 @@ async function runContactApiTests() {
   const data5 = await res5.json();
   assert.strictEqual(res5.status, 200, 'Honeypot returns HTTP 200 to trick bot');
   assert.strictEqual(data5.success, true);
-  console.log('✓ Honeypot trap protects against automated form scrapers.');
+  assert.strictEqual(interceptedUrl, '', 'Honeypot must not invoke Resend SDK');
+  console.log('✓ Honeypot trap protects against automated form scrapers without triggering Resend.');
 
   // Test 6: Rate limiting after multiple requests
   console.log('\n[Test 6] Rate limiting blocks aggressive submissions...');
@@ -147,116 +188,66 @@ async function runContactApiTests() {
   assert.strictEqual(lastStatus, 429, 'Excessive submissions from same IP must trigger HTTP 429 Too Many Requests');
   console.log('✓ Rate limiter successfully triggered HTTP 429 after 5 requests in window.');
 
-  // Test 7: Email adapter HTML sanitization
-  console.log('\n[Test 7] Email adapter HTML sanitization test...');
-  const directInquiryResult = await emailAdapter.sendContactInquiry({
-    senderName: 'John <script>alert(1)</script>',
-    senderEmail: 'john@example.com',
-    subject: '<b>Test Vulnerability</b>',
-    message: '<img src=x onerror=alert(1)> Real message text.',
-  });
-
-  assert.strictEqual(directInquiryResult.success, true, 'Email adapter must accept sanitized message');
-  assert.ok(directInquiryResult.messageId, 'Email adapter returned messageId');
-  console.log('✓ Email adapter properly sanitizes sender input and constructs safe payload.');
-
-  // Test 8: Live Resend dispatch when RESEND_API_KEY is configured
-  console.log('\n[Test 8] Auto-detects Resend provider when RESEND_API_KEY is set and dispatches to Resend API...');
-  const originalFetch = global.fetch;
-  let interceptedUrl = '';
-  let interceptedAuth = '';
-  let interceptedBody: any = null;
-
-  global.fetch = async (url: any, init?: any) => {
-    interceptedUrl = String(url);
-    interceptedAuth = init?.headers?.Authorization;
-    interceptedBody = JSON.parse(init?.body);
-    return new Response(JSON.stringify({ id: 'resend_msg_test_12345' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  // Test 7: Resend failure returns HTTP 500 and does not report false success
+  console.log('\n[Test 7] Resend SDK failure returns HTTP 500...');
+  mockStatus = 403;
+  mockResponseData = {
+    statusCode: 403,
+    message: 'Domain not verified in Resend account.',
+    name: 'validation_error',
   };
 
-  process.env.RESEND_API_KEY = 're_test_dummy_key_for_unit_tests';
-  delete process.env.EMAIL_PROVIDER;
-
-  const resendInquiryResult = await emailAdapter.sendContactInquiry({
-    senderName: 'Live Tester',
-    senderEmail: 'livetester@example.com',
-    subject: 'Testing Live Resend Detection',
-    message: 'Testing that Resend fetch is invoked when RESEND_API_KEY is set.',
-  });
-
-  assert.strictEqual(resendInquiryResult.success, true, 'Resend dispatch must succeed with mock 200');
-  assert.strictEqual(resendInquiryResult.provider, 'resend', 'Provider should automatically be resend');
-  assert.strictEqual(resendInquiryResult.messageId, 'resend_msg_test_12345');
-  assert.strictEqual(interceptedUrl, 'https://api.resend.com/emails', 'Must call Resend API endpoint');
-  assert.strictEqual(interceptedAuth, 'Bearer re_test_dummy_key_for_unit_tests', 'Must include Resend auth header');
-  assert.strictEqual(interceptedBody.reply_to, 'livetester@example.com', 'Must set reply_to properly');
-  console.log('✓ Live Resend API call successfully triggered and verified.');
-
-  // Test 9: Resend API failure returns safe error without exposing secrets
-  console.log('\n[Test 9] Resend API rejection returns failure and does not crash...');
-  global.fetch = async () => {
-    return new Response(JSON.stringify({ message: 'Domain not verified in Resend.' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  };
-
-  const failedInquiryResult = await emailAdapter.sendContactInquiry({
-    senderName: 'Failed Tester',
-    senderEmail: 'failed@example.com',
-    subject: 'Failing Request',
-    message: 'This request will simulate a 403 rejection from Resend.',
-  });
-
-  assert.strictEqual(failedInquiryResult.success, false, 'Result must be success: false when Resend returns 403');
-  assert.match(failedInquiryResult.error!, /Domain not verified/, 'Error must contain clean message from Resend');
-
-  // Verify route returns HTTP 500 when dispatch fails
-  const failedRouteReq = new NextRequest('http://localhost:3000/api/contact', {
+  const failingReq = new NextRequest('http://localhost:3000/api/contact', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-forwarded-for': '192.168.1.109',
+      'x-forwarded-for': '192.168.1.110',
     },
     body: JSON.stringify({
-      name: 'Failing Tester',
-      email: 'failing@example.com',
-      subject: 'Testing 500 on delivery error',
-      message: 'This inquiry should trigger HTTP 500 response from /api/contact route.',
+      name: 'Sarah Connor',
+      email: 'sarah@example.com',
+      subject: 'Urgent Issue',
+      message: 'Testing that API returns 500 when Resend returns an error response.',
     }),
   });
 
-  const failedRouteRes = await POST(failedRouteReq);
-  const failedRouteData = await failedRouteRes.json();
-  assert.strictEqual(failedRouteRes.status, 500, 'Route must return status 500 when email delivery fails');
-  assert.match(failedRouteData.error, /Failed to dispatch email/, 'Route returns safe user-facing error message');
-  console.log('✓ Resend failure handled safely with HTTP 500 without exposing secrets.');
+  const resFailing = await POST(failingReq);
+  const dataFailing = await resFailing.json();
 
-  // Test 10: Missing configuration in production mode fails safely
-  console.log('\n[Test 10] Missing RESEND_API_KEY in production mode fails safely...');
+  assert.strictEqual(resFailing.status, 500, 'Must return status 500 when Resend returns error');
+  assert.strictEqual(dataFailing.success, undefined, 'Must not claim success');
+  assert.match(dataFailing.error, /Failed to dispatch email/i, 'Must return safe error message without secrets');
+  console.log('✓ Resend SDK error appropriately rejected with HTTP 500.');
+
+  // Test 8: Missing RESEND_API_KEY returns HTTP 500
+  console.log('\n[Test 8] Missing RESEND_API_KEY returns HTTP 500...');
   delete process.env.RESEND_API_KEY;
-  const oldNodeEnv = process.env.NODE_ENV;
-  (process.env as any).NODE_ENV = 'production';
 
-  const missingConfigResult = await emailAdapter.sendContactInquiry({
-    senderName: 'Prod Tester',
-    senderEmail: 'prod@example.com',
-    subject: 'Prod Test',
-    message: 'Testing production failure when RESEND_API_KEY is not defined.',
+  const missingKeyReq = new NextRequest('http://localhost:3000/api/contact', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-forwarded-for': '192.168.1.111',
+    },
+    body: JSON.stringify({
+      name: 'No Key Tester',
+      email: 'nokey@example.com',
+      subject: 'No Key Configured',
+      message: 'Testing handler behavior when RESEND_API_KEY is not defined in environment.',
+    }),
   });
 
-  assert.strictEqual(missingConfigResult.success, false, 'Must fail in production without RESEND_API_KEY');
-  assert.match(missingConfigResult.error!, /Email service configuration missing/i);
-  console.log('✓ Missing configuration in production safely detected and prevented from false success.');
+  const resMissingKey = await POST(missingKeyReq);
+  const dataMissingKey = await resMissingKey.json();
 
-  // Cleanup test environment
-  (process.env as any).NODE_ENV = oldNodeEnv;
+  assert.strictEqual(resMissingKey.status, 500, 'Must return status 500 when RESEND_API_KEY is missing');
+  assert.match(dataMissingKey.error, /Email service is not configured/i);
+  console.log('✓ Missing RESEND_API_KEY handled safely with HTTP 500.');
+
+  // Restore environment
   global.fetch = originalFetch;
 
-  console.log('\nALL 10 CONTACT FORM API & EMAIL DISPATCH TESTS PASSED! ✅\n');
+  console.log('\nALL 8 CONTACT FORM RESEND SDK TESTS PASSED! ✅\n');
 }
 
 runContactApiTests().catch((err) => {

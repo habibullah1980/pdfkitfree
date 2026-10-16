@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { emailAdapter } from '@/lib/server/email-adapter';
+import { Resend } from 'resend';
 
 // In-memory rate limiting map: IP -> array of request timestamps
 const contactRateLimitMap = new Map<string, number[]>();
@@ -78,17 +78,64 @@ export async function POST(req: NextRequest) {
     timestamps.push(now);
     contactRateLimitMap.set(ip, timestamps);
 
-    // Send email via configured provider (Resend in live, mock_console in dev/sandbox)
-    const deliveryResult = await emailAdapter.sendContactInquiry({
-      senderName: name.trim(),
-      senderEmail: email.trim(),
-      subject: subject.trim(),
-      message: message.trim(),
+    const apiKey = process.env.RESEND_API_KEY;
+
+    // Check for missing configuration
+    if (!apiKey) {
+      console.error('[ContactAPI] Dispatch failed: RESEND_API_KEY environment variable is not configured.');
+      return NextResponse.json(
+        {
+          error: 'Email service is not configured. Please contact support@pdfkitfree.online directly.',
+        },
+        { status: 500 }
+      );
+    }
+
+    const fromEmail = process.env.FROM_EMAIL || 'PDFKitFree Support <noreply@pdfkitfree.online>';
+    const recipientEmail = process.env.SUPPORT_RECIPIENT_EMAIL || 'support@pdfkitfree.online';
+
+    // Sanitize user inputs for HTML rendering
+    const safeName = name.trim().replace(/[<>]/g, '');
+    const safeEmail = email.trim().replace(/[<>]/g, '');
+    const safeSubject = subject.trim().replace(/[<>]/g, '');
+    const safeMessage = message.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
+
+    const resend = new Resend(apiKey);
+
+    console.log('[ContactAPI] Invoking Resend SDK to dispatch contact inquiry.');
+    const { data, error } = await resend.emails.send({
+      from: fromEmail,
+      to: [recipientEmail],
+      replyTo: safeEmail,
+      subject: `[PDFKitFree Inquiry] ${safeSubject}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+          <div style="border-bottom: 2px solid #4b49ac; padding-bottom: 12px; margin-bottom: 20px;">
+            <h2 style="color: #4b49ac; margin: 0; font-size: 20px;">New Contact Form Submission</h2>
+            <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Received via PDFKitFree Support Portal</p>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <strong style="color: #334155; font-size: 14px;">Sender:</strong>
+            <span style="color: #0f172a; font-size: 14px; margin-left: 6px;">${safeName} &lt;${safeEmail}&gt;</span>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <strong style="color: #334155; font-size: 14px;">Subject:</strong>
+            <span style="color: #0f172a; font-size: 14px; margin-left: 6px;">${safeSubject}</span>
+          </div>
+          <div style="margin-top: 20px; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <strong style="display: block; color: #475569; font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Message Content:</strong>
+            <div style="color: #1e293b; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</div>
+          </div>
+          <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+            You can reply directly to this email to respond to ${safeName} (${safeEmail}).
+          </p>
+        </div>
+      `,
     });
 
-    if (!deliveryResult.success) {
+    if (error) {
       console.error(
-        `[ContactAPI] Email delivery failure for inquiry from domain: ${email.trim().split('@')[1] || 'unknown'}. Provider: ${deliveryResult.provider}. Reason: ${deliveryResult.error || 'Unknown error'}`
+        `[ContactAPI] Resend SDK dispatch rejected. ErrorName: ${error.name || 'Error'}, ErrorMessage: ${error.message || 'Unknown'}`
       );
       return NextResponse.json(
         {
@@ -98,15 +145,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log('[ContactAPI] Resend email accepted successfully. Message ID:', data?.id);
+
     return NextResponse.json({
       success: true,
-      messageId: deliveryResult.messageId,
-      provider: deliveryResult.provider,
+      messageId: data?.id,
+      provider: 'resend',
       message: 'Your message has been delivered to the PDFKitFree support team. We typically respond within 24 business hours.',
     });
   } catch (err: unknown) {
     const error = err as Error;
-    console.error('[ContactAPI] Unexpected exception during contact processing:', error.message);
+    console.error('[ContactAPI] Unexpected exception in contact handler:', error.message);
     return NextResponse.json(
       { error: 'An unexpected error occurred while processing your message. Please try again later.' },
       { status: 500 }
