@@ -28,15 +28,19 @@ export function generateMetadata({ params }: ToolPageProps): Metadata {
     };
   }
 
+  const pageTitle = tool.metaTitle.includes('PDFKitFree')
+    ? { absolute: tool.metaTitle }
+    : tool.metaTitle;
+
   return {
-    title: `${tool.metaTitle} | PDFKitFree`,
+    title: pageTitle,
     description: tool.metaDescription,
     keywords: tool.keywords,
     alternates: {
       canonical: `/tools/${tool.slug}`,
     },
     openGraph: {
-      title: `${tool.metaTitle} | PDFKitFree`,
+      title: tool.metaTitle,
       description: tool.metaDescription,
       type: 'website',
       url: `https://www.pdfkitfree.online/tools/${tool.slug}`,

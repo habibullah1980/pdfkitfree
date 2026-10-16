@@ -67,7 +67,7 @@ export const TOOLS: ToolDefinition[] = [
     category: 'organize',
     badge: 'Popular',
     isImplemented: true,
-    metaTitle: 'Merge PDF Files Online - Free & Private | pdfkitfree',
+    metaTitle: 'Merge PDF Online Free - Combine PDF Files | PDFKitFree',
     metaDescription: 'Merge PDF files online for free. Combine multiple PDFs into one document directly in your browser. 100% private, no cloud storage needed.',
     keywords: ['merge pdf', 'combine pdf', 'join pdf files', 'free pdf combiner', 'merge documents'],
   },
