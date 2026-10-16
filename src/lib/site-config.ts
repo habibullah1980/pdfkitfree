@@ -1,4 +1,4 @@
-const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://pdfkitfree.com').replace(/\/+$/, '');
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.pdfkitfree.online').replace(/\/+$/, '');
 const appDomain = process.env.NEXT_PUBLIC_DOMAIN || appUrl.replace(/^https?:\/\//, '');
 
 export const SITE_CONFIG = {

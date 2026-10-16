@@ -4,6 +4,7 @@ import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { WebsiteChatbot } from '@/components/WebsiteChatbot';
+import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { AuthProvider } from '@/contexts/AuthContext';
 
@@ -83,6 +84,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col bg-white text-slate-900 antialiased font-sans">
+        <GoogleAnalytics />
         <AuthProvider>
           <Header />
           <main className="flex-1">{children}</main>
