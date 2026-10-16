@@ -62,8 +62,8 @@ export default function ArticleTemplatePage({ params }: ArticlePageProps) {
     },
     publisher: {
       '@type': 'Organization',
-      name: 'pdfkitfree',
-      url: 'https://pdfkitfree.com',
+      name: 'PDFKitFree',
+      url: 'https://www.pdfkitfree.online',
     },
   };
 
