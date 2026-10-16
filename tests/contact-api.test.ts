@@ -160,7 +160,103 @@ async function runContactApiTests() {
   assert.ok(directInquiryResult.messageId, 'Email adapter returned messageId');
   console.log('✓ Email adapter properly sanitizes sender input and constructs safe payload.');
 
-  console.log('\nALL 7 CONTACT FORM API & EMAIL DISPATCH TESTS PASSED! ✅\n');
+  // Test 8: Live Resend dispatch when RESEND_API_KEY is configured
+  console.log('\n[Test 8] Auto-detects Resend provider when RESEND_API_KEY is set and dispatches to Resend API...');
+  const originalFetch = global.fetch;
+  let interceptedUrl = '';
+  let interceptedAuth = '';
+  let interceptedBody: any = null;
+
+  global.fetch = async (url: any, init?: any) => {
+    interceptedUrl = String(url);
+    interceptedAuth = init?.headers?.Authorization;
+    interceptedBody = JSON.parse(init?.body);
+    return new Response(JSON.stringify({ id: 'resend_msg_test_12345' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  process.env.RESEND_API_KEY = 're_test_dummy_key_for_unit_tests';
+  delete process.env.EMAIL_PROVIDER;
+
+  const resendInquiryResult = await emailAdapter.sendContactInquiry({
+    senderName: 'Live Tester',
+    senderEmail: 'livetester@example.com',
+    subject: 'Testing Live Resend Detection',
+    message: 'Testing that Resend fetch is invoked when RESEND_API_KEY is set.',
+  });
+
+  assert.strictEqual(resendInquiryResult.success, true, 'Resend dispatch must succeed with mock 200');
+  assert.strictEqual(resendInquiryResult.provider, 'resend', 'Provider should automatically be resend');
+  assert.strictEqual(resendInquiryResult.messageId, 'resend_msg_test_12345');
+  assert.strictEqual(interceptedUrl, 'https://api.resend.com/emails', 'Must call Resend API endpoint');
+  assert.strictEqual(interceptedAuth, 'Bearer re_test_dummy_key_for_unit_tests', 'Must include Resend auth header');
+  assert.strictEqual(interceptedBody.reply_to, 'livetester@example.com', 'Must set reply_to properly');
+  console.log('✓ Live Resend API call successfully triggered and verified.');
+
+  // Test 9: Resend API failure returns safe error without exposing secrets
+  console.log('\n[Test 9] Resend API rejection returns failure and does not crash...');
+  global.fetch = async () => {
+    return new Response(JSON.stringify({ message: 'Domain not verified in Resend.' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  const failedInquiryResult = await emailAdapter.sendContactInquiry({
+    senderName: 'Failed Tester',
+    senderEmail: 'failed@example.com',
+    subject: 'Failing Request',
+    message: 'This request will simulate a 403 rejection from Resend.',
+  });
+
+  assert.strictEqual(failedInquiryResult.success, false, 'Result must be success: false when Resend returns 403');
+  assert.match(failedInquiryResult.error!, /Domain not verified/, 'Error must contain clean message from Resend');
+
+  // Verify route returns HTTP 500 when dispatch fails
+  const failedRouteReq = new NextRequest('http://localhost:3000/api/contact', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-forwarded-for': '192.168.1.109',
+    },
+    body: JSON.stringify({
+      name: 'Failing Tester',
+      email: 'failing@example.com',
+      subject: 'Testing 500 on delivery error',
+      message: 'This inquiry should trigger HTTP 500 response from /api/contact route.',
+    }),
+  });
+
+  const failedRouteRes = await POST(failedRouteReq);
+  const failedRouteData = await failedRouteRes.json();
+  assert.strictEqual(failedRouteRes.status, 500, 'Route must return status 500 when email delivery fails');
+  assert.match(failedRouteData.error, /Failed to dispatch email/, 'Route returns safe user-facing error message');
+  console.log('✓ Resend failure handled safely with HTTP 500 without exposing secrets.');
+
+  // Test 10: Missing configuration in production mode fails safely
+  console.log('\n[Test 10] Missing RESEND_API_KEY in production mode fails safely...');
+  delete process.env.RESEND_API_KEY;
+  const oldNodeEnv = process.env.NODE_ENV;
+  (process.env as any).NODE_ENV = 'production';
+
+  const missingConfigResult = await emailAdapter.sendContactInquiry({
+    senderName: 'Prod Tester',
+    senderEmail: 'prod@example.com',
+    subject: 'Prod Test',
+    message: 'Testing production failure when RESEND_API_KEY is not defined.',
+  });
+
+  assert.strictEqual(missingConfigResult.success, false, 'Must fail in production without RESEND_API_KEY');
+  assert.match(missingConfigResult.error!, /Email service configuration missing/i);
+  console.log('✓ Missing configuration in production safely detected and prevented from false success.');
+
+  // Cleanup test environment
+  (process.env as any).NODE_ENV = oldNodeEnv;
+  global.fetch = originalFetch;
+
+  console.log('\nALL 10 CONTACT FORM API & EMAIL DISPATCH TESTS PASSED! ✅\n');
 }
 
 runContactApiTests().catch((err) => {

@@ -87,11 +87,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!deliveryResult.success) {
+      console.error(
+        `[ContactAPI] Email delivery failure for inquiry from domain: ${email.trim().split('@')[1] || 'unknown'}. Provider: ${deliveryResult.provider}. Reason: ${deliveryResult.error || 'Unknown error'}`
+      );
       return NextResponse.json(
         {
-          error: deliveryResult.error || 'Failed to dispatch email. Please try again or reach out directly.',
+          error: 'Failed to dispatch email. Please try again or reach out to support@pdfkitfree.online directly.',
         },
-        { status: 502 }
+        { status: 500 }
       );
     }
 
@@ -103,8 +106,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: unknown) {
     const error = err as Error;
+    console.error('[ContactAPI] Unexpected exception during contact processing:', error.message);
     return NextResponse.json(
-      { error: error.message || 'An unexpected error occurred while processing your message.' },
+      { error: 'An unexpected error occurred while processing your message. Please try again later.' },
       { status: 500 }
     );
   }
