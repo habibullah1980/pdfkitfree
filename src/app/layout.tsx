@@ -85,6 +85,8 @@ export default function RootLayout({
           name="google-site-verification"
           content="google-search-console-verification-token"
         />
+        {/* Verification meta tag for Bing Webmaster Tools */}
+        <meta name="msvalidate.01" content="DAFB040EA71026356781552808195EAC" />
       </head>
       <body className="min-h-screen flex flex-col bg-white text-slate-900 antialiased font-sans">
         <GoogleAnalytics />
