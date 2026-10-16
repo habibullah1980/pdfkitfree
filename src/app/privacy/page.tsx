@@ -61,7 +61,7 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-xl font-bold text-slate-900">5. Contact Information</h2>
           <p>
-            For privacy inquiries or compliance verification, contact our data protection representative at: <code>privacy@pdfkitfree.com</code>.
+            For privacy inquiries or compliance verification, contact our data protection representative at: <code>privacy@pdfkitfree.online</code>.
           </p>
         </div>
       </div>

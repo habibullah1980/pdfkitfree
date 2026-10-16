@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         `• Sign documents electronically with legally binding cryptographic timestamps complying with US ESIGN and EU eIDAS standards.\n` +
         `• Access your dashboard at [/nda-esign](/nda-esign).`;
     } else if (query.includes('contact') || query.includes('support') || query.includes('help') || query.includes('email')) {
-      reply = `Need assistance or have feedback? You can contact our support team via our [/contact](/contact) page or reach out directly at **privacy@pdfkitfree.com**.`;
+      reply = `Need assistance or have feedback? You can contact our support team via our [/contact](/contact) page or reach out directly at **support@pdfkitfree.online**.`;
     } else if (query.includes('hello') || query.includes('hi') || query.includes('hey')) {
       reply = `Hello! 👋 Welcome to **pdfkitfree**. I'm your interactive website assistant.\n\n` +
         `I can help you with:\n` +

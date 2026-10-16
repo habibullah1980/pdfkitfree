@@ -475,7 +475,7 @@ export function getToolSeoData(slug: string): ToolSeoContent {
         answer: 'All modern web browsers are supported, including Chrome, Edge, Safari, Firefox, and mobile browsers on iOS and Android.',
       },
     ],
-    relatedToolSlugs: ['merge-pdf', 'split-pdf', 'compress-pdf', 'organize-pdf'],
+    relatedToolSlugs: ['merge-pdf', 'sign-pdf', 'compress-pdf', 'organize-pdf'],
     relatedBlogSlug: 'why-client-side-pdf-tools-are-safer',
   };
 }

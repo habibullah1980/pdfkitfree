@@ -11,7 +11,7 @@ interface ToolCardProps {
 export function ToolCard({ tool }: ToolCardProps) {
   const iconConfig = getToolIconConfig(tool.id || tool.slug);
   const IconComponent = iconConfig.icon;
-  const href = tool.slug === 'sign-pdf' ? '/sign-pdf' : `/tools/${tool.slug}`;
+  const href = `/tools/${tool.slug}`;
 
   return (
     <div className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md">

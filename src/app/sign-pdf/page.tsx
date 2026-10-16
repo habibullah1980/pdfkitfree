@@ -161,6 +161,13 @@ export default function SignPdfPage() {
             </p>
             <div className="mt-6 flex flex-wrap gap-4">
               <Link
+                href="/tools/sign-pdf"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#4b49ac] px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-[#3f3d91] transition"
+              >
+                <span>Sign PDF Online (Workspace)</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
                 href="/nda-generator"
                 className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-teal-700 transition"
               >

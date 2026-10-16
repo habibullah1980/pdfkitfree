@@ -2,20 +2,48 @@
 
 import React, { useState } from 'react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { Mail, CheckCircle, Send, ShieldCheck } from 'lucide-react';
+import { Mail, CheckCircle, Send, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverSuccessMessage, setServerSuccessMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: 'Feedback / Feature Request',
     message: '',
+    honeypot: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setServerError(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setServerError(data.error || 'Failed to dispatch your inquiry. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+
+      setServerSuccessMessage(data.message || 'Your inquiry has been successfully delivered.');
+      setSubmitted(true);
+    } catch (_err) {
+      setServerError('A network communication error occurred. Please check your internet connection.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -40,15 +68,16 @@ export default function ContactPage() {
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-100 text-teal-600 mb-4">
                   <CheckCircle className="h-8 w-8" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">Message Received!</h3>
+                <h3 className="text-xl font-bold text-slate-900">Message Delivered!</h3>
                 <p className="mt-2 text-sm text-slate-600 max-w-sm mx-auto">
-                  Thank you for reaching out. Our engineering team reviews all feedback within 24 business hours.
+                  {serverSuccessMessage || 'Thank you for reaching out. Our engineering team reviews all inquiries within 24 business hours.'}
                 </p>
                 <button
                   type="button"
                   onClick={() => {
                     setSubmitted(false);
-                    setFormData({ name: '', email: '', subject: 'Feedback / Feature Request', message: '' });
+                    setServerError(null);
+                    setFormData({ name: '', email: '', subject: 'Feedback / Feature Request', message: '', honeypot: '' });
                   }}
                   className="mt-6 text-sm font-semibold text-brand-600 hover:underline"
                 >
@@ -57,6 +86,25 @@ export default function ContactPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {serverError && (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-800 flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                    <span>{serverError}</span>
+                  </div>
+                )}
+
+                {/* Honeypot field for bot protection (hidden from humans) */}
+                <input
+                  type="text"
+                  name="website_trap"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={formData.honeypot}
+                  onChange={(e) => setFormData({ ...formData, honeypot: e.target.value })}
+                  className="hidden"
+                  aria-hidden="true"
+                />
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                     Your Name
@@ -67,7 +115,8 @@ export default function ContactPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Jane Doe"
-                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    disabled={submitting}
+                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -81,7 +130,8 @@ export default function ContactPage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="jane@company.com"
-                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    disabled={submitting}
+                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -92,7 +142,8 @@ export default function ContactPage() {
                   <select
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    disabled={submitting}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-50"
                   >
                     <option value="Feedback / Feature Request">Feedback / Feature Request</option>
                     <option value="Bug Report">Bug Report</option>
@@ -110,17 +161,28 @@ export default function ContactPage() {
                     rows={4}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Tell us what you think or how we can improve pdfkitfree..."
-                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    placeholder="Tell us what you think or how we can improve PDFKitFree..."
+                    disabled={submitting}
+                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-50"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
+                  disabled={submitting}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 transition disabled:opacity-75 cursor-pointer"
                 >
-                  <Send className="h-4 w-4" />
-                  <span>Send Message</span>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Sending Message...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      <span>Send Message</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}
@@ -135,7 +197,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-900">Direct Inquiries</h4>
-                  <p className="text-xs text-slate-500">support@pdfkitfree.com</p>
+                  <p className="text-xs text-slate-600 font-medium">support@pdfkitfree.online</p>
                 </div>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">

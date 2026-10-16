@@ -16,7 +16,7 @@ export class EmailProviderAdapter {
   constructor() {
     this.provider = (process.env.EMAIL_PROVIDER as EmailDeliveryResult['provider']) || 'mock_console';
     this.resendApiKey = process.env.RESEND_API_KEY;
-    this.fromEmail = process.env.FROM_EMAIL || 'pdfkitfree Security <noreply@pdfkitfree.com>';
+    this.fromEmail = process.env.FROM_EMAIL || 'PDFKitFree Support <noreply@pdfkitfree.online>';
   }
 
   async sendVerificationEmail(to: string, code: string, verifyLink: string): Promise<EmailDeliveryResult> {
@@ -136,6 +136,93 @@ export class EmailProviderAdapter {
       provider: 'mock_console',
       messageId: `email_${crypto.randomUUID().slice(0, 8)}`,
       devPreviewUrl: resetLink,
+    };
+  }
+
+  async sendContactInquiry(params: {
+    senderName: string;
+    senderEmail: string;
+    subject: string;
+    message: string;
+    recipientEmail?: string;
+  }): Promise<EmailDeliveryResult> {
+    const isLiveResend = this.provider === 'resend' && !!this.resendApiKey;
+    const recipient = params.recipientEmail || process.env.SUPPORT_RECIPIENT_EMAIL || 'support@pdfkitfree.online';
+
+    // Sanitize user inputs for HTML rendering
+    const safeName = params.senderName.replace(/[<>]/g, '');
+    const safeEmail = params.senderEmail.replace(/[<>]/g, '');
+    const safeSubject = params.subject.replace(/[<>]/g, '');
+    const safeMessage = params.message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
+
+    if (isLiveResend) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: this.fromEmail,
+            to: [recipient],
+            reply_to: safeEmail,
+            subject: `[PDFKitFree Inquiry] ${safeSubject}`,
+            html: `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                <div style="border-bottom: 2px solid #4b49ac; padding-bottom: 12px; margin-bottom: 20px;">
+                  <h2 style="color: #4b49ac; margin: 0; font-size: 20px;">New Contact Form Submission</h2>
+                  <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Received via PDFKitFree Support Portal</p>
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <strong style="color: #334155; font-size: 14px;">Sender:</strong>
+                  <span style="color: #0f172a; font-size: 14px; margin-left: 6px;">${safeName} &lt;${safeEmail}&gt;</span>
+                </div>
+                <div style="margin-bottom: 16px;">
+                  <strong style="color: #334155; font-size: 14px;">Subject:</strong>
+                  <span style="color: #0f172a; font-size: 14px; margin-left: 6px;">${safeSubject}</span>
+                </div>
+                <div style="margin-top: 20px; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                  <strong style="display: block; color: #475569; font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Message Content:</strong>
+                  <div style="color: #1e293b; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</div>
+                </div>
+                <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+                  You can reply directly to this email to respond to ${safeName} (${safeEmail}).
+                </p>
+              </div>
+            `,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          return {
+            success: false,
+            error: errData.message || 'Email delivery failed via Resend API.',
+            provider: 'resend',
+          };
+        }
+
+        const data = await res.json();
+        return {
+          success: true,
+          messageId: data.id,
+          provider: 'resend',
+        };
+      } catch (err: unknown) {
+        return {
+          success: false,
+          error: (err as Error).message || 'Resend network error',
+          provider: 'resend',
+        };
+      }
+    }
+
+    // Mock console fallback for development/sandbox
+    return {
+      success: true,
+      provider: 'mock_console',
+      messageId: `contact_${crypto.randomUUID().slice(0, 8)}`,
     };
   }
 }
