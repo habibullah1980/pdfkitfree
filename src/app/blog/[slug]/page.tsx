@@ -25,14 +25,7 @@ export function generateMetadata({ params }: ArticlePageProps): Metadata {
     };
   }
 
-  // Concise, SEO-friendly titles (45-56 chars)
-  const blogTitleMap: Record<string, string> = {
-    'electronic-signature-legality-guide': 'Electronic Signature Legality Guide (ESIGN) | PDFKitFree',
-    'why-client-side-pdf-tools-are-safer': 'Why Client-Side PDF Tools Are Safer | PDFKitFree',
-    'how-to-organize-and-merge-pdf-files-efficiently': 'Organize & Merge Large PDFs Efficiently | PDFKitFree',
-  };
-
-  const seoTitle = blogTitleMap[post.slug] || `${post.title} | PDFKitFree`;
+  const seoTitle = post.seoTitle || `${post.title} | PDFKitFree`;
 
   return {
     title: { absolute: seoTitle },
@@ -59,7 +52,7 @@ export default function ArticleTemplatePage({ params }: ArticlePageProps) {
   }
 
   // Schema.org Article structured data
-  const jsonLd = {
+  const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
@@ -76,12 +69,32 @@ export default function ArticleTemplatePage({ params }: ArticlePageProps) {
     },
   };
 
+  // Schema.org FAQ structured data if present
+  const faqJsonLd = post.faqs && post.faqs.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: post.faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: f.answer,
+      },
+    })),
+  } : null;
+
   return (
     <div className="py-12 bg-white min-h-screen">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
 
       <article className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <Breadcrumbs
@@ -129,47 +142,87 @@ export default function ArticleTemplatePage({ params }: ArticlePageProps) {
           {post.excerpt}
         </div>
 
-        {/* Article Body */}
+        {/* Intro Paragraphs */}
         <div className="space-y-6 text-base text-slate-800 leading-relaxed">
           {post.content.map((paragraph, idx) => (
             <p key={idx}>{paragraph}</p>
           ))}
         </div>
 
-        {/* Call to action inside blog */}
-        <div className="mt-16 rounded-2xl border border-slate-200 bg-slate-50 p-8 sm:p-10 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-teal-100 text-teal-700 mb-4">
+        {/* Structured Sections */}
+        {post.sections && post.sections.length > 0 && (
+          <div className="mt-12 space-y-10">
+            {post.sections.map((section, sIdx) => (
+              <section key={sIdx} className="space-y-4">
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  {section.heading}
+                </h2>
+                {section.body.map((p, pIdx) => (
+                  <p key={pIdx} className="text-base text-slate-700 leading-relaxed">
+                    {p}
+                  </p>
+                ))}
+              </section>
+            ))}
+          </div>
+        )}
+
+        {/* Frequently Asked Questions */}
+        {post.faqs && post.faqs.length > 0 && (
+          <div className="mt-16 border-t border-slate-200 pt-10">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-4">
+              {post.faqs.map((faq, fIdx) => (
+                <div key={fIdx} className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+                  <h3 className="font-semibold text-slate-900 text-base">{faq.question}</h3>
+                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Contextual Tool CTA */}
+        <div className="mt-16 rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50/70 to-teal-50/50 p-8 sm:p-10 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-700 mb-4">
             <ShieldCheck className="h-6 w-6" />
           </div>
           <h3 className="text-xl font-bold text-slate-900">
-            {post.slug === 'electronic-signature-legality-guide'
-              ? 'Sign Documents Online With Complete Privacy'
-              : 'Experience Browser-First Document Workflows'}
+            Ready to use {post.primaryToolName}?
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
-            {post.slug === 'electronic-signature-legality-guide'
-              ? 'Upload, draw, and place legally valid electronic signatures with audit trails directly in your web browser.'
-              : 'Test our client-side Merge PDF tool right now with zero uploads, zero installation, and no fee.'}
+            Process your PDF documents directly inside your browser with complete confidentiality, zero server uploads, and no subscription required.
           </p>
-          <div className="mt-6 flex items-center justify-center gap-4">
-            {post.slug === 'electronic-signature-legality-guide' ? (
-              <Link
-                href="/tools/sign-pdf"
-                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-teal-700 transition"
-              >
-                <span>Sign PDF Online</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            ) : (
-              <Link
-                href="/tools/merge-pdf"
-                className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
-              >
-                <span>Merge PDFs For Free</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            )}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href={`/tools/${post.primaryToolSlug}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-brand-700 transition"
+            >
+              <span>Launch {post.primaryToolName}</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
+
+          {post.relatedToolSlugs && post.relatedToolSlugs.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-brand-100">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                Related PDF Utilities
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {post.relatedToolSlugs.map((rSlug) => (
+                  <Link
+                    key={rSlug}
+                    href={`/tools/${rSlug}`}
+                    className="inline-block rounded-md bg-white border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-brand-500 hover:text-brand-600 transition"
+                  >
+                    {rSlug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Back Link */}

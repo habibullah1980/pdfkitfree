@@ -70,7 +70,7 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
       },
     ],
     relatedToolSlugs: ['split-pdf', 'organize-pdf', 'add-page-numbers', 'compress-pdf'],
-    relatedBlogSlug: 'how-to-organize-and-merge-pdf-files-efficiently',
+    relatedBlogSlug: 'how-to-merge-pdf-files-online',
   },
 
   'split-pdf': {
@@ -119,7 +119,7 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
       },
     ],
     relatedToolSlugs: ['merge-pdf', 'remove-pages', 'extract-pages', 'rotate-pdf'],
-    relatedBlogSlug: 'how-to-organize-and-merge-pdf-files-efficiently',
+    relatedBlogSlug: 'how-to-split-pdf-pages',
   },
 
   'compress-pdf': {
@@ -143,7 +143,7 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
       {
         title: 'Email Attachment Compliance',
         description: 'Shrink PDFs that exceed strict 10MB or 25MB corporate email attachment restrictions.',
-      },
+        },
       {
         title: 'Government & University Portals',
         description: 'Meet strict file-size limits required when uploading passport scans, tax returns, or academic applications.',
@@ -168,7 +168,7 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
       },
     ],
     relatedToolSlugs: ['merge-pdf', 'repair-pdf', 'optimize-web-pdf', 'video-compressor'],
-    relatedBlogSlug: 'why-client-side-pdf-tools-are-safer',
+    relatedBlogSlug: 'how-to-compress-pdf-for-email',
   },
 
   'rotate-pdf': {
