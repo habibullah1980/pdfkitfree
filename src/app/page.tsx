@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import HomePageClient from './page-client';
 
 export const metadata: Metadata = {
-  title: 'PDFKitFree - Fast, Secure & Private PDF Tools SaaS',
+  title: { absolute: 'PDFKitFree - Fast, Secure & Private PDF Tools SaaS' },
   description:
     'Free client-side PDF utility suite and electronic signature SaaS. Merge, split, compress, edit, convert, and sign PDF documents privately without cloud uploads.',
   alternates: {

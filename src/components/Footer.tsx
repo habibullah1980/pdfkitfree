@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { FileText, Shield, Lock, Zap } from 'lucide-react';
+import { VisitorCounter } from '@/components/VisitorCounter';
 
 export function Footer() {
   return (
@@ -96,11 +97,16 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-slate-200 pt-8 sm:flex sm:items-center sm:justify-between">
-          <p className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} pdfkitfree. All rights reserved. Built for security, performance, and legal compliance.
-          </p>
-          <div className="mt-4 flex space-x-6 sm:mt-0">
+        <div className="mt-12 border-t border-slate-200 pt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="text-xs text-slate-500">
+              &copy; {new Date().getFullYear()} pdfkitfree. All rights reserved. Built for security, performance, and legal compliance.
+            </p>
+            <div className="flex items-center">
+              <VisitorCounter />
+            </div>
+          </div>
+          <div className="flex space-x-6">
             <Link href="/privacy" className="text-xs text-slate-500 hover:text-slate-700">
               Privacy
             </Link>

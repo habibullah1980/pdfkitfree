@@ -25,14 +25,23 @@ export function generateMetadata({ params }: ArticlePageProps): Metadata {
     };
   }
 
+  // Concise, SEO-friendly titles (45-56 chars)
+  const blogTitleMap: Record<string, string> = {
+    'electronic-signature-legality-guide': 'Electronic Signature Legality Guide (ESIGN) | PDFKitFree',
+    'why-client-side-pdf-tools-are-safer': 'Why Client-Side PDF Tools Are Safer | PDFKitFree',
+    'how-to-organize-and-merge-pdf-files-efficiently': 'Organize & Merge Large PDFs Efficiently | PDFKitFree',
+  };
+
+  const seoTitle = blogTitleMap[post.slug] || `${post.title} | PDFKitFree`;
+
   return {
-    title: `${post.title} | PDFKitFree Blog`,
+    title: { absolute: seoTitle },
     description: post.excerpt,
     alternates: {
       canonical: `/blog/${post.slug}`,
     },
     openGraph: {
-      title: post.title,
+      title: seoTitle,
       description: post.excerpt,
       type: 'article',
       publishedTime: post.date,

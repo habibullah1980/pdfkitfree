@@ -28,12 +28,8 @@ export function generateMetadata({ params }: ToolPageProps): Metadata {
     };
   }
 
-  const pageTitle = tool.metaTitle.includes('PDFKitFree')
-    ? { absolute: tool.metaTitle }
-    : tool.metaTitle;
-
   return {
-    title: pageTitle,
+    title: { absolute: tool.metaTitle },
     description: tool.metaDescription,
     keywords: tool.keywords,
     alternates: {
