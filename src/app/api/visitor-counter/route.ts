@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVisitorCount, incrementVisitorCount } from '@/lib/server/visitor-counter';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // List of allowed public page prefixes
 const PUBLIC_PAGE_PREFIXES = [
   '/',
@@ -52,10 +55,16 @@ function isKnownBot(userAgent: string): boolean {
 export async function GET() {
   try {
     const count = await getVisitorCount();
-    return NextResponse.json({
-      success: true,
-      count,
-    });
+    return NextResponse.json(
+      { success: true, count },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
   } catch (err: unknown) {
     const error = err as Error;
     console.error('[VisitorAPI] Error reading count:', error.message);

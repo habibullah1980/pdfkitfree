@@ -47,7 +47,7 @@ async function ensureNeonTable(): Promise<void> {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `);
-    // Ensure the row exists
+    // Ensure the row exists with an initial base count if not present
     await executeNeonQuery(`
       INSERT INTO site_stats (key, value)
       VALUES ('website_visits', 12458)
@@ -56,6 +56,7 @@ async function ensureNeonTable(): Promise<void> {
     tableChecked = true;
   } catch (err) {
     console.error('[VisitorCounter] Failed to ensure Neon site_stats table:', err);
+    throw err;
   }
 }
 
@@ -72,8 +73,13 @@ export async function getVisitorCount(): Promise<number> {
       if (rows && rows.length > 0) {
         return Number(rows[0].value);
       }
+      throw new Error("No 'website_visits' row found in site_stats table");
     } catch (err) {
       console.error('[VisitorCounter] Neon query error in getVisitorCount:', err);
+      // In production with DATABASE_URL, do not return local fabricated fallback
+      if (process.env.NODE_ENV === 'production') {
+        throw err;
+      }
     }
   }
 
@@ -96,12 +102,15 @@ export async function incrementVisitorCount(): Promise<number> {
       `);
       if (rows && rows.length > 0) {
         const count = Number(rows[0].value);
-        // Also update local file in background
         setLocalCount(count);
         return count;
       }
+      throw new Error('Failed to retrieve incremented value from site_stats');
     } catch (err) {
-      console.error('[VisitorCounter] Neon increment error, fallback to local store:', err);
+      console.error('[VisitorCounter] Neon increment error:', err);
+      if (process.env.NODE_ENV === 'production') {
+        throw err;
+      }
     }
   }
 

@@ -49,10 +49,11 @@ export function VisitorCounter() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pathname }),
+            cache: 'no-store',
           });
         } else {
           // Simply fetch current count without incrementing
-          res = await fetch('/api/visitor-counter', { method: 'GET' });
+          res = await fetch('/api/visitor-counter', { method: 'GET', cache: 'no-store' });
         }
 
         if (!res.ok) throw new Error('API returned error');
