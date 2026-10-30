@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { WebsiteChatbot } from '@/components/WebsiteChatbot';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
+import { CookieConsent } from '@/components/CookieConsent';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { AuthProvider } from '@/contexts/AuthContext';
 
@@ -71,7 +72,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function RootLayout({
   children,
 }: {
@@ -95,6 +95,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
           <WebsiteChatbot />
+          <CookieConsent />
         </AuthProvider>
       </body>
     </html>

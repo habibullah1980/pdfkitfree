@@ -12,15 +12,15 @@ function getLocalCount(): number {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(COUNTER_FILE)) {
-      // Initialize with realistic base or 1
-      fs.writeFileSync(COUNTER_FILE, JSON.stringify({ count: 12458 }), 'utf-8');
-      return 12458;
+      // Initialize with genuine base count
+      fs.writeFileSync(COUNTER_FILE, JSON.stringify({ count: 1 }), 'utf-8');
+      return 1;
     }
     const data = JSON.parse(fs.readFileSync(COUNTER_FILE, 'utf-8'));
-    return typeof data.count === 'number' ? data.count : 12458;
+    return typeof data.count === 'number' ? data.count : 1;
   } catch (err) {
     console.error('[VisitorCounter] Failed to read local count:', err);
-    return 12458;
+    return 1;
   }
 }
 
@@ -50,7 +50,7 @@ async function ensureNeonTable(): Promise<void> {
     // Ensure the row exists with an initial base count if not present
     await executeNeonQuery(`
       INSERT INTO site_stats (key, value)
-      VALUES ('website_visits', 12458)
+      VALUES ('website_visits', 1)
       ON CONFLICT (key) DO NOTHING;
     `);
     tableChecked = true;
