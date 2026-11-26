@@ -10,6 +10,17 @@ import { FolderOpen, Lock, Minimize2, Monitor, Search, ShieldCheck, Upload, Zap,
 
 const POPULAR = ['compress-pdf', 'merge-pdf', 'pdf-to-word', 'sign-pdf'];
 
+/** Colour dot for each category filter, matching the tool card tints. */
+const CATEGORY_DOT: Record<string, string> = {
+  organize: 'bg-[#6C61EE]',
+  optimize: 'bg-[#2CC59A]',
+  'convert-to': 'bg-[#FFC83D]',
+  'convert-from': 'bg-[#FF8A65]',
+  edit: 'bg-[#A78BFA]',
+  security: 'bg-[#5B7BFF]',
+  other: 'bg-[#38BDF8]',
+};
+
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -144,27 +155,32 @@ export default function HomePage() {
       {/* Tools catalog */}
       <section ref={catalogRef} id="tools-catalog" className="scroll-mt-24 bg-[#FFFBF0] py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-8 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-            <div>
+          <div className="mb-8 flex flex-col gap-6">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <h2 className="text-4xl font-extrabold text-ink sm:text-[46px]">Pick a tool and drop your file</h2>
-              <p className="mt-3 text-lg text-ink-soft">
+              <p className="text-lg text-ink-soft">
                 {searchQuery ? `${filteredTools.length} tools match “${searchQuery}”.` : 'Grouped by what you want to do.'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-1 rounded-[22px] bg-white p-1.5 shadow-sm" role="group" aria-label="Tool categories">
-              {[{ id: 'all', name: `All (${TOOLS.length})` }, ...TOOL_CATEGORIES.map((c) => ({ id: c.id, name: c.name.replace(' PDF', '') }))].map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  aria-pressed={selectedCategory === cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`min-h-[40px] rounded-full px-4 text-sm font-bold transition ${
-                    selectedCategory === cat.id ? 'bg-ink text-white' : 'text-ink-muted hover:text-ink'
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
+            <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="group" aria-label="Tool categories">
+                {[{ id: 'all', name: `All tools (${TOOLS.length})` }, ...TOOL_CATEGORIES.map((c) => ({ id: c.id, name: c.name.replace(' PDF', '') }))].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    aria-pressed={selectedCategory === cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`pk-cat inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] px-4 text-sm font-bold transition ${
+                      selectedCategory === cat.id
+                        ? 'border-ink bg-ink text-white'
+                        : 'border-[#ECEBF8] bg-white text-ink-soft hover:border-brand-600 hover:text-ink'
+                    }`}
+                  >
+                    <span className={`h-2.5 w-2.5 rounded-full ${CATEGORY_DOT[cat.id] ?? 'bg-sun'}`} aria-hidden="true" />
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
