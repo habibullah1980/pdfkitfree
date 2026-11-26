@@ -11,6 +11,6 @@ export async function GET() {
     );
   }
 
-  const stats = getPlatformStatsAdmin();
+  const stats = await getPlatformStatsAdmin();
   return NextResponse.json({ success: true, stats });
 }

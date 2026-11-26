@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter your email address.' }, { status: 400 });
     }
 
-    const result = createPasswordResetToken(email);
+    const result = await createPasswordResetToken(email);
 
     if (result && result.token) {
       const origin = req.nextUrl.origin || 'http://localhost:3000';

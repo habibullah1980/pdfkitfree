@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const captureUnit = capture.purchase_units?.[0]?.payments?.captures?.[0];
     const fee = parseFloat(captureUnit?.seller_receivable_breakdown?.paypal_fee?.value || '0');
 
-    const updatedSub = PaymentGateway.applyVerifiedPayment({
+    const updatedSub = await PaymentGateway.applyVerifiedPayment({
       userId: session.user.id,
       planId: planId || 'pro',
       billingInterval: billingInterval || 'monthly',

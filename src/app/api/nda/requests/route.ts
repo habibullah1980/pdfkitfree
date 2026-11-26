@@ -16,7 +16,7 @@ export async function GET() {
     );
   }
 
-  const requests = getSigningRequestsByUserId(session.user.id);
+  const requests = await getSigningRequestsByUserId(session.user.id);
   return NextResponse.json({ success: true, requests });
 }
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Title and filename are required.' }, { status: 400 });
     }
 
-    const newRecord = createSigningRequest(session.user.id, {
+    const newRecord = await createSigningRequest(session.user.id, {
       title,
       documentType: documentType === 'generated' ? 'generated' : 'uploaded',
       status: status === 'draft' ? 'draft' : status === 'pending' ? 'pending' : 'signed',
@@ -84,7 +84,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Agreement ID is required.' }, { status: 400 });
     }
 
-    const deleted = deleteSigningRequest(session.user.id, id);
+    const deleted = await deleteSigningRequest(session.user.id, id);
     if (!deleted) {
       return NextResponse.json({ error: 'Agreement record not found.' }, { status: 404 });
     }

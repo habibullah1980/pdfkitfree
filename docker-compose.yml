@@ -13,8 +13,8 @@ services:
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://www.pdfkitfree.online}
       - NEXT_PUBLIC_DOMAIN=${NEXT_PUBLIC_DOMAIN:-pdfkitfree.online}
       - AUTH_SECRET=${AUTH_SECRET}
-      - SUPERADMIN_EMAIL=${SUPERADMIN_EMAIL:-habibullah}
-      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD:-habib8963}
+      - SUPERADMIN_EMAIL=${SUPERADMIN_EMAIL:?Set SUPERADMIN_EMAIL}
+      - SUPERADMIN_PASSWORD=${SUPERADMIN_PASSWORD:?Set SUPERADMIN_PASSWORD}
       - DATA_DIR=/app/.data
       - DB_FILE=/app/.data/freepdfkit-db.json
       # PostgreSQL Database Connection

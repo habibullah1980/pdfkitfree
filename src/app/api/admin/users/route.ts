@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-  const result = getAllUsersAdmin({ search, role, plan, status, page, limit });
+  const result = await getAllUsersAdmin({ search, role, plan, status, page, limit });
   return NextResponse.json({ success: true, ...result });
 }
 
@@ -50,10 +50,10 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (mode === 'soft') {
-      softDeleteUserAdmin(session.user.name || 'habibullah', userId, reason);
+      await softDeleteUserAdmin(session.user.email, userId, reason);
       return NextResponse.json({ success: true, message: 'User soft-deleted.' });
     } else {
-      deleteUserAdmin(userId);
+      await deleteUserAdmin(userId);
       return NextResponse.json({ success: true, message: 'User permanently deleted.' });
     }
   } catch (err: unknown) {
@@ -76,24 +76,24 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'User ID is required.' }, { status: 400 });
     }
 
-    const adminActor = session.user.name || 'habibullah';
+    const adminActor = session.user.email;
 
     switch (action) {
       case 'toggle-verification': {
-        toggleUserVerificationAdmin(userId);
+        await toggleUserVerificationAdmin(userId);
         return NextResponse.json({ success: true, message: 'Verification status toggled.' });
       }
 
       case 'update-role': {
         if (role === 'superadmin' || role === 'user') {
-          updateUserRoleAdmin(userId, role);
+          await updateUserRoleAdmin(userId, role);
           return NextResponse.json({ success: true, message: 'User role updated.' });
         }
         return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
       }
 
       case 'update-profile': {
-        const updated = updateUserProfileAdmin(adminActor, userId, { name, phone });
+        const updated = await updateUserProfileAdmin(adminActor, userId, { name, phone });
         return NextResponse.json({ success: true, user: updated, message: 'Profile fields updated.' });
       }
 
@@ -104,7 +104,7 @@ export async function PATCH(req: NextRequest) {
             { status: 400 }
           );
         }
-        const updated = adjustUserQuotaAdmin(adminActor, userId, quotas || {}, reason);
+        const updated = await adjustUserQuotaAdmin(adminActor, userId, quotas || {}, reason);
         return NextResponse.json({ success: true, user: updated, message: 'User quotas adjusted.' });
       }
 
@@ -118,7 +118,7 @@ export async function PATCH(req: NextRequest) {
             { status: 400 }
           );
         }
-        const updated = grantPromotionalAccessAdmin(
+        const updated = await grantPromotionalAccessAdmin(
           adminActor,
           userId,
           planId as PlanTier,
@@ -132,7 +132,7 @@ export async function PATCH(req: NextRequest) {
         if (!accountStatus || !['active', 'suspended', 'soft_deleted'].includes(accountStatus)) {
           return NextResponse.json({ error: 'Valid account status required.' }, { status: 400 });
         }
-        const updated = setUserAccountStatusAdmin(
+        const updated = await setUserAccountStatusAdmin(
           adminActor,
           userId,
           accountStatus as AccountStatus,
@@ -142,7 +142,7 @@ export async function PATCH(req: NextRequest) {
       }
 
       case 'trigger-reset': {
-        const result = triggerPasswordResetAdmin(adminActor, userId);
+        const result = await triggerPasswordResetAdmin(adminActor, userId);
         return NextResponse.json({
           success: true,
           resetUrl: result.resetUrl,

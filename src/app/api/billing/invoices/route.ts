@@ -9,7 +9,7 @@ export async function GET() {
   }
 
   try {
-    const invoices = getTransactionsForUser(session.user.id);
+    const invoices = await getTransactionsForUser(session.user.id);
     return NextResponse.json({ success: true, invoices });
   } catch (err: unknown) {
     const error = err as Error;
