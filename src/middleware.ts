@@ -13,6 +13,7 @@ export function middleware(_request: NextRequest) {
     font-src 'self' data: https:;
     connect-src 'self' blob: https:;
     worker-src 'self' blob:;
+    media-src 'self' blob: data:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
