@@ -14,6 +14,8 @@ export interface BlogPost {
   seoTitle?: string;
   primaryToolSlug: string;
   primaryToolName: string;
+  /** Overrides /tools/{primaryToolSlug} for pages outside the tool catalogue. */
+  primaryToolHref?: string;
   relatedToolSlugs?: string[];
   content: string[];
   sections?: BlogSection[];
@@ -309,7 +311,7 @@ export const BLOG_POSTS: BlogPost[] = [
       {
         heading: 'Is it safe for ID cards and certificates?',
         body: [
-          'Yes. The compression runs inside your browser, on your own phone or computer. The document is never uploaded to a server, which matters for passports, CNICs, mark sheets and bank statements.',
+          'Yes. The compression runs inside your browser, on your own phone or computer. The document is never uploaded to a server, which matters for passports, national ID cards, transcripts and bank statements.',
         ],
       },
     ],
@@ -438,7 +440,145 @@ export const BLOG_POSTS: BlogPost[] = [
       { question: 'Do I need an account?', answer: 'No. Signing a PDF is free and does not need a sign-up.' },
       { question: 'Is the document uploaded?', answer: 'No. The PDF stays on your phone while you sign it.' },
     ],
-  }
+  },
+  {
+    slug: 'how-to-compress-a-video-for-email',
+    title: 'How to Compress a Video for Email, Discord or WhatsApp (Free)',
+    seoTitle: 'How to Compress a Video for Email & Discord Free | PDFKitFree',
+    excerpt: 'Gmail stops attachments at 25 MB and chat apps have their own limits. Here is how to shrink a phone video to fit, without a watermark or an app.',
+    date: '2026-11-27',
+    readTime: '4 min read',
+    category: 'Tutorials',
+    author: 'PDFKitFree Editorial Team',
+    primaryToolSlug: 'compress-pdf',
+    primaryToolName: 'Video Compressor',
+    primaryToolHref: '/compress-video-to/25mb',
+    relatedToolSlugs: ['compress-pdf', 'merge-pdf'],
+    content: [
+      'A one minute video from a modern phone is often 100 MB or more. That is far over what email and most chat apps accept, so the upload fails or the app squeezes it into a blurry mess.',
+      'You can do better by compressing it yourself to just under the limit. That way you choose the size and keep as much quality as the limit allows.',
+    ],
+    sections: [
+      {
+        heading: 'Pick the size you need',
+        body: [
+          'Email: Gmail and Outlook.com accept attachments up to about 20 to 25 MB, so use Compress Video to 25 MB (or 20 MB to be safe with older mail servers).',
+          'Discord and Slack: free accounts have small upload limits, so Compress Video to 10 MB or 8 MB is the usual choice.',
+          'Forms and support tickets: many accept 5 MB to 50 MB. Check the limit shown on the form and choose the next size down.',
+        ],
+      },
+      {
+        heading: 'Step by step',
+        body: [
+          'Open the page for your size, for example Compress Video to 25 MB.',
+          'Add the video. MP4, MOV, WebM and most phone videos work.',
+          'Press Compress. The tool spreads the size budget across the whole clip and lowers the resolution only when that gives a cleaner picture.',
+          'Check the result. You see the real file size before you download. If it is still over, the tool tries again at a lower bitrate, and tells you honestly if it cannot fit.',
+        ],
+      },
+      {
+        heading: 'Getting the best quality',
+        body: [
+          'Trim the clip first. Every second you cut leaves more of the budget for the seconds you keep.',
+          'Shorter clips look much better at small sizes. A 30 second clip at 10 MB looks good; a 10 minute clip at 10 MB will not.',
+          'For longer videos, share a link from a cloud drive instead of attaching the file.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Is there a watermark?', answer: 'No. The compressed video has no watermark and you do not need an account.' },
+      { question: 'Is my video uploaded?', answer: 'Videos your browser can play are compressed on your own device. Unusual formats are converted on our server and deleted right after.' },
+      { question: 'Does it work on iPhone?', answer: 'Yes, in Safari and Chrome on iPhone and iPad, and in all major browsers on Android, Windows and Mac.' },
+    ],
+  },
+  {
+    slug: 'how-to-compress-an-image-to-50kb',
+    title: 'How to Compress a Photo to 50 KB, 20 KB or 100 KB for Online Applications',
+    seoTitle: 'How to Compress Image to 50 KB or 20 KB Free | PDFKitFree',
+    excerpt: 'Application forms around the world ask for photos and signatures under 20 KB, 50 KB or 100 KB. Here is how to hit the limit and still look sharp.',
+    date: '2026-11-27',
+    readTime: '3 min read',
+    category: 'Tutorials',
+    author: 'PDFKitFree Editorial Team',
+    primaryToolSlug: 'jpg-to-pdf',
+    primaryToolName: 'Compress Image to 50 KB',
+    primaryToolHref: '/compress-image-to/50kb',
+    relatedToolSlugs: ['jpg-to-pdf', 'compress-pdf'],
+    content: [
+      'Visa forms, exam registrations, job portals and government services often ask for a passport photo or signature under a tiny size such as 20 KB or 50 KB. A photo straight from a phone is usually 2 to 5 MB.',
+      'The trick is to lower the JPG quality before you shrink the picture, because a small drop in quality is almost invisible while smaller dimensions are not.',
+    ],
+    sections: [
+      {
+        heading: 'Step by step',
+        body: [
+          'Open the page for the size the form asks for, such as Compress Image to 50 KB (there are also pages for 10 KB, 20 KB, 30 KB, 100 KB, 200 KB, 500 KB and 1 MB).',
+          'Add your photo. JPG, PNG and WebP all work.',
+          'The tool finds the highest quality that fits. If even that is too big, it reduces the dimensions a step at a time.',
+          'Check the size, dimensions and quality shown, then download the JPG.',
+        ],
+      },
+      {
+        heading: 'Tips for photos and signatures',
+        body: [
+          'Crop to just the face or signature before compressing. Fewer pixels means more quality for the same size.',
+          'Use a plain, light background. Busy backgrounds take more bytes.',
+          'If the form also gives minimum dimensions, check the dimensions shown after compressing.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Is my photo uploaded?', answer: 'No. The image is compressed in your browser and never leaves your device.' },
+      { question: 'Why do I get a JPG from a PNG?', answer: 'JPG is far smaller for photos and accepted everywhere. Transparent areas become white.' },
+    ],
+  },
+  {
+    slug: 'how-to-create-and-sign-an-nda-online',
+    title: 'How to Create and Sign an NDA Online for Free',
+    seoTitle: 'How to Create & Sign an NDA Online Free (Template) | PDFKitFree',
+    excerpt: 'A non-disclosure agreement protects ideas you share with freelancers, partners or investors. Here is how to create one from a template and sign it online.',
+    date: '2026-11-27',
+    readTime: '5 min read',
+    category: 'Business',
+    author: 'PDFKitFree Editorial Team',
+    primaryToolSlug: 'sign-pdf',
+    primaryToolName: 'NDA & eSign',
+    primaryToolHref: '/nda-esign',
+    relatedToolSlugs: ['sign-pdf', 'fill-pdf-form', 'protect-pdf'],
+    content: [
+      'A non-disclosure agreement (NDA) is a short contract in which one or both sides promise to keep shared information confidential. Startups use them before pitching, companies use them with contractors, and freelancers use them with clients.',
+      'This guide explains the two common types and how to prepare and sign one online. It is general information, not legal advice; for anything high-stakes, ask a lawyer in your country.',
+    ],
+    sections: [
+      {
+        heading: 'One-way or mutual?',
+        body: [
+          'One-way (unilateral): only one side shares confidential information, for example a company briefing a contractor.',
+          'Mutual (bilateral): both sides share, for example two companies exploring a partnership.',
+        ],
+      },
+      {
+        heading: 'What a good NDA covers',
+        body: [
+          'Who the parties are, and what counts as confidential information.',
+          'What the receiving side may and may not do with it, and the exceptions (information that is already public, for example).',
+          'How long the obligation lasts, and which country or state law applies.',
+        ],
+      },
+      {
+        heading: 'Create and sign it online',
+        body: [
+          'Open NDA & eSign and choose a one-way or mutual template. Fill in the parties, purpose and duration.',
+          'Review the text, then sign by drawing or typing your name.',
+          'Already have an NDA as a PDF? Use Sign PDF to add your signature to it and download the signed copy.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Are electronic signatures valid?', answer: 'In many countries, including the US (ESIGN Act), the EU (eIDAS) and the UK, electronic signatures are generally accepted for ordinary contracts such as NDAs. Rules differ by country and document type, so check if you are unsure.' },
+      { question: 'Do I need an account?', answer: 'The NDA templates need a free account so your signing records are kept. Signing a PDF you already have does not.' },
+    ],
+  },
 ];
 
 export function getBlogPostBySlug(slug: string): BlogPost | undefined {

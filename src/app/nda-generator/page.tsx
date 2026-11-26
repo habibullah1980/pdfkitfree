@@ -3,14 +3,14 @@ import { SITE_CONFIG } from '@/lib/site-config';
 import NdaGeneratorClient from './page-client';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Free Mutual NDA Generator & eSign Tool | PDFKitFree' },
+  title: { absolute: 'Sign an NDA PDF Online Free - Upload & eSign | PDFKitFree' },
   description:
-    'Generate customized mutual Non-Disclosure Agreements (NDAs) online and sign them electronically. 100% private in-browser legal agreement creation.',
+    'Upload your NDA or any agreement as a PDF, draw or type your signature, place it on the page and download the signed copy. Free, right in your browser.',
   alternates: {
     canonical: '/nda-generator',
   },
   openGraph: {
-    title: 'Free Mutual NDA Generator & eSign Tool | PDFKitFree',
+    title: 'Sign an NDA PDF Online Free - Upload & eSign | PDFKitFree',
     description:
       'Create and electronically sign standard mutual non-disclosure agreements in your browser without cloud uploads.',
     url: `${SITE_CONFIG.url}/nda-generator`,

@@ -34,8 +34,10 @@ export const SITE_CONFIG = {
     popular: [
       { label: 'Compress PDF to 100 KB', href: '/compress-pdf-to/100kb' },
       { label: 'Compress PDF to 200 KB', href: '/compress-pdf-to/200kb' },
-      { label: 'Compress PDF to 500 KB', href: '/compress-pdf-to/500kb' },
-      { label: 'Compress PDF to 1 MB', href: '/compress-pdf-to/1mb' },
+      { label: 'Compress video to 25 MB', href: '/compress-video-to/25mb' },
+      { label: 'Compress video to 10 MB', href: '/compress-video-to/10mb' },
+      { label: 'Compress image to 50 KB', href: '/compress-image-to/50kb' },
+      { label: 'Compress image to 100 KB', href: '/compress-image-to/100kb' },
       { label: 'Make a scanned PDF searchable', href: '/tools/ocr-pdf' },
       { label: 'Redact a PDF', href: '/tools/redact-pdf' },
     ],

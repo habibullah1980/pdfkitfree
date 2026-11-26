@@ -46,6 +46,12 @@ export async function POST(req: NextRequest) {
       targetBitrateKbps = 3200;
     }
 
+    // Optional size-target mode: the page sends the bitrate that fits the byte budget.
+    const requestedKbps = Number(formData.get('targetBitrateKbps'));
+    if (Number.isFinite(requestedKbps) && requestedKbps > 0) {
+      targetBitrateKbps = Math.min(8000, Math.max(100, Math.round(requestedKbps)));
+    }
+
     let targetHeight: number | undefined;
     if (resolution === '1080p') targetHeight = 1080;
     else if (resolution === '720p') targetHeight = 720;

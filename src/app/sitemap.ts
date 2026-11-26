@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { TOOLS } from '@/lib/tools';
 import { BLOG_POSTS } from '@/lib/blog-data';
 import { SITE_CONFIG } from '@/lib/site-config';
-import { SIZE_TARGETS } from '@/lib/size-targets';
+import { SIZE_TARGETS, VIDEO_SIZE_TARGETS, IMAGE_SIZE_TARGETS } from '@/lib/size-targets';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = SITE_CONFIG.url;
@@ -38,8 +38,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  const sizePages = SIZE_TARGETS.map((t) => ({
-    url: `${baseUrl}/compress-pdf-to/${t.slug}`,
+  const sizePages = [
+    ...SIZE_TARGETS.map((t) => `/compress-pdf-to/${t.slug}`),
+    ...VIDEO_SIZE_TARGETS.map((t) => `/compress-video-to/${t.slug}`),
+    ...IMAGE_SIZE_TARGETS.map((t) => `/compress-image-to/${t.slug}`),
+  ].map((path) => ({
+    url: `${baseUrl}${path}`,
     lastModified: currentDate,
     changeFrequency: 'monthly' as const,
     priority: 0.8,

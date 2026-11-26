@@ -5,7 +5,7 @@ import { TOOLS, getToolBySlug } from '@/lib/tools';
 import { getToolSeoData } from '@/lib/tool-content';
 import { getBlogPostBySlug } from '@/lib/blog-data';
 import { ShareTool } from '@/components/ShareTool';
-import { SIZE_TARGETS } from '@/lib/size-targets';
+import { SIZE_TARGETS, IMAGE_SIZE_TARGETS } from '@/lib/size-targets';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ToolDispatcher } from '@/components/ToolDispatcher';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
@@ -136,6 +136,16 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
                 {SIZE_TARGETS.filter((t) => ['50kb', '100kb', '200kb', '500kb', '1mb'].includes(t.slug)).map((t) => (
                   <Link key={t.slug} href={`/compress-pdf-to/${t.slug}`} className="rounded-full bg-white px-3 py-1.5 font-bold text-brand-600 shadow-sm hover:bg-brand-50">
                     Under {t.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+            {['jpg-to-pdf', 'png-to-pdf'].includes(tool.slug) && (
+              <nav aria-label="Compress an image" className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-semibold text-ink-muted">Just need a smaller image?</span>
+                {IMAGE_SIZE_TARGETS.filter((t) => ['20kb', '50kb', '100kb', '200kb'].includes(t.slug)).map((t) => (
+                  <Link key={t.slug} href={`/compress-image-to/${t.slug}`} className="rounded-full bg-white px-3 py-1.5 font-bold text-brand-600 shadow-sm hover:bg-brand-50">
+                    Image under {t.label}
                   </Link>
                 ))}
               </nav>
