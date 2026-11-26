@@ -43,10 +43,10 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="overflow-hidden bg-[radial-gradient(1200px_500px_at_85%_0%,#FFF6DC_0%,rgba(255,246,220,0)_60%)] pb-10 pt-10 sm:pt-14">
+      <section className="overflow-hidden bg-[radial-gradient(900px_520px_at_88%_8%,#FFE7A8_0%,rgba(255,231,168,0)_62%),radial-gradient(760px_520px_at_-5%_105%,#FFD9CC_0%,rgba(255,217,204,0)_60%),linear-gradient(#EEEDFF,#E6E4FF)] pb-12 pt-10 sm:pt-14">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div className="flex flex-col gap-6">
-            <span className="inline-flex items-center gap-2 self-start rounded-full bg-teal-50 px-3.5 py-2 text-sm font-bold text-teal-800">
+            <span className="inline-flex items-center gap-2 self-start rounded-full bg-white px-3.5 py-2 text-sm font-bold text-teal-800 shadow-sm">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Your files are processed on your device
             </span>
@@ -78,7 +78,7 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="mr-1 text-sm font-semibold text-ink-muted">Popular:</span>
               {popularTools.map((t) => (
-                <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full bg-brand-50 px-3.5 py-2 text-sm font-semibold text-[#3D3B63] transition hover:bg-brand-100 hover:text-ink">
+                <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full bg-white/80 px-3.5 py-2 text-sm font-semibold text-[#3D3B63] transition hover:bg-white hover:text-ink">
                   {t.title}
                 </Link>
               ))}
@@ -108,7 +108,7 @@ export default function HomePage() {
       </section>
 
       {/* Tools catalog */}
-      <section ref={catalogRef} id="tools-catalog" className="scroll-mt-24 py-20 sm:py-24">
+      <section ref={catalogRef} id="tools-catalog" className="scroll-mt-24 bg-[#FFFBF0] py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
@@ -117,7 +117,7 @@ export default function HomePage() {
                 {searchQuery ? `${filteredTools.length} tools match “${searchQuery}”.` : 'Grouped by what you want to do.'}
               </p>
             </div>
-            <div className="flex flex-wrap gap-1 rounded-[22px] bg-[#F4F3FB] p-1.5" role="group" aria-label="Tool categories">
+            <div className="flex flex-wrap gap-1 rounded-[22px] bg-white p-1.5 shadow-sm" role="group" aria-label="Tool categories">
               {[{ id: 'all', name: `All (${TOOLS.length})` }, ...TOOL_CATEGORIES.map((c) => ({ id: c.id, name: c.name.replace(' PDF', '') }))].map((cat) => (
                 <button
                   key={cat.id}
@@ -174,23 +174,25 @@ export default function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="bg-mist py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-4xl font-extrabold text-ink sm:text-[46px]">Three steps, no upload</h2>
+      <section className="relative overflow-hidden bg-brand-600 py-20 text-white sm:py-24">
+        <span className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#6C61EE]" aria-hidden="true" />
+        <span className="absolute -bottom-28 right-10 h-64 w-64 rounded-full bg-sun/90" aria-hidden="true" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-4xl font-extrabold text-white sm:text-[46px]">Three steps, no upload</h2>
           <ol className="mt-12 grid gap-8 md:grid-cols-3">
             <li className="flex flex-col gap-4">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sun font-display text-xl font-extrabold">1</span>
-              <h3 className="text-2xl font-bold">Drop your PDF</h3>
-              <p className="leading-relaxed text-ink-soft">Drag a file onto the page or pick it from your computer or phone.</p>
-              <div className="flex h-[150px] items-center justify-center rounded-2xl border-2 border-dashed border-[#CFCBFF] bg-white">
-                <Upload className="h-11 w-11 text-brand-600" strokeWidth={1.8} aria-hidden="true" />
+              <h3 className="text-2xl font-bold text-white">Drop your PDF</h3>
+              <p className="leading-relaxed text-[#DCDAFF]">Drag a file onto the page or pick it from your computer or phone.</p>
+              <div className="flex h-[150px] items-center justify-center rounded-2xl border-2 border-dashed border-white/50 bg-white/10">
+                <Upload className="h-11 w-11 text-white" strokeWidth={1.8} aria-hidden="true" />
               </div>
             </li>
             <li className="flex flex-col gap-4">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sun font-display text-xl font-extrabold">2</span>
-              <h3 className="text-2xl font-bold">Your browser does the work</h3>
-              <p className="leading-relaxed text-ink-soft">The file is processed on your device, so it stays private and fast.</p>
-              <div className="flex h-[150px] flex-col justify-center gap-2.5 rounded-2xl bg-white p-5 shadow-lift" aria-hidden="true">
+              <h3 className="text-2xl font-bold text-white">Your browser does the work</h3>
+              <p className="leading-relaxed text-[#DCDAFF]">The file is processed on your device, so it stays private and fast.</p>
+              <div className="flex h-[150px] flex-col justify-center gap-2.5 rounded-2xl bg-white p-5 text-ink shadow-lift" aria-hidden="true">
                 <span className="text-sm font-bold">Shrinking images 12 of 18</span>
                 <span className="block h-2.5 overflow-hidden rounded-full bg-[#ECEBF7]">
                   <span className="pk-sheen block h-full w-2/3 rounded-full bg-gradient-to-r from-teal-500 to-brand-600" />
@@ -200,9 +202,9 @@ export default function HomePage() {
             </li>
             <li className="flex flex-col gap-4">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sun font-display text-xl font-extrabold">3</span>
-              <h3 className="text-2xl font-bold">Download the result</h3>
-              <p className="leading-relaxed text-ink-soft">Save it, or keep going with another tool on the same file.</p>
-              <div className="flex h-[150px] items-center gap-4 rounded-2xl bg-white p-5 shadow-lift" aria-hidden="true">
+              <h3 className="text-2xl font-bold text-white">Download the result</h3>
+              <p className="leading-relaxed text-[#DCDAFF]">Save it, or keep going with another tool on the same file.</p>
+              <div className="flex h-[150px] items-center gap-4 rounded-2xl bg-white p-5 text-ink shadow-lift" aria-hidden="true">
                 <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500">
                   <Download className="h-7 w-7 text-white" strokeWidth={2.6} />
                 </span>

@@ -93,7 +93,7 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
   const ToolIcon = toolIcon.icon;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(900px_380px_at_90%_0%,#FFF6DC_0%,rgba(255,246,220,0)_60%),linear-gradient(#F7F6FF,#fff_560px)] py-10">
+    <div className="min-h-screen bg-[radial-gradient(800px_420px_at_92%_0%,#FFE7A8_0%,rgba(255,231,168,0)_62%),radial-gradient(600px_400px_at_0%_0%,#FFD9CC_0%,rgba(255,217,204,0)_60%),linear-gradient(#E6E4FF,#F3F2FF_420px,#fff_760px)] py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -115,13 +115,13 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
 
         {/* Tool Header */}
         <div className="mb-8 mt-2 flex flex-col gap-5 sm:flex-row sm:items-center">
-          <span className={`flex h-16 w-16 flex-none items-center justify-center rounded-[20px] border ${toolIcon.bgClass}`}>
+          <span className="flex h-16 w-16 flex-none items-center justify-center rounded-[20px] bg-white shadow-lift">
             <ToolIcon className={`h-8 w-8 ${toolIcon.colorClass}`} strokeWidth={2} aria-hidden="true" />
           </span>
           <div>
             <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{tool.title}</h1>
             <p className="mt-2 max-w-3xl text-base text-ink-soft sm:text-lg">{tool.longDescription}</p>
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1.5 text-sm font-bold text-teal-800">
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-teal-800 shadow-sm">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Runs in your browser
             </p>
@@ -136,7 +136,7 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
         {/* SEO Explanations, Instructions, Use Cases & FAQs */}
         <div className="space-y-14">
           {/* Detailed Intro */}
-          <div className="rounded-3xl bg-mist p-6 sm:p-8">
+          <div className="rounded-3xl bg-[#FFF1CC] p-6 sm:p-8">
             <h2 className="text-xl font-bold text-ink mb-3">
               About {tool.title} by PDFKitFree
             </h2>
