@@ -6,7 +6,7 @@ import React from 'react';
  */
 export function HeroStage() {
   return (
-    <div className="relative mx-auto h-[440px] w-full max-w-[600px] sm:h-[560px]" aria-hidden="true">
+    <div className="pk-stage relative mx-auto h-[440px] w-full max-w-[600px] sm:h-[560px]" aria-hidden="true">
       <div className="absolute right-[-20px] top-[-10px] hidden h-[560px] w-[560px] animate-pk-spin-slow rounded-full border-2 border-dashed border-[#E3E1F5] sm:block" />
       <div className="absolute right-2 top-6 h-[380px] w-[380px] animate-pk-sun rounded-full bg-sun sm:right-5 sm:top-8 sm:h-[480px] sm:w-[480px]" />
 

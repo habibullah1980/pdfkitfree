@@ -81,3 +81,108 @@ h1, h2, h3 {
 @keyframes pk-draw { to { stroke-dashoffset: 0; } }
 @keyframes pk-shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @keyframes pk-fill { from { width: 0; } }
+
+/* ------------------------------------------------------------------
+   Dark theme. Toggled by the `dark` class on <html> (see ThemeToggle).
+   One place remaps the shared colour utilities used across all pages
+   and tools, so components keep their light classes unchanged.
+   ------------------------------------------------------------------ */
+.dark {
+  --background: #100F24;
+  --foreground: #F4F3FF;
+  --d-bg: #100F24;
+  --d-surface: #1C1A3D;
+  --d-surface-2: #242150;
+  --d-line: #33306A;
+  --d-text: #F4F3FF;
+  --d-text-2: #D9D7F5;
+  --d-text-3: #B4B2D6;
+  --d-text-4: #9997C4;
+  --d-brand: #A9A2FF;
+  --d-mint: #5EE0B8;
+  --d-coral: #FF9EA2;
+  --d-sun: #FFD66B;
+  --d-blue: #93C5FD;
+}
+
+/* Page and sections */
+.dark body.bg-white { background-color: var(--d-bg); color: var(--d-text); }
+.dark .pk-header { background-color: rgba(16, 15, 36, .86); border-color: #24224A; }
+.dark .pk-hero {
+  background: radial-gradient(900px 520px at 88% 8%, rgba(255, 200, 61, .2), transparent 62%),
+    radial-gradient(760px 520px at -5% 105%, rgba(75, 63, 228, .45), transparent 60%),
+    linear-gradient(#141235, #100F24);
+}
+.dark .pk-tool-hero {
+  background: radial-gradient(800px 420px at 92% 0%, rgba(255, 200, 61, .18), transparent 60%),
+    radial-gradient(600px 400px at 0% 0%, rgba(75, 63, 228, .45), transparent 60%),
+    var(--d-bg);
+}
+.dark .pk-steps { background-color: var(--d-surface); }
+.dark #tools-catalog { background-color: var(--d-bg); }
+.dark footer.bg-ink { background-color: #0A0919; }
+.dark main .bg-ink:not(a):not(button) { background-color: var(--d-surface); box-shadow: inset 0 0 0 1px var(--d-line); }
+
+/* Surfaces */
+.dark .bg-white, .dark .bg-white\/80, .dark .bg-white\/70, .dark .bg-white\/90 { background-color: var(--d-surface); }
+.dark .bg-slate-50, .dark .bg-slate-50\/50, .dark .bg-slate-50\/60, .dark .bg-mist,
+.dark .bg-slate-100, .dark .bg-slate-100\/70 { background-color: var(--d-surface-2); }
+.dark .bg-slate-200, .dark .bg-\[\#ECEBF7\], .dark .bg-\[\#E3E1F5\], .dark .bg-\[\#CFCBFF\] { background-color: var(--d-line); }
+.dark .bg-brand-50, .dark .bg-brand-50\/50, .dark .bg-brand-50\/70, .dark .bg-brand-100, .dark .bg-indigo-50 { background-color: rgba(108, 97, 238, .2); }
+.dark .bg-teal-50, .dark .bg-teal-50\/50, .dark .bg-teal-50\/60, .dark .bg-teal-50\/70, .dark .bg-teal-100, .dark .bg-emerald-50 { background-color: rgba(44, 197, 154, .14); }
+.dark .bg-red-50, .dark .bg-rose-50 { background-color: rgba(243, 121, 126, .14); }
+.dark .bg-amber-50, .dark .bg-orange-50, .dark .bg-sun-100, .dark .bg-\[\#FFF1CC\] { background-color: rgba(255, 200, 61, .13); }
+.dark .bg-blue-50 { background-color: rgba(96, 165, 250, .14); }
+.dark .hover\:bg-white:hover, .dark .hover\:bg-slate-50:hover, .dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-slate-200:hover, .dark .hover\:bg-brand-50:hover, .dark .hover\:bg-brand-50\/50:hover { background-color: var(--d-surface-2); }
+.dark .hover\:bg-brand-100\/70:hover, .dark .hover\:bg-indigo-100\/70:hover { background-color: rgba(108, 97, 238, .28); }
+.dark .hover\:bg-teal-100:hover, .dark .hover\:bg-teal-100\/70:hover, .dark .hover\:bg-emerald-100:hover, .dark .hover\:bg-emerald-100\/70:hover { background-color: rgba(44, 197, 154, .22); }
+.dark .hover\:bg-red-50:hover, .dark .hover\:bg-red-100:hover, .dark .hover\:bg-rose-100\/70:hover { background-color: rgba(243, 121, 126, .22); }
+.dark .hover\:bg-amber-100\/70:hover, .dark .hover\:bg-orange-100\/70:hover { background-color: rgba(255, 200, 61, .2); }
+.dark .hover\:bg-blue-100\/70:hover { background-color: rgba(96, 165, 250, .22); }
+
+/* Text */
+.dark .text-ink, .dark .text-slate-900, .dark .text-slate-800,
+.dark .hover\:text-ink:hover, .dark .hover\:text-slate-900:hover, .dark .hover\:text-slate-800:hover { color: var(--d-text); }
+.dark .text-slate-700, .dark .text-slate-600, .dark .text-ink-soft, .dark .text-\[\#3D3B63\],
+.dark .hover\:text-slate-700:hover, .dark .hover\:text-slate-600:hover { color: var(--d-text-2); }
+.dark .text-slate-500, .dark .text-ink-muted, .dark .text-\[\#6E6C8E\] { color: var(--d-text-3); }
+.dark .text-slate-400 { color: var(--d-text-4); }
+.dark .text-brand-600, .dark .text-brand-700, .dark .text-\[\#4B3FE4\], .dark .text-indigo-600,
+.dark .hover\:text-brand-600:hover, .dark .hover\:text-brand-700:hover { color: var(--d-brand); }
+.dark .text-brand-900, .dark .text-\[\#221A7A\], .dark .hover\:text-brand-900:hover { color: #CFCBFF; }
+.dark .text-teal-600, .dark .text-teal-700, .dark .text-teal-800, .dark .text-teal-900, .dark .text-teal-950,
+.dark .text-emerald-600, .dark .text-emerald-800 { color: var(--d-mint); }
+.dark .text-red-600, .dark .text-red-700, .dark .text-red-800, .dark .text-red-900, .dark .text-rose-600 { color: var(--d-coral); }
+.dark .text-amber-600, .dark .text-amber-800, .dark .text-amber-900, .dark .text-sun-700, .dark .text-orange-600 { color: var(--d-sun); }
+.dark .text-blue-600 { color: var(--d-blue); }
+.dark .placeholder\:text-\[\#6E6C8E\]::placeholder { color: #8E8CB8; }
+
+/* Lines */
+.dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300,
+.dark .border-\[\#ECEBF8\], .dark .border-\[\#EEEDF8\], .dark .border-\[\#E3E1F5\], .dark .border-\[\#D9D7F2\],
+.dark .border-\[\#F0EFF8\], .dark .divide-slate-100 > * + * { border-color: var(--d-line); }
+.dark .border-\[\#CFCBFF\] { border-color: #4A4690; }
+.dark .border-brand-100, .dark .border-brand-200, .dark .border-indigo-100 { border-color: rgba(108, 97, 238, .45); }
+.dark .border-teal-100, .dark .border-teal-200, .dark .border-emerald-100, .dark .border-emerald-200 { border-color: rgba(44, 197, 154, .35); }
+.dark .border-red-200, .dark .border-rose-100 { border-color: rgba(243, 121, 126, .4); }
+.dark .border-amber-100, .dark .border-amber-200, .dark .border-orange-100 { border-color: rgba(255, 200, 61, .35); }
+.dark .border-blue-100 { border-color: rgba(96, 165, 250, .35); }
+
+/* Form fields without their own colours */
+:where(.dark input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), .dark select, .dark textarea) { background-color: var(--d-surface-2); color: var(--d-text); }
+
+/* Sunflower panels keep dark ink text in both themes */
+.dark .bg-sun { color: #1B1A3A; }
+.dark .bg-sun .text-ink, .dark .bg-sun.text-ink, .dark .bg-sun h2, .dark .bg-sun h3, .dark .bg-sun > p { color: #1B1A3A; }
+.dark .bg-sun .bg-white { color: var(--d-text); }
+.dark .bg-sun .border-ink\/30 { border-color: rgba(27, 26, 58, .4); }
+
+/* The hero illustration stays paper-white so it glows on the dark page */
+.dark .pk-stage .bg-white { background-color: #fff; color: #1B1A3A; }
+.dark .pk-stage .text-ink-muted { color: #5A5880; }
+.dark .pk-stage .text-teal-600 { color: #139A72; }
+.dark .pk-stage .border-\[\#E3E1F5\] { border-color: #33306A; }
+.dark footer .bg-slate-50\/80 { background-color: rgba(255, 255, 255, .06); }
+.dark .bg-slate-50\/70, .dark .bg-slate-50\/80 { background-color: var(--d-surface-2); }
+.dark .bg-slate-200\/80, .dark .hover\:bg-slate-200\/70:hover { background-color: var(--d-line); }

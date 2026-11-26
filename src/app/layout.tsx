@@ -8,6 +8,7 @@ import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { CookieConsent } from '@/components/CookieConsent';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { THEME_INIT_SCRIPT } from '@/components/ThemeToggle';
 
 const figtree = Figtree({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
 const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-display', weight: ['500', '700', '800'], display: 'swap' });
@@ -79,8 +80,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
+    <html lang="en" className={`${figtree.variable} ${bricolage.variable}`} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* Verification meta tag placeholder for Google Search Console */}
         <meta
           name="google-site-verification"

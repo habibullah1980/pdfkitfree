@@ -43,7 +43,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="overflow-hidden bg-[radial-gradient(900px_520px_at_88%_8%,#FFE7A8_0%,rgba(255,231,168,0)_62%),radial-gradient(760px_520px_at_-5%_105%,#FFD9CC_0%,rgba(255,217,204,0)_60%),linear-gradient(#EEEDFF,#E6E4FF)] pb-12 pt-10 sm:pt-14">
+      <section className="pk-hero overflow-hidden bg-[radial-gradient(900px_520px_at_88%_8%,#FFE7A8_0%,rgba(255,231,168,0)_62%),radial-gradient(760px_520px_at_-5%_105%,#FFD9CC_0%,rgba(255,217,204,0)_60%),linear-gradient(#EEEDFF,#E6E4FF)] pb-12 pt-10 sm:pt-14">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div className="flex flex-col gap-6">
             <span className="inline-flex items-center gap-2 self-start rounded-full bg-white px-3.5 py-2 text-sm font-bold text-teal-800 shadow-sm">
@@ -174,7 +174,7 @@ export default function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="relative overflow-hidden bg-brand-600 py-20 text-white sm:py-24">
+      <section className="pk-steps relative overflow-hidden bg-brand-600 py-20 text-white sm:py-24">
         <span className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#6C61EE]" aria-hidden="true" />
         <span className="absolute -bottom-28 right-10 h-64 w-64 rounded-full bg-sun/90" aria-hidden="true" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

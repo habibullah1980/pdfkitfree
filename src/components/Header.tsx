@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/brand/Logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   Menu, 
   X, 
@@ -40,7 +41,7 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#F0EFF8] bg-white/90 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-[#F0EFF8] bg-white/90 backdrop-blur-md pk-header">
       <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <Link href="/" className="flex items-center rounded-lg" aria-label="PDFKitFree home">
@@ -69,6 +70,7 @@ export function Header() {
 
         {/* Desktop Auth & CTA */}
         <div className="hidden items-center gap-3 md:flex">
+          <ThemeToggle />
 
           {isAuthenticated && user ? (
             <div className="relative" ref={dropdownRef}>
@@ -192,7 +194,8 @@ export function Header() {
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex md:hidden">
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

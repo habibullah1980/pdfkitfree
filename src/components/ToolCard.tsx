@@ -6,13 +6,13 @@ import { getToolIconConfig } from '@/lib/tool-icons';
 
 /** One soft colour per tool group, so the grid reads by category at a glance. */
 const CATEGORY_TINT: Record<ToolDefinition['category'], string> = {
-  organize: 'bg-[#EEEDFF] hover:bg-[#E4E2FF]',
-  optimize: 'bg-[#DDF6EC] hover:bg-[#CFF2E3]',
-  'convert-to': 'bg-[#FFF1CC] hover:bg-[#FFE9B3]',
-  'convert-from': 'bg-[#FFE6DD] hover:bg-[#FFDACD]',
-  edit: 'bg-[#F1E9FF] hover:bg-[#E8DCFF]',
-  security: 'bg-[#E2E8FF] hover:bg-[#D6DFFF]',
-  other: 'bg-[#E0F2FE] hover:bg-[#D0EBFD]',
+  organize: 'bg-[#EEEDFF] hover:bg-[#E4E2FF] dark:bg-[#211E4A] dark:hover:bg-[#28245A]',
+  optimize: 'bg-[#DDF6EC] hover:bg-[#CFF2E3] dark:bg-[#132E2E] dark:hover:bg-[#173838]',
+  'convert-to': 'bg-[#FFF1CC] hover:bg-[#FFE9B3] dark:bg-[#2C2720] dark:hover:bg-[#363026]',
+  'convert-from': 'bg-[#FFE6DD] hover:bg-[#FFDACD] dark:bg-[#2D1E2A] dark:hover:bg-[#372432]',
+  edit: 'bg-[#F1E9FF] hover:bg-[#E8DCFF] dark:bg-[#261D47] dark:hover:bg-[#2E2356]',
+  security: 'bg-[#E2E8FF] hover:bg-[#D6DFFF] dark:bg-[#1B2347] dark:hover:bg-[#212B56]',
+  other: 'bg-[#E0F2FE] hover:bg-[#D0EBFD] dark:bg-[#14283A] dark:hover:bg-[#183046]',
 };
 
 interface ToolCardProps {
@@ -26,10 +26,10 @@ export function ToolCard({ tool }: ToolCardProps) {
   return (
     <Link
       href={`/tools/${tool.slug}`}
-      className={`group relative flex flex-col gap-3 rounded-[22px] border-[1.5px] border-transparent p-6 transition duration-200 hover:-translate-y-1 hover:border-brand-600 hover:shadow-lift focus-visible:-translate-y-1 ${CATEGORY_TINT[tool.category] ?? 'bg-white'}`}
+      className={`group relative flex flex-col gap-3 rounded-[22px] border-[1.5px] border-transparent p-6 transition duration-200 hover:-translate-y-1 hover:border-brand-600 hover:shadow-lift dark:hover:border-sun focus-visible:-translate-y-1 ${CATEGORY_TINT[tool.category] ?? 'bg-white'}`}
     >
       <div className="flex items-start justify-between">
-        <span className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-white shadow-sm">
+        <span className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-white/10">
           <IconComponent
             className={`h-6 w-6 transition-transform duration-200 group-hover:scale-110 ${iconConfig.colorClass}`}
             strokeWidth={2}
