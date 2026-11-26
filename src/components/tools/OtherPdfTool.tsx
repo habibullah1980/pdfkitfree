@@ -18,7 +18,7 @@ import {
 import { openPdfDocument } from '@/lib/pdfjs-client';
 
 interface OtherPdfToolProps {
-  toolType: 'extract-text' | 'extract-images' | 'compare' | 'fill-form' | 'ocr';
+  toolType: 'extract-text' | 'extract-images' | 'compare' | 'fill-form';
 }
 
 export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
@@ -37,6 +37,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>('output.txt');
+  const [resultNote, setResultNote] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const secondFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,13 +97,15 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
     if (!file) return;
     setIsProcessing(true);
     setErrorMessage(null);
+    setResultNote(null);
+    setDownloadUrl(null);
 
     try {
       const buffer = await file.arrayBuffer();
       const doc = await openPdfDocument(buffer);
       const base = file.name.replace(/\.[^/.]+$/, '');
 
-      if (toolType === 'extract-text' || toolType === 'ocr') {
+      if (toolType === 'extract-text') {
         let fullText = '';
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i);
@@ -115,37 +118,32 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
           fullText += `=== Page ${i} ===\n` + (pageStr || '[No selectable text detected on this page]') + '\n\n';
         }
 
-        if (!fullText.trim()) {
-          fullText = '[Scanned Document Detected]\nText transcribed from document page layers.';
-        }
 
         setExtractedResult(fullText);
         const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
-        setDownloadName(`${base}-${toolType === 'ocr' ? 'ocr-transcribed' : 'extracted-text'}.txt`);
+        setDownloadName(`${base}-extracted-text.txt`);
       } else if (toolType === 'extract-images') {
-        const zip = new JSZip();
-        for (let i = 1; i <= doc.numPages; i++) {
-          const page = await doc.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            await page.render({ canvasContext: ctx, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-            zip.file(`extracted-image-p${i}.png`, base64Data, { base64: true });
-          }
+        const { extractPdfImages } = await import('@/lib/pdf-image-extract');
+        const { images, skipped } = await extractPdfImages(buffer);
+        if (images.length === 0) {
+          setErrorMessage(
+            skipped > 0
+              ? `Found ${skipped} image${skipped === 1 ? '' : 's'} in an unusual format that could not be converted. Try PDF to JPG to save whole pages instead.`
+              : 'This PDF has no embedded images. If the pages are scans or drawings, use PDF to JPG to save whole pages as images.'
+          );
+          return;
         }
+        const zip = new JSZip();
+        for (const img of images) zip.file(img.name, img.bytes);
         const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(zipBlob);
-        setDownloadUrl(url);
-        setDownloadName(`${base}-extracted-images.zip`);
+        setDownloadUrl(URL.createObjectURL(zipBlob));
+        setDownloadName(`${base}-images.zip`);
+        setResultNote(
+          `Extracted ${images.length} image${images.length === 1 ? '' : 's'} at original resolution` +
+            (skipped > 0 ? `. ${skipped} image${skipped === 1 ? '' : 's'} in an unusual format could not be converted.` : '.')
+        );
       } else if (toolType === 'compare') {
         if (!secondFile) {
           setErrorMessage('Please select a second PDF file to compare.');
@@ -256,14 +254,12 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
             {toolType === 'extract-images' && <ImageIcon className="h-7 w-7" />}
             {toolType === 'compare' && <GitCompare className="h-7 w-7" />}
             {toolType === 'fill-form' && <CheckSquare className="h-7 w-7" />}
-            {toolType === 'ocr' && <ScanText className="h-7 w-7" />}
           </div>
           <h3 className="text-xl font-bold text-slate-900">
             {toolType === 'extract-text' && 'Choose a PDF to extract text'}
             {toolType === 'extract-images' && 'Choose a PDF to extract images'}
             {toolType === 'compare' && 'Choose primary PDF for comparison'}
             {toolType === 'fill-form' && 'Choose a PDF form to inspect & fill'}
-            {toolType === 'ocr' && 'Choose a scanned PDF for OCR text recognition'}
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md">
             100% in-browser processing. Document text and images are extracted directly in memory.
@@ -426,10 +422,9 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
               ) : (
                 <span>
                   {toolType === 'extract-text' && 'Extract Text Now'}
-                  {toolType === 'extract-images' && 'Extract All Images (ZIP)'}
+                  {toolType === 'extract-images' && 'Extract Images (ZIP)'}
                   {toolType === 'compare' && 'Compare Two PDFs'}
                   {toolType === 'fill-form' && 'Save & Export Form'}
-                  {toolType === 'ocr' && 'Run Optical Recognition (OCR)'}
                 </span>
               )}
             </button>
@@ -450,7 +445,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
             <CheckCircle className="h-6 w-6" />
           </div>
           <h4 className="text-xl font-bold text-slate-900">Task Completed Successfully!</h4>
-          <p className="text-xs text-slate-600 mt-1">Your generated output is ready for download.</p>
+          <p className="text-xs text-slate-600 mt-1">{resultNote ?? 'Your generated output is ready for download.'}</p>
           <div className="mt-6 flex justify-center gap-4">
             <a
               href={downloadUrl}

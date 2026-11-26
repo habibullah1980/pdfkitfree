@@ -12,6 +12,7 @@ import { ConvertToPdfTool } from '@/components/tools/ConvertToPdfTool';
 import { ConvertFromPdfTool } from '@/components/tools/ConvertFromPdfTool';
 import { EditPdfTool } from '@/components/tools/EditPdfTool';
 import { SecurityPdfTool } from '@/components/tools/SecurityPdfTool';
+import { OcrPdfTool } from './tools/OcrPdfTool';
 import { RedactPdfTool } from '@/components/tools/RedactPdfTool';
 import { OtherPdfTool } from '@/components/tools/OtherPdfTool';
 import { NdaUploadWorkspace } from '@/components/NdaUploadWorkspace';
@@ -107,7 +108,7 @@ export function ToolDispatcher({ tool }: ToolDispatcherProps) {
     case 'fill-pdf-form':
       return <OtherPdfTool toolType="fill-form" />;
     case 'ocr-pdf':
-      return <OtherPdfTool toolType="ocr" />;
+      return <OcrPdfTool />;
 
     // Signing
     case 'sign-pdf':

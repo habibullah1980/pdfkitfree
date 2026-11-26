@@ -33,7 +33,7 @@ function nameOf(dict: PDFDict, key: string): string | undefined {
   return v instanceof PDFName ? v.decodeText() : undefined;
 }
 
-function filterNames(dict: PDFDict): string[] {
+export function filterNames(dict: PDFDict): string[] {
   const f = dict.lookup(PDFName.of('Filter'));
   if (f instanceof PDFName) return [f.decodeText()];
   if (f instanceof PDFArray) return f.asArray().map((x) => (x instanceof PDFName ? x.decodeText() : '?'));
@@ -41,7 +41,7 @@ function filterNames(dict: PDFDict): string[] {
 }
 
 /** Number of colour components for the colour spaces we can safely re-encode, else null. */
-function componentsOf(dict: PDFDict): number | null {
+export function componentsOf(dict: PDFDict): number | null {
   const cs = dict.lookup(PDFName.of('ColorSpace'));
   if (cs instanceof PDFName) {
     const n = cs.decodeText();
@@ -94,7 +94,7 @@ export function undoPngPredictor(data: Uint8Array, rowBytes: number, bpp: number
   return out;
 }
 
-async function decodeToBitmap(stream: PDFRawStream, width: number, height: number): Promise<ImageBitmap | null> {
+export async function decodeToBitmap(stream: PDFRawStream, width: number, height: number): Promise<ImageBitmap | null> {
   const dict = stream.dict;
   const filters = filterNames(dict);
   const comps = componentsOf(dict);

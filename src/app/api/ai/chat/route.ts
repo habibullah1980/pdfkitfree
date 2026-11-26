@@ -6,7 +6,7 @@ import {
   saveAiConversation,
   getPlansConfig,
 } from '@/lib/server/auth-store';
-import { aiAdapter, AiChatMessage } from '@/lib/server/ai-adapter';
+import { aiAdapter, AiChatMessage, AiUnavailableError } from '@/lib/server/ai-adapter';
 
 // In-memory rate limiting map for AI calls: userId -> timestamp[]
 const userAiRateLimitMap = new Map<string, number[]>();
@@ -135,6 +135,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: unknown) {
     const error = err as Error;
+    if (err instanceof AiUnavailableError) {
+      return NextResponse.json({ error: error.message, aiUnavailable: true }, { status: 503 });
+    }
     return NextResponse.json({ error: error.message || 'AI request failed.' }, { status: 500 });
   }
 }
