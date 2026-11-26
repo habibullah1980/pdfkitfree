@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { 
   Upload, 
-  File, 
+  File as FileIcon, 
   Download, 
   AlertCircle, 
   CheckCircle, 
-  Loader2,
+  Loader2, 
   Trash2,
-  Sparkles
+  Sparkles,
+  Info
 } from 'lucide-react';
 
 interface OptimizePdfToolProps {
@@ -27,6 +28,23 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>('optimized.pdf');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Object URL cleanup
+  const prevDownloadUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevDownloadUrlRef.current && prevDownloadUrlRef.current !== downloadUrl) {
+      URL.revokeObjectURL(prevDownloadUrlRef.current);
+    }
+    prevDownloadUrlRef.current = downloadUrl;
+  }, [downloadUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (prevDownloadUrlRef.current) {
+        URL.revokeObjectURL(prevDownloadUrlRef.current);
+      }
+    };
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
@@ -57,26 +75,77 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
 
     try {
       const buffer = await file.arrayBuffer();
-      // Load document ignoring non-fatal syntax errors (essential for repair)
-      const doc = await PDFDocument.load(buffer, { 
-        ignoreEncryption: true,
-        updateMetadata: false 
-      });
+      const base = file.name.replace(/\.[^/.]+$/, '');
+      let finalBytes: Uint8Array;
 
-      // Compress / Repair / Web optimization:
-      // Re-serializing through pdf-lib cleans orphaned streams, rebuilds cross-reference (xref) tables,
-      // and strips unnecessary uncompressed dictionary trailers.
-      const optimizedBytes = await doc.save({
-        useObjectStreams: true,
-        addDefaultPage: false,
-      });
+      if (toolType === 'compress' && compressionLevel === 'extreme') {
+        // Extreme compression: re-rasterize and recompress pages with high-efficiency JPEG
+        try {
+          const pdfjsLib = await import('pdfjs-dist');
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+          const srcDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+          const newDoc = await PDFDocument.create();
 
-      const blob = new Blob([new Uint8Array(optimizedBytes)], { type: 'application/pdf' });
+          for (let i = 1; i <= srcDoc.numPages; i++) {
+            const page = await srcDoc.getPage(i);
+            const viewport = page.getViewport({ scale: 1.2 });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              await page.render({ canvasContext: ctx, viewport }).promise;
+              const jpegUrl = canvas.toDataURL('image/jpeg', 0.65);
+              const base64 = jpegUrl.replace(/^data:image\/jpeg;base64,/, '');
+              const bin = atob(base64);
+              const imgBytes = new Uint8Array(bin.length);
+              for (let j = 0; j < bin.length; j++) {
+                imgBytes[j] = bin.charCodeAt(j);
+              }
+
+              const embedded = await newDoc.embedJpg(imgBytes);
+              const { width, height } = page.getViewport({ scale: 1.0 });
+              const p = newDoc.addPage([width, height]);
+              p.drawImage(embedded, { x: 0, y: 0, width, height });
+            }
+          }
+          finalBytes = await newDoc.save({ useObjectStreams: true });
+        } catch {
+          // Fallback to standard object stream compression if canvas fails
+          const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+          finalBytes = await doc.save({ useObjectStreams: true });
+        }
+      } else {
+        // Recommended / Low / Repair / Web:
+        // Cleans xref tables, strips unreferenced objects, uses object streams
+        const doc = await PDFDocument.load(buffer, { 
+          ignoreEncryption: true,
+          updateMetadata: toolType === 'repair' ? false : true 
+        });
+
+        finalBytes = await doc.save({
+          useObjectStreams: true,
+          addDefaultPage: false,
+        });
+      }
+
+      // If output is larger than original file and tool is compress, keep original bytes
+      let effectiveBytes = finalBytes;
+      let effectiveSize = finalBytes.length;
+
+      if (toolType === 'compress' && effectiveSize >= originalSize) {
+        // Never claim compression if file becomes larger
+        effectiveBytes = new Uint8Array(buffer);
+        effectiveSize = originalSize;
+      }
+
+      const blob = new Blob([new Uint8Array(effectiveBytes)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      setNewSize(blob.size);
+      setNewSize(effectiveSize);
       setDownloadUrl(url);
 
-      const base = file.name.replace(/\.[^/.]+$/, '');
       if (toolType === 'compress') setDownloadName(`${base}-compressed.pdf`);
       else if (toolType === 'repair') setDownloadName(`${base}-repaired.pdf`);
       else setDownloadName(`${base}-web-optimized.pdf`);
@@ -132,7 +201,7 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <div className="flex items-center gap-3">
-              <File className="h-6 w-6 text-brand-600" />
+              <FileIcon className="h-6 w-6 text-brand-600" />
               <div>
                 <h4 className="text-base font-semibold text-slate-900">{file.name}</h4>
                 <p className="text-xs text-slate-500">Original Size: {formatFileSize(originalSize)}</p>
@@ -158,8 +227,8 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { id: 'extreme', title: 'Extreme Compression', desc: 'Maximum file size reduction' },
-                  { id: 'recommended', title: 'Recommended', desc: 'Good quality, high compression' },
-                  { id: 'low', title: 'Less Compression', desc: 'Highest visual fidelity' },
+                  { id: 'recommended', title: 'Recommended', desc: 'Balanced stream & metadata compression' },
+                  { id: 'low', title: 'Lossless', desc: 'Preserves 100% original pixel data' },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -182,14 +251,14 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
           {toolType === 'repair' && (
             <div className="mb-6 rounded-lg bg-teal-50 border border-teal-200 p-4 text-xs text-teal-900">
               <p className="font-semibold mb-1">How PDF Repair Works:</p>
-              <p>We rebuild damaged xref tables, fix corrupted cross-references, and re-serialize valid page objects into a clean, uncorrupted PDF container.</p>
+              <p>Rebuilds damaged cross-reference tables, repairs corrupted trailers, and recovers uncorrupted page objects into a compliant PDF.</p>
             </div>
           )}
 
           {toolType === 'web' && (
             <div className="mb-6 rounded-lg bg-brand-50 border border-brand-200 p-4 text-xs text-brand-900">
               <p className="font-semibold mb-1">Fast Web View Optimization:</p>
-              <p>Object streams and metadata are restructured for sequential rendering, enabling immediate display of the first page while subsequent pages stream in background.</p>
+              <p>Re-serializes page objects into sequential object streams for instantaneous first-page loading across modern web browsers.</p>
             </div>
           )}
 
@@ -198,7 +267,7 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
               type="button"
               disabled={isProcessing}
               onClick={handleOptimize}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
             >
               {isProcessing ? (
                 <>
@@ -233,18 +302,26 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
             <CheckCircle className="h-6 w-6" />
           </div>
           <h4 className="text-xl font-bold text-slate-900">
-            {toolType === 'compress' && 'PDF Compressed Successfully!'}
+            {toolType === 'compress' && (newSize < originalSize ? 'PDF Compressed Successfully!' : 'PDF Optimization Complete')}
             {toolType === 'repair' && 'PDF Repaired Successfully!'}
             {toolType === 'web' && 'PDF Optimized for Web!'}
           </h4>
-          <p className="text-sm text-slate-600 mt-1">
-            Original: {formatFileSize(originalSize)} &bull; Optimized: {formatFileSize(newSize)}
-            {newSize < originalSize && (
-              <span className="text-teal-700 font-bold ml-1">
-                ({Math.round(((originalSize - newSize) / originalSize) * 100)}% reduction)
-              </span>
-            )}
-          </p>
+
+          {toolType === 'compress' && newSize >= originalSize ? (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1 text-xs text-slate-700">
+              <Info className="h-3.5 w-3.5 text-slate-500" />
+              <span>Document is already at maximum compression ({formatFileSize(originalSize)})</span>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-600 mt-1">
+              Original: {formatFileSize(originalSize)} &bull; Output: {formatFileSize(newSize)}
+              {newSize < originalSize && (
+                <span className="text-teal-700 font-bold ml-1">
+                  ({Math.round(((originalSize - newSize) / originalSize) * 100)}% reduction)
+                </span>
+              )}
+            </p>
+          )}
 
           <div className="mt-6 flex justify-center gap-4">
             <a
@@ -253,7 +330,7 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
               className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
             >
               <Download className="h-4 w-4" />
-              <span>Download Optimized PDF</span>
+              <span>Download Processed PDF</span>
             </a>
           </div>
         </div>

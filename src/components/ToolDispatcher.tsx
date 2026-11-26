@@ -60,8 +60,9 @@ export function ToolDispatcher({ tool }: ToolDispatcherProps) {
 
     // Convert from PDF
     case 'pdf-to-jpg':
+      return <ConvertFromPdfTool targetFormat="image" imageFormat="jpg" />;
     case 'pdf-to-png':
-      return <ConvertFromPdfTool targetFormat="image" />;
+      return <ConvertFromPdfTool targetFormat="image" imageFormat="png" />;
     case 'pdf-to-word':
       return <ConvertFromPdfTool targetFormat="word" />;
     case 'pdf-to-excel':
@@ -109,7 +110,12 @@ export function ToolDispatcher({ tool }: ToolDispatcherProps) {
 
     // Signing
     case 'sign-pdf':
-      return <NdaUploadWorkspace />;
+      return (
+        <NdaUploadWorkspace
+          title="Upload PDF Document to Sign"
+          description="Upload any PDF contract, agreement, or document to preview, place custom signatures, dates, or initials."
+        />
+      );
 
     default:
       return <MergePdfTool />;

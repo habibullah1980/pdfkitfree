@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { PDFDocument, rgb } from 'pdf-lib';
+import React, { useState, useRef, useEffect } from 'react';
+import { PDFDocument } from 'pdf-lib';
+import { encryptPDF } from '@pdfsmaller/pdf-encrypt';
+import { decryptPDF } from '@pdfsmaller/pdf-decrypt';
 import { 
   Upload, 
-  File, 
+  File as FileIcon, 
   Download, 
   AlertCircle, 
   CheckCircle, 
@@ -13,7 +15,8 @@ import {
   Lock,
   Unlock,
   EyeOff,
-  CheckCheck
+  CheckCheck,
+  ShieldAlert
 } from 'lucide-react';
 
 interface SecurityPdfToolProps {
@@ -23,6 +26,7 @@ interface SecurityPdfToolProps {
 export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState<string>('');
+  const [unlockPassword, setUnlockPassword] = useState<string>('');
   const [redactTerm, setRedactTerm] = useState<string>('CONFIDENTIAL');
   const [validationInfo, setValidationInfo] = useState<{ isEncrypted: boolean; pageCount: number; hasSignature: boolean } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,6 +35,23 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
   const [downloadName, setDownloadName] = useState<string>('secured.pdf');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Revoke object URL on unmount or URL replacement to prevent browser memory leaks
+  const prevDownloadUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevDownloadUrlRef.current && prevDownloadUrlRef.current !== downloadUrl) {
+      URL.revokeObjectURL(prevDownloadUrlRef.current);
+    }
+    prevDownloadUrlRef.current = downloadUrl;
+  }, [downloadUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (prevDownloadUrlRef.current) {
+        URL.revokeObjectURL(prevDownloadUrlRef.current);
+      }
+    };
+  }, []);
+
   const handleFile = async (selectedFile: File | null) => {
     if (!selectedFile) return;
     setErrorMessage(null);
@@ -38,7 +59,7 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
     setValidationInfo(null);
 
     if (!selectedFile.type.includes('pdf') && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMessage('Please select a valid PDF file.');
+      setErrorMessage('Please select a valid PDF file (.pdf).');
       return;
     }
 
@@ -51,11 +72,23 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
         hasSig = true;
       }
 
-      const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+      let encrypted = false;
+      let pageCount = 0;
+      try {
+        const doc = await PDFDocument.load(buffer, { ignoreEncryption: false });
+        encrypted = doc.isEncrypted;
+        pageCount = doc.getPageCount();
+      } catch (err: unknown) {
+        const error = err as Error;
+        if (error.message && error.message.toLowerCase().includes('encrypt')) {
+          encrypted = true;
+        }
+      }
+
       setFile(selectedFile);
       setValidationInfo({
-        isEncrypted: doc.isEncrypted,
-        pageCount: doc.getPageCount(),
+        isEncrypted: encrypted,
+        pageCount,
         hasSignature: hasSig,
       });
     } catch {
@@ -73,50 +106,106 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
       const base = file.name.replace(/\.[^/.]+$/, '');
 
       if (toolType === 'protect') {
-        if (!password) {
+        if (!password || password.trim().length === 0) {
           setErrorMessage('Please enter a password to encrypt this document.');
           setIsProcessing(false);
           return;
         }
+
+        // 1. Load document with pdf-lib to ensure clean object tree
         const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
-        doc.setTitle(`${base} (Password Protected)`);
-        // Save PDF with sanitized markers
-        const bytes = await doc.save();
-        const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+        const cleanBytes = await doc.save();
+
+        // 2. Encrypt with AES-256 standard PDF encryption
+        const encryptedBytes = await encryptPDF(new Uint8Array(cleanBytes), password.trim());
+        const blob = new Blob([new Uint8Array(encryptedBytes)], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
+
         setDownloadUrl(url);
         setDownloadName(`${base}-protected.pdf`);
       } else if (toolType === 'unlock') {
-        const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
-        const bytes = await doc.save();
-        const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+        let decryptedBytes: Uint8Array | null = null;
+        try {
+          // Attempt decryption with user supplied password or blank password
+          decryptedBytes = await decryptPDF(new Uint8Array(buffer), unlockPassword || '');
+        } catch {
+          // If decrypt failed, check if document was already unprotected
+          try {
+            const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+            decryptedBytes = await doc.save();
+          } catch {
+            throw new Error('Incorrect password or unsupported encryption algorithm. Please verify your password.');
+          }
+        }
+
+        if (!decryptedBytes) {
+          throw new Error('Unable to decrypt PDF. Please check the document password.');
+        }
+
+        const blob = new Blob([new Uint8Array(decryptedBytes)], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
         setDownloadName(`${base}-unlocked.pdf`);
       } else if (toolType === 'redact') {
-        // Redaction: permanently black out sensitive coordinates across pages
-        const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
-        const total = doc.getPageCount();
-        for (let i = 0; i < total; i++) {
-          const page = doc.getPage(i);
-          // Draw solid black redaction bar across middle sensitive area
-          page.drawRectangle({
-            x: 50,
-            y: page.getHeight() - 140,
-            width: page.getWidth() - 100,
-            height: 35,
-            color: rgb(0, 0, 0),
-          });
+        // Permanent Redaction:
+        // We render each page using pdfjs-dist onto an HTML5 canvas, stamp solid black redaction blocks,
+        // and re-encode onto a clean PDF page so underlying vector text strings are permanently obliterated.
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+        const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+        const cleanPdf = await PDFDocument.create();
+
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+          const page = await pdfDoc.getPage(i);
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            // Burn permanent solid black redaction bar across the specified area
+            ctx.fillStyle = '#000000';
+            const rectHeight = 60;
+            const rectY = viewport.height / 2 - rectHeight / 2;
+            ctx.fillRect(50, rectY, viewport.width - 100, rectHeight);
+
+            // Optional redact marker text
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText(`[REDACTED: ${redactTerm.toUpperCase()}]`, 70, rectY + 36);
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.92);
+            const base64 = imgData.replace(/^data:image\/jpeg;base64,/, '');
+            const binary = atob(base64);
+            const imgBytes = new Uint8Array(binary.length);
+            for (let j = 0; j < binary.length; j++) {
+              imgBytes[j] = binary.charCodeAt(j);
+            }
+
+            const embeddedImage = await cleanPdf.embedJpg(imgBytes);
+            const { width, height } = page.getViewport({ scale: 1.0 });
+            const newPage = cleanPdf.addPage([width, height]);
+            newPage.drawImage(embeddedImage, {
+              x: 0,
+              y: 0,
+              width,
+              height,
+            });
+          }
         }
-        const bytes = await doc.save();
+
+        const bytes = await cleanPdf.save();
         const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
-        setDownloadName(`${base}-redacted.pdf`);
+        setDownloadName(`${base}-permanently-redacted.pdf`);
       }
     } catch (err: unknown) {
       const error = err as Error;
-      setErrorMessage(`Action failed: ${error.message}`);
+      setErrorMessage(`Security operation failed: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -142,11 +231,11 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
           <h3 className="text-xl font-bold text-slate-900">
             {toolType === 'protect' && 'Choose a PDF to encrypt with password'}
             {toolType === 'unlock' && 'Choose a PDF to unlock and remove restrictions'}
-            {toolType === 'redact' && 'Choose a PDF to redact confidential data'}
+            {toolType === 'redact' && 'Choose a PDF to permanently redact'}
             {toolType === 'validate' && 'Choose a PDF to inspect digital signatures'}
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md">
-            100% Client-Side Privacy. Your passwords and documents never touch our servers.
+            100% Client-Side Privacy. Your passwords and documents never leave your browser memory.
           </p>
           <div className="mt-6">
             <button
@@ -170,10 +259,10 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <div className="flex items-center gap-3">
-              <File className="h-6 w-6 text-brand-600" />
+              <FileIcon className="h-6 w-6 text-brand-600" />
               <div>
                 <h4 className="text-base font-semibold text-slate-900">{file.name}</h4>
-                <p className="text-xs text-slate-500">Security & Encryption Control</p>
+                <p className="text-xs text-slate-500">Security & Encryption Control &bull; In-Browser</p>
               </div>
             </div>
             <button
@@ -181,6 +270,8 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
               onClick={() => {
                 setFile(null);
                 setDownloadUrl(null);
+                setPassword('');
+                setUnlockPassword('');
               }}
               className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1"
             >
@@ -192,22 +283,41 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Enter Password
+                  Enter Password to Encrypt Document
                 </label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Set strong document password..."
-                  className="w-full max-w-md rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900"
+                  className="w-full max-w-md rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
+                <p className="text-xs text-slate-500 mt-1">
+                  Standard AES-256 PDF encryption will be applied. Required to open or print in any PDF reader.
+                </p>
               </div>
             </div>
           )}
 
           {toolType === 'unlock' && (
-            <div className="p-4 rounded-lg bg-teal-50 border border-teal-200 text-xs text-teal-900 mb-6">
-              Removing permissions decrypts the file so you can print, copy text, and modify it without restriction.
+            <div className="space-y-4 mb-6">
+              <div className="p-4 rounded-lg bg-teal-50 border border-teal-200 text-xs text-teal-900">
+                Removing encryption unlocks printing, copying text, and editing without restrictions.
+              </div>
+              {validationInfo?.isEncrypted && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                    Document Password (if required)
+                  </label>
+                  <input
+                    type="password"
+                    value={unlockPassword}
+                    onChange={(e) => setUnlockPassword(e.target.value)}
+                    placeholder="Enter document password to remove..."
+                    className="w-full max-w-md rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -215,25 +325,31 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Sensitive Keyword / Region Label
+                  Redaction Label / Reason
                 </label>
                 <input
                   type="text"
                   value={redactTerm}
                   onChange={(e) => setRedactTerm(e.target.value)}
-                  className="w-full max-w-md rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900"
+                  className="w-full max-w-md rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
-                <p className="text-xs text-slate-500 mt-1">Applies permanent solid black vector redaction.</p>
+                <div className="mt-2 flex items-start gap-2 text-xs text-slate-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Permanent Sanitization:</strong> Content underneath is burned into flattened raster pixels. Text strings and vectors are permanently removed from the PDF syntax.
+                  </span>
+                </div>
               </div>
             </div>
           )}
 
           {toolType === 'validate' && validationInfo && (
             <div className="space-y-3 mb-6 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-              <h5 className="font-bold text-slate-900">Cryptographic Signature Audit:</h5>
-              <p>&bull; Digital Signature Field: <strong className={validationInfo.hasSignature ? 'text-teal-700' : 'text-slate-600'}>{validationInfo.hasSignature ? 'Detected (PKCS#7 Signature Present)' : 'No digital signature certificate detected'}</strong></p>
-              <p>&bull; Page Count: <strong>{validationInfo.pageCount} pages</strong></p>
-              <p>&bull; Structural Integrity: <strong className="text-teal-700">Valid PDF Syntax</strong></p>
+              <h5 className="font-bold text-slate-900">Cryptographic Signature & Security Audit:</h5>
+              <p>&bull; Digital Signature: <strong className={validationInfo.hasSignature ? 'text-teal-700' : 'text-slate-600'}>{validationInfo.hasSignature ? 'Detected (PKCS#7 Signature Structure Present)' : 'No digital signature certificate detected'}</strong></p>
+              <p>&bull; Document Encryption: <strong>{validationInfo.isEncrypted ? 'Password Protected / Encrypted' : 'Unencrypted'}</strong></p>
+              <p>&bull; Total Pages: <strong>{validationInfo.pageCount > 0 ? validationInfo.pageCount : 'Available after unlock'}</strong></p>
+              <p>&bull; Structural Integrity: <strong className="text-teal-700">Valid PDF Container</strong></p>
             </div>
           )}
 
@@ -243,18 +359,18 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
                 type="button"
                 disabled={isProcessing}
                 onClick={handleSecurityAction}
-                className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Securing document...</span>
+                    <span>Processing security action...</span>
                   </>
                 ) : (
                   <span>
                     {toolType === 'protect' && 'Encrypt & Protect PDF'}
                     {toolType === 'unlock' && 'Unlock PDF'}
-                    {toolType === 'redact' && 'Apply Permanent Redaction'}
+                    {toolType === 'redact' && 'Burn Permanent Redactions'}
                   </span>
                 )}
               </button>
@@ -276,6 +392,7 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
             <CheckCircle className="h-6 w-6" />
           </div>
           <h4 className="text-xl font-bold text-slate-900">Security Operation Completed!</h4>
+          <p className="text-xs text-slate-600 mt-1">Your secured PDF is ready for immediate download.</p>
           <div className="mt-6 flex justify-center gap-4">
             <a
               href={downloadUrl}

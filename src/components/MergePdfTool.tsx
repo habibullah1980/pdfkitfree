@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { 
   Upload, 
@@ -30,6 +30,22 @@ export function MergePdfTool() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<{ pageCount: number; sizeBytes: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const prevDownloadUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevDownloadUrlRef.current && prevDownloadUrlRef.current !== downloadUrl) {
+      URL.revokeObjectURL(prevDownloadUrlRef.current);
+    }
+    prevDownloadUrlRef.current = downloadUrl;
+  }, [downloadUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (prevDownloadUrlRef.current) {
+        URL.revokeObjectURL(prevDownloadUrlRef.current);
+      }
+    };
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';

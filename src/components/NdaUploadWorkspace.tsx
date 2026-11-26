@@ -5,7 +5,15 @@ import { PDFDocument } from 'pdf-lib';
 import { SharedSignerWorkspace } from './SharedSignerWorkspace';
 import { Upload, FileText, AlertCircle, Lock } from 'lucide-react';
 
-export function NdaUploadWorkspace() {
+interface NdaUploadWorkspaceProps {
+  title?: string;
+  description?: string;
+}
+
+export function NdaUploadWorkspace({
+  title = 'Upload PDF Document to Sign',
+  description = 'Drag and drop your signed or unsigned agreement in PDF format. Supports multi-page documents up to 50 MB.',
+}: NdaUploadWorkspaceProps = {}) {
   const [fileArrayBuffer, setFileArrayBuffer] = useState<ArrayBuffer | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -100,10 +108,10 @@ export function NdaUploadWorkspace() {
         </div>
 
         <h3 className="text-xl font-bold text-slate-900">
-          Upload Existing NDA Document
+          {title}
         </h3>
         <p className="mt-2 text-sm text-slate-600 max-w-md">
-          Drag and drop your signed or unsigned non-disclosure agreement in PDF format. Supports multi-page agreements up to 50 MB.
+          {description}
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">

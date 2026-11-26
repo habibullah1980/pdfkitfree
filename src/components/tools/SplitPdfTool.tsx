@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
 import { 
@@ -24,6 +24,22 @@ export function SplitPdfTool() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>('split-pages.zip');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const prevDownloadUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevDownloadUrlRef.current && prevDownloadUrlRef.current !== downloadUrl) {
+      URL.revokeObjectURL(prevDownloadUrlRef.current);
+    }
+    prevDownloadUrlRef.current = downloadUrl;
+  }, [downloadUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (prevDownloadUrlRef.current) {
+        URL.revokeObjectURL(prevDownloadUrlRef.current);
+      }
+    };
+  }, []);
 
   const handleFile = async (selectedFile: File | null) => {
     if (!selectedFile) return;

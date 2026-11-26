@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { PDFDocument } from 'pdf-lib';
+import React, { useState, useRef, useEffect } from 'react';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import JSZip from 'jszip';
 import { 
   Upload, 
   Trash2, 
@@ -9,7 +10,10 @@ import {
   AlertCircle, 
   CheckCircle, 
   Loader2,
-  FileCheck
+  FileCheck,
+  FileSpreadsheet,
+  FileText,
+  Presentation
 } from 'lucide-react';
 
 interface ConvertToPdfToolProps {
@@ -18,17 +22,36 @@ interface ConvertToPdfToolProps {
 
 export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
   const [files, setFiles] = useState<{ id: string; file: File; previewUrl?: string }[]>([]);
-  const [htmlContent, setHtmlContent] = useState<string>('<h1>Document Title</h1><p>Enter formatted content to export to PDF.</p>');
+  const [htmlContent, setHtmlContent] = useState<string>(
+    '<h1>FreePDFKit Document</h1>\n<p>Export clean, formatted content directly into standard PDF format with full client-side privacy.</p>'
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>('converted-document.pdf');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Object URL cleanup
+  const prevDownloadUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevDownloadUrlRef.current && prevDownloadUrlRef.current !== downloadUrl) {
+      URL.revokeObjectURL(prevDownloadUrlRef.current);
+    }
+    prevDownloadUrlRef.current = downloadUrl;
+  }, [downloadUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (prevDownloadUrlRef.current) {
+        URL.revokeObjectURL(prevDownloadUrlRef.current);
+      }
+    };
+  }, []);
+
   const getAcceptTypes = () => {
     switch (sourceType) {
       case 'image':
-        return 'image/png,image/jpeg,image/webp,image/bmp';
+        return 'image/*,.png,.jpg,.jpeg,.webp,.bmp,.gif';
       case 'word':
         return '.docx,.doc,.txt';
       case 'excel':
@@ -64,71 +87,428 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
     setFiles((prev) => [...prev, ...newFiles]);
   };
 
+  const convertImageToJpegBytes = async (file: File): Promise<Uint8Array> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas 2D context unavailable'));
+          return;
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob(
+          async (blob) => {
+            if (!blob) {
+              reject(new Error('Failed to encode image to blob'));
+              return;
+            }
+            const buf = await blob.arrayBuffer();
+            resolve(new Uint8Array(buf));
+          },
+          'image/jpeg',
+          0.92
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error(`Failed to decode image file: ${file.name}`));
+      };
+      img.src = objectUrl;
+    });
+  };
+
+  // Extract clean paragraphs from DOCX or plain text
+  const extractWordParagraphs = async (file: File): Promise<string[]> => {
+    const fileName = file.name.toLowerCase();
+    if (fileName.endsWith('.docx')) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(buffer);
+        const docXmlFile = zip.file('word/document.xml');
+        if (docXmlFile) {
+          const xml = await docXmlFile.async('text');
+          const paragraphs: string[] = [];
+          const pRegex = /<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g;
+          let match;
+          while ((match = pRegex.exec(xml)) !== null) {
+            const tRegex = /<w:t\b[^>]*>([^<]*)<\/w:t>/g;
+            let tMatch;
+            let pText = '';
+            while ((tMatch = tRegex.exec(match[1])) !== null) {
+              pText += tMatch[1];
+            }
+            if (pText.trim()) paragraphs.push(pText.trim());
+          }
+          if (paragraphs.length > 0) return paragraphs;
+        }
+      } catch {
+        // Fallback to text reading if zip parsing fails
+      }
+    }
+    const rawText = await file.text();
+    return rawText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+  };
+
+  // Extract table rows from XLSX or CSV
+  const extractExcelRows = async (file: File): Promise<string[][]> => {
+    const fileName = file.name.toLowerCase();
+    if (fileName.endsWith('.xlsx')) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(buffer);
+        // Shared strings
+        const sharedStrings: string[] = [];
+        const ssFile = zip.file('xl/sharedStrings.xml');
+        if (ssFile) {
+          const ssXml = await ssFile.async('text');
+          const sRegex = /<t\b[^>]*>([^<]*)<\/t>/g;
+          let sMatch;
+          while ((sMatch = sRegex.exec(ssXml)) !== null) {
+            sharedStrings.push(sMatch[1]);
+          }
+        }
+
+        // Sheet 1
+        const sheetFile = zip.file('xl/worksheets/sheet1.xml');
+        if (sheetFile) {
+          const sheetXml = await sheetFile.async('text');
+          const rows: string[][] = [];
+          const rowRegex = /<row\b[^>]*>([\s\S]*?)<\/row>/g;
+          let rMatch;
+          while ((rMatch = rowRegex.exec(sheetXml)) !== null) {
+            const cellRegex = /<c\b[^>]*?(?:\bt="([^"]*)")?[^>]*>(?:<v>([^<]*)<\/v>)?<\/c>/g;
+            let cMatch;
+            const rowCells: string[] = [];
+            while ((cMatch = cellRegex.exec(rMatch[1])) !== null) {
+              const type = cMatch[1];
+              const val = cMatch[2] || '';
+              if (type === 's') {
+                const idx = parseInt(val, 10);
+                rowCells.push(sharedStrings[idx] || '');
+              } else {
+                rowCells.push(val);
+              }
+            }
+            if (rowCells.some((c) => c.trim().length > 0)) {
+              rows.push(rowCells);
+            }
+          }
+          if (rows.length > 0) return rows;
+        }
+      } catch {
+        // Fallback to text csv parsing
+      }
+    }
+
+    const text = await file.text();
+    return text
+      .split(/\r?\n/)
+      .filter((l) => l.trim().length > 0)
+      .map((l) => l.split(',').map((c) => c.replace(/^"|"$/g, '').trim()));
+  };
+
+  // Extract presentation slides from PPTX
+  const extractPptxSlides = async (file: File): Promise<string[][]> => {
+    const fileName = file.name.toLowerCase();
+    if (fileName.endsWith('.pptx')) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(buffer);
+        const slideFiles = Object.keys(zip.files)
+          .filter((f) => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
+          .sort();
+
+        const slides: string[][] = [];
+        for (const sf of slideFiles) {
+          const xml = await zip.files[sf].async('text');
+          const lines: string[] = [];
+          const tRegex = /<a:t\b[^>]*>([^<]*)<\/a:t>/g;
+          let match;
+          while ((match = tRegex.exec(xml)) !== null) {
+            if (match[1].trim()) lines.push(match[1].trim());
+          }
+          if (lines.length > 0) slides.push(lines);
+        }
+        if (slides.length > 0) return slides;
+      } catch {
+        // Fallback
+      }
+    }
+    const text = await file.text();
+    return [text.split(/\r?\n/).slice(0, 30)];
+  };
+
   const handleConvert = async () => {
     setIsProcessing(true);
     setErrorMessage(null);
 
     try {
       const doc = await PDFDocument.create();
+      const baseName = files.length > 0 ? files[0].file.name.replace(/\.[^/.]+$/, '') : 'converted';
 
       if (sourceType === 'image') {
         if (files.length === 0) {
-          setErrorMessage('Please add at least one image.');
+          setErrorMessage('Please add at least one image file.');
           setIsProcessing(false);
           return;
         }
 
         for (const item of files) {
-          const buffer = await item.file.arrayBuffer();
-          let embeddedImage;
-          if (item.file.type.includes('png')) {
-            embeddedImage = await doc.embedPng(buffer);
-          } else {
-            embeddedImage = await doc.embedJpg(buffer);
+          const jpegBytes = await convertImageToJpegBytes(item.file);
+          const embeddedImage = await doc.embedJpg(jpegBytes);
+          const { width, height } = embeddedImage.scale(1);
+
+          // Standard A4 aspect fit
+          const a4Width = 595.28;
+          const a4Height = 841.89;
+          const margin = 36;
+          const maxWidth = a4Width - margin * 2;
+          const maxHeight = a4Height - margin * 2;
+
+          let renderW = width;
+          let renderH = height;
+          if (renderW > maxWidth || renderH > maxHeight) {
+            const scaleRatio = Math.min(maxWidth / renderW, maxHeight / renderH);
+            renderW = renderW * scaleRatio;
+            renderH = renderH * scaleRatio;
           }
 
-          const { width, height } = embeddedImage.scale(1);
-          const page = doc.addPage([width, height]);
+          const page = doc.addPage([a4Width, a4Height]);
+          const x = (a4Width - renderW) / 2;
+          const y = (a4Height - renderH) / 2;
+
           page.drawImage(embeddedImage, {
-            x: 0,
-            y: 0,
-            width,
-            height,
+            x,
+            y,
+            width: renderW,
+            height: renderH,
           });
         }
-      } else {
-        // Office / HTML / Text conversion:
-        // Client-side parser extracts textual and tabular content, rendering onto standardized A4 canvas
-        const page = doc.addPage([595.28, 841.89]); // A4
-        const { height } = page.getSize();
-        
-        let extractedText = '';
-        if (sourceType === 'html') {
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          extractedText = tempDiv.innerText || 'Converted HTML Document';
-        } else if (files.length > 0) {
-          // Read text/CSV/DOCX payload
-          extractedText = await files[0].file.text();
-          // Clean non-printable characters for raw files
-          extractedText = extractedText.replace(/[^\x20-\x7E\n\r\t]/g, ' ').slice(0, 3000);
-        } else {
-          setErrorMessage('Please select a file to convert.');
+      } else if (sourceType === 'word') {
+        if (files.length === 0) {
+          setErrorMessage('Please select a Word or text file to convert.');
           setIsProcessing(false);
           return;
         }
 
-        const lines = extractedText.split('\n').slice(0, 45);
-        let currentY = height - 50;
+        const font = await doc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+        const paragraphs = await extractWordParagraphs(files[0].file);
 
-        lines.forEach((line) => {
-          if (currentY > 40) {
-            page.drawText(line.slice(0, 80), {
-              x: 50,
+        const a4Width = 595.28;
+        const a4Height = 841.89;
+        const margin = 50;
+        const lineHeight = 16;
+        let currentPage = doc.addPage([a4Width, a4Height]);
+        let currentY = a4Height - margin;
+
+        // Document Title
+        currentPage.drawText(files[0].file.name.replace(/\.[^/.]+$/, ''), {
+          x: margin,
+          y: currentY,
+          size: 16,
+          font: fontBold,
+          color: rgb(0.1, 0.2, 0.5),
+        });
+        currentY -= 30;
+
+        for (const p of paragraphs) {
+          // Word-wrap paragraph
+          const words = p.split(/\s+/);
+          let currentLine = '';
+
+          for (const w of words) {
+            const testLine = currentLine ? `${currentLine} ${w}` : w;
+            const textWidth = font.widthOfTextAtSize(testLine, 10.5);
+
+            if (textWidth > a4Width - margin * 2 && currentLine) {
+              if (currentY < margin + lineHeight) {
+                currentPage = doc.addPage([a4Width, a4Height]);
+                currentY = a4Height - margin;
+              }
+              currentPage.drawText(currentLine, {
+                x: margin,
+                y: currentY,
+                size: 10.5,
+                font,
+                color: rgb(0.15, 0.15, 0.15),
+              });
+              currentY -= lineHeight;
+              currentLine = w;
+            } else {
+              currentLine = testLine;
+            }
+          }
+
+          if (currentLine) {
+            if (currentY < margin + lineHeight) {
+              currentPage = doc.addPage([a4Width, a4Height]);
+              currentY = a4Height - margin;
+            }
+            currentPage.drawText(currentLine, {
+              x: margin,
               y: currentY,
-              size: 11,
+              size: 10.5,
+              font,
+              color: rgb(0.15, 0.15, 0.15),
             });
-            currentY -= 16;
+            currentY -= lineHeight + 8; // Paragraph spacing
+          }
+        }
+      } else if (sourceType === 'excel') {
+        if (files.length === 0) {
+          setErrorMessage('Please select a spreadsheet file (.xlsx, .csv).');
+          setIsProcessing(false);
+          return;
+        }
+
+        const font = await doc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+        const rows = await extractExcelRows(files[0].file);
+
+        // Landscape A4 for spreadsheets
+        const pageW = 841.89;
+        const pageH = 595.28;
+        const margin = 40;
+        let currentPage = doc.addPage([pageW, pageH]);
+        let currentY = pageH - margin;
+
+        currentPage.drawText(`Spreadsheet: ${files[0].file.name}`, {
+          x: margin,
+          y: currentY,
+          size: 14,
+          font: fontBold,
+          color: rgb(0.1, 0.3, 0.4),
+        });
+        currentY -= 24;
+
+        const maxCols = Math.min(8, Math.max(...rows.map((r) => r.length), 1));
+        const colWidth = (pageW - margin * 2) / maxCols;
+
+        for (let rIdx = 0; rIdx < rows.length; rIdx++) {
+          const row = rows[rIdx];
+          if (currentY < margin + 20) {
+            currentPage = doc.addPage([pageW, pageH]);
+            currentY = pageH - margin;
+          }
+
+          const isHeader = rIdx === 0;
+          // Row background
+          if (isHeader) {
+            currentPage.drawRectangle({
+              x: margin,
+              y: currentY - 4,
+              width: pageW - margin * 2,
+              height: 18,
+              color: rgb(0.9, 0.94, 0.98),
+            });
+          }
+
+          for (let cIdx = 0; cIdx < maxCols; cIdx++) {
+            const cellText = (row[cIdx] || '').slice(0, 24);
+            currentPage.drawText(cellText, {
+              x: margin + cIdx * colWidth + 4,
+              y: currentY,
+              size: 9,
+              font: isHeader ? fontBold : font,
+              color: rgb(0.1, 0.1, 0.1),
+            });
+          }
+          currentY -= 20;
+        }
+      } else if (sourceType === 'powerpoint') {
+        if (files.length === 0) {
+          setErrorMessage('Please select a PowerPoint presentation file (.pptx).');
+          setIsProcessing(false);
+          return;
+        }
+
+        const font = await doc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+        const slides = await extractPptxSlides(files[0].file);
+
+        // Standard 16:9 widescreen presentation slide (960 x 540 pt)
+        const slideW = 960;
+        const slideH = 540;
+
+        for (let sIdx = 0; sIdx < slides.length; sIdx++) {
+          const slide = slides[sIdx];
+          const page = doc.addPage([slideW, slideH]);
+
+          // Header band
+          page.drawRectangle({
+            x: 0,
+            y: slideH - 60,
+            width: slideW,
+            height: 60,
+            color: rgb(0.08, 0.38, 0.65),
+          });
+
+          const title = slide[0] || `Slide ${sIdx + 1}`;
+          page.drawText(title.slice(0, 60), {
+            x: 50,
+            y: slideH - 40,
+            size: 20,
+            font: fontBold,
+            color: rgb(1, 1, 1),
+          });
+
+          let textY = slideH - 110;
+          for (let lIdx = 1; lIdx < slide.length; lIdx++) {
+            if (textY > 50) {
+              page.drawText(`• ${slide[lIdx].slice(0, 90)}`, {
+                x: 60,
+                y: textY,
+                size: 14,
+                font,
+                color: rgb(0.2, 0.2, 0.2),
+              });
+              textY -= 28;
+            }
+          }
+        }
+      } else if (sourceType === 'html') {
+        const font = await doc.embedFont(StandardFonts.Helvetica);
+        const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+
+        const a4Width = 595.28;
+        const a4Height = 841.89;
+        const margin = 50;
+        const page = doc.addPage([a4Width, a4Height]);
+
+        let plainText = htmlContent;
+        if (typeof window !== 'undefined') {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          plainText = tempDiv.innerText || tempDiv.textContent || 'Exported HTML Document';
+        }
+
+        const lines = plainText.split('\n').filter((l) => l.trim().length > 0);
+        let currentY = a4Height - margin;
+
+        lines.forEach((line, idx) => {
+          if (currentY > margin) {
+            const isHeading = idx === 0 || line.length < 30;
+            page.drawText(line.slice(0, 80), {
+              x: margin,
+              y: currentY,
+              size: isHeading ? 14 : 10.5,
+              font: isHeading ? fontBold : font,
+              color: isHeading ? rgb(0.1, 0.2, 0.6) : rgb(0.2, 0.2, 0.2),
+            });
+            currentY -= isHeading ? 24 : 16;
           }
         });
       }
@@ -137,7 +517,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
       const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url);
-      setDownloadName(`converted-${Date.now()}.pdf`);
+      setDownloadName(`${baseName}-converted.pdf`);
     } catch (err: unknown) {
       const error = err as Error;
       setErrorMessage(`Conversion failed: ${error.message}`);
@@ -149,22 +529,22 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
   return (
     <div className="w-full">
       {sourceType === 'html' ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="space-y-4">
           <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            Enter HTML Code to Convert to PDF
+            Enter or Paste HTML Code
           </label>
           <textarea
-            rows={8}
             value={htmlContent}
             onChange={(e) => setHtmlContent(e.target.value)}
-            className="w-full font-mono text-sm border border-slate-300 rounded-lg p-3 text-slate-900 focus:border-brand-500 focus:outline-none"
+            rows={8}
+            className="w-full rounded-xl border border-slate-300 p-4 font-mono text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           <div className="flex justify-end">
             <button
               type="button"
               disabled={isProcessing}
               onClick={handleConvert}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
             >
               {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
               <span>Convert HTML to PDF</span>
@@ -181,16 +561,19 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
           className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-8 sm:p-12 text-center hover:border-brand-400 hover:bg-brand-50/70 transition"
         >
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm border border-brand-100 mb-4">
-            <Upload className="h-7 w-7" />
+            {sourceType === 'image' && <Upload className="h-7 w-7" />}
+            {sourceType === 'word' && <FileText className="h-7 w-7" />}
+            {sourceType === 'excel' && <FileSpreadsheet className="h-7 w-7" />}
+            {sourceType === 'powerpoint' && <Presentation className="h-7 w-7" />}
           </div>
           <h3 className="text-xl font-bold text-slate-900">
-            {sourceType === 'image' && 'Select JPG or PNG images'}
-            {sourceType === 'word' && 'Select Word (.docx) or Text document'}
-            {sourceType === 'excel' && 'Select Excel (.xlsx) or CSV spreadsheet'}
-            {sourceType === 'powerpoint' && 'Select PowerPoint (.pptx) presentation'}
+            {sourceType === 'image' && 'Select Image files (JPG, PNG, WebP, BMP)'}
+            {sourceType === 'word' && 'Select Word Document (.docx, .txt)'}
+            {sourceType === 'excel' && 'Select Excel Spreadsheet (.xlsx, .csv)'}
+            {sourceType === 'powerpoint' && 'Select PowerPoint Presentation (.pptx)'}
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md">
-            Fast, private client-side conversion directly in your browser.
+            Direct client-side conversion. Files are parsed securely in your browser.
           </p>
           <div className="mt-6">
             <button
@@ -199,7 +582,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
               className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
             >
               <Upload className="h-4 w-4" />
-              <span>Choose Files</span>
+              <span>Select File</span>
             </button>
             <input
               ref={fileInputRef}
@@ -214,40 +597,40 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-            <div>
-              <h4 className="text-base font-semibold text-slate-900">Selected Files ({files.length})</h4>
-              <p className="text-xs text-slate-500">Ready to convert to unified PDF document</p>
-            </div>
+            <h4 className="text-base font-semibold text-slate-900">Selected Source Files ({files.length})</h4>
             <button
               type="button"
               onClick={() => {
                 setFiles([]);
                 setDownloadUrl(null);
               }}
-              className="text-xs text-slate-500 hover:text-red-600"
+              className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1"
             >
-              Clear All
+              <Trash2 className="h-3.5 w-3.5" /> Remove All
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="space-y-3 mb-6">
             {files.map((item, idx) => (
-              <div key={item.id} className="relative rounded-lg border border-slate-200 p-2 bg-slate-50 flex flex-col items-center">
-                {item.previewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.previewUrl} alt={item.file.name} className="h-24 object-cover rounded mb-2" />
-                ) : (
-                  <div className="h-24 w-full flex items-center justify-center bg-white rounded border border-slate-200 mb-2 text-xs font-bold text-slate-500">
-                    File {idx + 1}
+              <div key={item.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 bg-slate-50">
+                <div className="flex items-center gap-3">
+                  {item.previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.previewUrl} alt={item.file.name} className="h-10 w-10 object-cover rounded" />
+                  ) : (
+                    <FileText className="h-6 w-6 text-brand-600" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{item.file.name}</p>
+                    <p className="text-xs text-slate-500">{(item.file.size / 1024).toFixed(1)} KB</p>
                   </div>
-                )}
-                <p className="text-xs font-medium text-slate-900 truncate w-full text-center">{item.file.name}</p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setFiles((prev) => prev.filter((f) => f.id !== item.id))}
-                  className="absolute top-1 right-1 p-1 bg-white/80 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-full"
+                  onClick={() => setFiles((prev) => prev.filter((_, i) => i !== idx))}
+                  className="text-slate-400 hover:text-red-600"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}
@@ -258,7 +641,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
               type="button"
               disabled={isProcessing}
               onClick={handleConvert}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
             >
               {isProcessing ? (
                 <>
@@ -288,7 +671,8 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-teal-600 text-white shadow-sm mb-3">
             <CheckCircle className="h-6 w-6" />
           </div>
-          <h4 className="text-xl font-bold text-slate-900">Conversion Complete!</h4>
+          <h4 className="text-xl font-bold text-slate-900">Conversion Successful!</h4>
+          <p className="text-xs text-slate-600 mt-1">Your document has been compiled into standard PDF format.</p>
           <div className="mt-6 flex justify-center gap-4">
             <a
               href={downloadUrl}
@@ -296,7 +680,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
               className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
             >
               <Download className="h-4 w-4" />
-              <span>Download PDF</span>
+              <span>Download PDF File</span>
             </a>
           </div>
         </div>
