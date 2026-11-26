@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newCode = refreshVerificationCode(session.user.id);
+    const newCode = await refreshVerificationCode(session.user.id);
     if (!newCode) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

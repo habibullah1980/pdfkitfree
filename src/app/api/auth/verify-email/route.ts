@@ -16,12 +16,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please provide the 6-digit verification code.' }, { status: 400 });
     }
 
-    const success = verifyUserEmail(session.user.id, code);
+    const success = await verifyUserEmail(session.user.id, code);
     if (!success) {
       return NextResponse.json({ error: 'Invalid or expired verification code.' }, { status: 400 });
     }
 
-    const updatedUser = findUserById(session.user.id);
+    const updatedUser = await findUserById(session.user.id);
     return NextResponse.json({
       success: true,
       message: 'Email verified successfully!',

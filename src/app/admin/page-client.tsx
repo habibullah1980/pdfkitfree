@@ -204,8 +204,8 @@ export default function SuperAdminPage() {
   const { user, login, logout, loading: authLoading } = useAuth();
 
   // Admin credentials state for login
-  const [adminId, setAdminId] = useState('habibullah');
-  const [adminPass, setAdminPass] = useState('habib8963');
+  const [adminId, setAdminId] = useState('');
+  const [adminPass, setAdminPass] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -630,7 +630,7 @@ export default function SuperAdminPage() {
                 required
                 value={adminId}
                 onChange={(e) => setAdminId(e.target.value)}
-                placeholder="habibullah"
+                placeholder="admin@example.com"
                 className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 px-3 text-sm text-white focus:border-[#4b49ac] focus:outline-none focus:ring-1 focus:ring-[#4b49ac]"
               />
             </div>
@@ -644,7 +644,7 @@ export default function SuperAdminPage() {
                 required
                 value={adminPass}
                 onChange={(e) => setAdminPass(e.target.value)}
-                placeholder="habib8963"
+                placeholder="Password"
                 className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 px-3 text-sm text-white focus:border-[#4b49ac] focus:outline-none focus:ring-1 focus:ring-[#4b49ac]"
               />
             </div>
@@ -702,7 +702,7 @@ export default function SuperAdminPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                Logged in as <strong className="text-white">habibullah</strong> • Multi-tier subscription &amp; platform governance
+                Logged in as <strong className="text-white">{user?.email}</strong> • Multi-tier subscription &amp; platform governance
               </p>
             </div>
           </div>
@@ -1161,7 +1161,7 @@ export default function SuperAdminPage() {
                         </button>
 
                         {/* Suspend / Reactivate */}
-                        {u.email !== 'habibullah' && (
+                        {u.role !== 'superadmin' && (
                           <button
                             type="button"
                             onClick={() => {
@@ -1197,7 +1197,7 @@ export default function SuperAdminPage() {
                         </button>
 
                         {/* Soft Delete */}
-                        {u.email !== 'habibullah' && (
+                        {u.role !== 'superadmin' && (
                           <button
                             type="button"
                             onClick={() => handleDeleteUser(u.id, u.email, 'soft')}

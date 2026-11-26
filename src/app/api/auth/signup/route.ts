@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters long.' }, { status: 400 });
     }
 
-    const newUser = createUser(name, email, password, phone);
+    const newUser = await createUser(name, email, password, phone);
     await setSessionCookie(newUser.id, newUser.email, ip, userAgent);
 
     // Send verification email via configured provider

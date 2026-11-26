@@ -1,7 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-import { isNeonConfigured, executeNeonQuery } from './neon-db';
+import { getStateBackend, StateConflictError, type LegacyUserRow } from './app-state-store';
 
 export type PlanTier = 'free' | 'pro' | 'business';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'past_due' | 'trialing';
@@ -227,8 +225,6 @@ interface DatabaseSchema {
   aiConversations?: AiConversation[];
 }
 
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), '.data');
-const DB_FILE = process.env.DB_FILE || path.join(DATA_DIR, 'freepdfkit-db.json');
 
 export const DEFAULT_PLANS: PlanConfig[] = [
   {
@@ -327,61 +323,84 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   telemetryEnabled: true,
 };
 
-// Seed/Ensure Super Admin Habibullah exists
-function seedSuperAdmin(db: DatabaseSchema) {
-  const superAdminIdentifier = process.env.SUPERADMIN_EMAIL || 'habibullah';
-  const superAdminPass = process.env.SUPERADMIN_PASSWORD || 'habib8963';
+function emptyDb(): DatabaseSchema {
+  return {
+    users: [],
+    signingRequests: [],
+    settings: { ...DEFAULT_SETTINGS },
+    plans: DEFAULT_PLANS,
+    billingTransactions: [],
+    activityLogs: [],
+    adminAuditLogs: [],
+    aiConversations: [],
+  };
+}
 
-  let admin = db.users.find(
-    (u) =>
-      u.email.toLowerCase() === superAdminIdentifier.toLowerCase() ||
-      u.email.toLowerCase() === 'habibullah' ||
-      u.email.toLowerCase() === 'habibullah@pdfkitfree.com' ||
-      u.id === 'superadmin-habibullah'
-  );
+function defaultSubscription(planId: PlanTier, createdAt?: string): UserSubscription {
+  return {
+    planId,
+    status: 'active',
+    billingInterval: 'monthly',
+    startDate: createdAt || new Date().toISOString(),
+    renewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    cancelAtPeriodEnd: false,
+    canceledAt: null,
+    paymentProvider: 'mock',
+    subscriptionId: null,
+    customerId: null,
+  };
+}
 
-  const { hash, salt } = hashPassword(superAdminPass);
+function emptyUsage(): UserUsage {
+  return {
+    pdfProcessedCount: 0,
+    videoProcessedCount: 0,
+    aiCreditsUsed: 0,
+    storageBytesUsed: 0,
+    lastUsageReset: new Date().toISOString(),
+  };
+}
 
+/**
+ * Creates or updates the super admin from SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD.
+ * There are deliberately no built-in fallback credentials: without both variables
+ * no account is promoted. Returns true when the state was changed.
+ */
+function seedSuperAdmin(db: DatabaseSchema): boolean {
+  const identifier = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.SUPERADMIN_PASSWORD;
+  if (!identifier || !password) {
+    console.warn('[auth] SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD are not set; no super admin account is provisioned.');
+    return false;
+  }
+  if (password.length < 12) {
+    console.error('[auth] SUPERADMIN_PASSWORD must be at least 12 characters; super admin was not provisioned.');
+    return false;
+  }
+
+  let admin = db.users.find((u) => u.email.toLowerCase() === identifier && !u.isDeleted);
+  if (admin && admin.role === 'superadmin' && admin.emailVerified && verifyPassword(password, admin.passwordHash, admin.salt)) {
+    return false; // already in sync
+  }
+
+  const { hash, salt } = hashPassword(password);
   if (!admin) {
     admin = {
-      id: 'superadmin-habibullah',
-      name: 'Super Admin Habibullah',
-      email: 'habibullah',
+      id: crypto.randomUUID(),
+      name: 'Super Admin',
+      email: identifier,
       role: 'superadmin',
       passwordHash: hash,
-      salt: salt,
+      salt,
       emailVerified: true,
       verificationCode: '',
-      verificationExpires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      verificationExpires: new Date().toISOString(),
       resetToken: null,
       resetTokenExpires: null,
       createdAt: new Date().toISOString(),
-      subscription: {
-        planId: 'business',
-        status: 'active',
-        billingInterval: 'yearly',
-        startDate: new Date().toISOString(),
-        renewalDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        cancelAtPeriodEnd: false,
-        canceledAt: null,
-        paymentProvider: 'mock',
-        subscriptionId: 'sub_admin_lifetime',
-        customerId: 'cus_admin_root',
-      },
-      usage: {
-        pdfProcessedCount: 42,
-        videoProcessedCount: 8,
-        aiCreditsUsed: 5,
-        storageBytesUsed: 12450000,
-        lastUsageReset: new Date().toISOString(),
-      },
+      subscription: { ...defaultSubscription('business'), billingInterval: 'yearly' },
+      usage: emptyUsage(),
       accountStatus: 'active',
-      approxLocation: {
-        country: 'United States',
-        city: 'New York',
-        note: 'Approximate geolocation for security monitoring',
-      },
-      lastLoginAt: new Date().toISOString(),
     };
     db.users.unshift(admin);
   } else {
@@ -389,289 +408,208 @@ function seedSuperAdmin(db: DatabaseSchema) {
     admin.emailVerified = true;
     admin.passwordHash = hash;
     admin.salt = salt;
-    if (!admin.subscription) {
-      admin.subscription = {
-        planId: 'business',
-        status: 'active',
-        billingInterval: 'yearly',
-        startDate: admin.createdAt || new Date().toISOString(),
-        renewalDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        cancelAtPeriodEnd: false,
-        canceledAt: null,
-        paymentProvider: 'mock',
-        subscriptionId: 'sub_admin_lifetime',
-        customerId: 'cus_admin_root',
-      };
-    }
+    admin.accountStatus = 'active';
   }
+  return true;
 }
 
-// Backfill existing users with subscription, usage, and status defaults
-function migrateUsers(db: DatabaseSchema) {
-  for (const u of db.users) {
-    if (!u.subscription) {
-      u.subscription = {
-        planId: u.role === 'superadmin' ? 'business' : 'free',
-        status: 'active',
-        billingInterval: 'monthly',
-        startDate: u.createdAt || new Date().toISOString(),
-        renewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        cancelAtPeriodEnd: false,
-        canceledAt: null,
-        paymentProvider: 'mock',
-        subscriptionId: null,
-        customerId: null,
-      };
-    }
-    if (!u.usage) {
-      u.usage = {
-        pdfProcessedCount: 0,
-        videoProcessedCount: 0,
-        aiCreditsUsed: 0,
-        storageBytesUsed: 0,
-        lastUsageReset: new Date().toISOString(),
-      };
-    }
-    if (!u.accountStatus) {
-      u.accountStatus = 'active';
-    }
-    if (!u.approxLocation) {
-      u.approxLocation = {
-        country: 'United States',
-        note: 'Estimated from server request headers (Approximate only)',
-      };
-    }
-    // Strict Demo Account Security: Enforce demo@pdfkitfree.com isolation
-    if (u.email.toLowerCase() === 'demo@pdfkitfree.com') {
-      u.role = 'user'; // NEVER allow demo account to possess superadmin role
-      // In production or when ENABLE_DEMO_ACCOUNT is not explicitly 'true', disable the demo account
-      const isDemoAllowed = process.env.ENABLE_DEMO_ACCOUNT === 'true';
-      if (!isDemoAllowed) {
-        u.accountStatus = 'suspended';
-        u.suspendedReason = 'Demo account is disabled by default in production. Set ENABLE_DEMO_ACCOUNT=true in demo environment to enable.';
-      } else if (u.suspendedReason?.includes('Demo account is disabled by default')) {
-        u.accountStatus = 'active';
-        u.suspendedReason = undefined;
-      }
-
-      // Restrict demo account to free plan or non-paying tier; never allow real/unrestricted subscription bypass
-      if (u.subscription?.planId === 'business') {
-        u.subscription.planId = 'free';
-      }
-    }
-  }
-
-  // Ensure demo@pdfkitfree.com is present in seed data if testing environment enables it, or safely disabled
-  let demoUser = db.users.find((u) => u.email.toLowerCase() === 'demo@pdfkitfree.com');
-  const isDemoAllowed = process.env.ENABLE_DEMO_ACCOUNT === 'true';
-
-  if (!demoUser) {
-    const demoPassword = process.env.DEMO_ACCOUNT_PASSWORD || 'habib8963';
-    const { hash: demoHash, salt: demoSalt } = hashPassword(demoPassword);
-    demoUser = {
-      id: 'usr_demo_pdfkitfree',
-      name: 'Demo Account (Restricted)',
-      email: 'demo@pdfkitfree.com',
-      role: 'user', // NEVER superadmin
-      passwordHash: demoHash,
-      salt: demoSalt,
-      emailVerified: true,
-      verificationCode: '',
-      verificationExpires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+/** Imports accounts mirrored into the old Neon `users` table, so existing users keep their logins. */
+function importLegacyUsers(db: DatabaseSchema, rows: LegacyUserRow[]) {
+  const asIso = (v: string | Date | null) => (v ? new Date(v).toISOString() : new Date().toISOString());
+  for (const r of rows) {
+    if (!r.email || !r.password_hash || !r.salt) continue;
+    const email = String(r.email).trim().toLowerCase();
+    if (db.users.some((u) => u.email.toLowerCase() === email)) continue;
+    const sub = (r.subscription && typeof r.subscription === 'object' ? r.subscription : null) as UserSubscription | null;
+    db.users.push({
+      id: r.id || crypto.randomUUID(),
+      name: r.name || email,
+      email,
+      phone: r.phone || undefined,
+      // Admin rights are only granted through SUPERADMIN_* env vars, never imported.
+      role: 'user',
+      passwordHash: r.password_hash,
+      salt: r.salt,
+      emailVerified: Boolean(r.email_verified),
+      verificationCode: r.verification_code || '',
+      verificationExpires: asIso(r.verification_expires),
       resetToken: null,
       resetTokenExpires: null,
-      createdAt: new Date().toISOString(),
-      subscription: {
-        planId: 'free', // Strictly free tier
-        status: 'active',
-        billingInterval: 'monthly',
-        startDate: new Date().toISOString(),
-        renewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        cancelAtPeriodEnd: false,
-        canceledAt: null,
-        paymentProvider: 'mock',
-        subscriptionId: null,
-        customerId: null,
-      },
-      usage: {
-        pdfProcessedCount: 3,
-        videoProcessedCount: 1,
-        aiCreditsUsed: 0,
-        storageBytesUsed: 500000,
-        lastUsageReset: new Date().toISOString(),
-      },
-      accountStatus: isDemoAllowed ? 'active' : 'suspended',
-      suspendedReason: isDemoAllowed
-        ? undefined
-        : 'Demo account is disabled by default in production. Set ENABLE_DEMO_ACCOUNT=true in demo environment to enable.',
-      approxLocation: {
-        country: 'United States',
-        city: 'Demo Sandbox',
-        note: 'Restricted demo sandbox environment',
-      },
-      lastLoginAt: new Date().toISOString(),
-    };
-    db.users.push(demoUser);
-  } else {
-    demoUser.role = 'user'; // NEVER superadmin
-    if (!isDemoAllowed) {
-      demoUser.accountStatus = 'suspended';
-      demoUser.suspendedReason =
-        'Demo account is disabled by default in production. Set ENABLE_DEMO_ACCOUNT=true in demo environment to enable.';
-    } else if (demoUser.suspendedReason?.includes('Demo account is disabled by default')) {
-      demoUser.accountStatus = 'active';
-      demoUser.suspendedReason = undefined;
-    }
-    if (demoUser.subscription?.planId !== 'free') {
-      demoUser.subscription.planId = 'free';
-    }
-  }
-
-  if (!db.plans || db.plans.length === 0) {
-    db.plans = DEFAULT_PLANS;
-  }
-
-  if (!db.billingTransactions) {
-    db.billingTransactions = [];
-  }
-
-  if (!db.activityLogs) {
-    db.activityLogs = [
-      {
-        id: crypto.randomUUID(),
-        category: 'auth',
-        action: 'USER_LOGIN',
-        details: 'Alex Mercer signed in successfully from US-East gateway',
-        ip: '198.51.100.24',
-        approxLocation: 'United States (Approximate)',
-        timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-      },
-      {
-        id: crypto.randomUUID(),
-        category: 'tool',
-        action: 'PDF_SIGN_COMPLETED',
-        details: 'NDA executed: Acme & Beta Mutual NDA (Client-side verified)',
-        timestamp: new Date(Date.now() - 3600000 * 1.5).toISOString(),
-      },
-    ];
-  }
-
-  if (!db.adminAuditLogs) {
-    db.adminAuditLogs = [
-      {
-        id: crypto.randomUUID(),
-        actorAdmin: 'habibullah',
-        action: 'SYSTEM_STARTUP',
-        reason: 'Platform initialization and security subsystem verification',
-        outcome: 'SUCCESS',
-        timestamp: new Date().toISOString(),
-      },
-    ];
-  }
-
-  if (!db.aiConversations) {
-    db.aiConversations = [];
-  }
-}
-
-function ensureDb(): DatabaseSchema {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DB_FILE)) {
-      const initialData: DatabaseSchema = {
-        users: [],
-        signingRequests: [],
-        settings: DEFAULT_SETTINGS,
-        plans: DEFAULT_PLANS,
-        billingTransactions: [],
-        activityLogs: [],
-        adminAuditLogs: [],
-      };
-      seedSuperAdmin(initialData);
-      migrateUsers(initialData);
-      fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf-8');
-      return initialData;
-    }
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    const parsed = JSON.parse(raw) as DatabaseSchema;
-    if (!parsed.settings) parsed.settings = DEFAULT_SETTINGS;
-    seedSuperAdmin(parsed);
-    migrateUsers(parsed);
-    return parsed;
-  } catch (err) {
-    console.error('Database load error, fallback to memory:', err);
-    const fallback: DatabaseSchema = {
-      users: [],
-      signingRequests: [],
-      settings: DEFAULT_SETTINGS,
-      plans: DEFAULT_PLANS,
-      billingTransactions: [],
-      activityLogs: [],
-      adminAuditLogs: [],
-    };
-    seedSuperAdmin(fallback);
-    migrateUsers(fallback);
-    return fallback;
-  }
-}
-
-function saveDb(data: DatabaseSchema) {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Database save error:', err);
-  }
-
-  // Non-blocking sync to Neon Lakebase Postgres when configured
-  if (isNeonConfigured()) {
-    Promise.resolve().then(async () => {
-      try {
-        // Sync latest user count or mutations
-        const lastUser = data.users[data.users.length - 1];
-        if (lastUser) {
-          await executeNeonQuery(
-            `INSERT INTO users (
-              id, name, email, phone, role, password_hash, salt,
-              email_verified, verification_code, verification_expires,
-              account_status, subscription, usage, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-            ON CONFLICT (email) DO UPDATE SET
-              name = EXCLUDED.name,
-              role = EXCLUDED.role,
-              subscription = EXCLUDED.subscription,
-              usage = EXCLUDED.usage,
-              email_verified = EXCLUDED.email_verified,
-              account_status = EXCLUDED.account_status;`,
-            [
-              lastUser.id,
-              lastUser.name,
-              lastUser.email,
-              lastUser.phone || null,
-              lastUser.role,
-              lastUser.passwordHash,
-              lastUser.salt,
-              Boolean(lastUser.emailVerified),
-              lastUser.verificationCode || '',
-              lastUser.verificationExpires || null,
-              lastUser.accountStatus || 'active',
-              JSON.stringify(lastUser.subscription || {}),
-              JSON.stringify(lastUser.usage || {}),
-              lastUser.createdAt || new Date().toISOString(),
-            ]
-          );
-        }
-      } catch (err) {
-        // Silent catch for non-blocking background sync
-        console.warn('Neon background sync notification:', (err as Error).message);
-      }
+      createdAt: asIso(r.created_at),
+      subscription: sub && sub.planId ? sub : defaultSubscription('free'),
+      usage: (r.usage && typeof r.usage === 'object' ? r.usage : emptyUsage()) as UserUsage,
+      accountStatus: (r.account_status as AccountStatus) || 'active',
     });
   }
 }
+
+// Backfill defaults on documents written by older versions of the app (in memory only).
+function normalizeDb(db: DatabaseSchema) {
+  db.users = db.users || [];
+  db.signingRequests = db.signingRequests || [];
+  db.settings = { ...DEFAULT_SETTINGS, ...(db.settings || {}) };
+  if (!db.plans || db.plans.length === 0) db.plans = DEFAULT_PLANS;
+  db.billingTransactions = db.billingTransactions || [];
+  db.activityLogs = db.activityLogs || [];
+  db.adminAuditLogs = db.adminAuditLogs || [];
+  db.aiConversations = db.aiConversations || [];
+
+  const demoAllowed = process.env.ENABLE_DEMO_ACCOUNT === 'true';
+  for (const u of db.users) {
+    if (!u.subscription) u.subscription = defaultSubscription(u.role === 'superadmin' ? 'business' : 'free', u.createdAt);
+    if (!u.usage) u.usage = emptyUsage();
+    if (!u.accountStatus) u.accountStatus = 'active';
+
+    // Demo account isolation: never admin, never paid, disabled unless explicitly enabled.
+    if (u.email.toLowerCase() === DEMO_EMAIL) {
+      u.role = 'user';
+      if (u.subscription.planId !== 'free') u.subscription.planId = 'free';
+      if (!demoAllowed) {
+        u.accountStatus = 'suspended';
+        u.suspendedReason = DEMO_DISABLED_REASON;
+      } else if (u.suspendedReason === DEMO_DISABLED_REASON) {
+        u.accountStatus = 'active';
+        u.suspendedReason = undefined;
+      }
+    }
+  }
+}
+
+/** Adds the demo account only when it is enabled and given its own password. Returns true when added. */
+function seedDemoAccount(db: DatabaseSchema): boolean {
+  const password = process.env.DEMO_ACCOUNT_PASSWORD;
+  if (process.env.ENABLE_DEMO_ACCOUNT !== 'true' || !password) return false;
+  if (db.users.some((u) => u.email.toLowerCase() === DEMO_EMAIL)) return false;
+  const { hash, salt } = hashPassword(password);
+  db.users.push({
+    id: 'usr_demo_pdfkitfree',
+    name: 'Demo Account (Restricted)',
+    email: DEMO_EMAIL,
+    role: 'user',
+    passwordHash: hash,
+    salt,
+    emailVerified: true,
+    verificationCode: '',
+    verificationExpires: new Date().toISOString(),
+    resetToken: null,
+    resetTokenExpires: null,
+    createdAt: new Date().toISOString(),
+    subscription: defaultSubscription('free'),
+    usage: emptyUsage(),
+    accountStatus: 'active',
+  });
+  return true;
+}
+
+const DEMO_EMAIL = 'demo@pdfkitfree.com';
+const DEMO_DISABLED_REASON =
+  'Demo account is disabled by default in production. Set ENABLE_DEMO_ACCOUNT=true in demo environment to enable.';
+
+// Version of the stored document each loaded copy was read at (used for compare-and-swap writes).
+const loadedVersions = new WeakMap<DatabaseSchema, number>();
+// Seeding (PBKDF2 hashing) runs once per server instance, not on every request.
+let seededThisInstance = false;
+
+/** Tests only: behave like a freshly started server instance (re-run env-based seeding). */
+export function resetSeedingForTests() {
+  seededThisInstance = false;
+}
+
+async function loadDb(): Promise<DatabaseSchema> {
+  const backend = getStateBackend();
+  let row = await backend.read();
+
+  if (!row) {
+    const initial = emptyDb();
+    importLegacyUsers(initial, await backend.readLegacyUsers().catch((err) => {
+      console.error('[auth] Could not read legacy users table; starting without imported accounts.', err);
+      return [];
+    }));
+    seedSuperAdmin(initial);
+    seedDemoAccount(initial);
+    normalizeDb(initial);
+    await backend.create(initial); // false = another instance created it first; read theirs below
+    row = await backend.read();
+    if (!row) throw new Error('Application state could not be initialised.');
+    seededThisInstance = true;
+  }
+
+  const db = row.data as DatabaseSchema;
+  normalizeDb(db);
+  loadedVersions.set(db, row.version);
+
+  if (!seededThisInstance) {
+    const changed = seedSuperAdmin(db) || seedDemoAccount(db);
+    if (changed) {
+      normalizeDb(db);
+      try {
+        await saveDb(db);
+      } catch (err) {
+        if (!(err instanceof StateConflictError)) throw err;
+        return loadDb(); // someone else wrote first; seeding is retried on the fresh copy
+      }
+    }
+    seededThisInstance = true;
+  }
+
+  return db;
+}
+
+async function saveDb(db: DatabaseSchema): Promise<void> {
+  const version = loadedVersions.get(db);
+  if (version === undefined) throw new Error('saveDb called with a state object that was not loaded by loadDb.');
+  const next = await getStateBackend().write(db, version);
+  if (next === null) throw new StateConflictError();
+  loadedVersions.set(db, next);
+}
+
+/** Re-runs a read-modify-write operation on fresh state when another request saved first. */
+function withDbRetry<A extends unknown[], R>(fn: (...args: A) => Promise<R>): (...args: A) => Promise<R> {
+  return async (...args: A) => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await fn(...args);
+      } catch (err) {
+        if (!(err instanceof StateConflictError) || attempt >= 6) throw err;
+        await new Promise((r) => setTimeout(r, 15 * attempt + Math.random() * 25));
+      }
+    }
+  };
+}
+
+/** Appends an activity log entry to an already-loaded state (saved together with the caller's change). */
+function pushActivity(db: DatabaseSchema, entry: Omit<ActivityLog, 'id' | 'timestamp'>): ActivityLog {
+  const log: ActivityLog = { id: crypto.randomUUID(), ...entry, timestamp: new Date().toISOString() };
+  db.activityLogs = [log, ...(db.activityLogs || [])].slice(0, 500);
+  return log;
+}
+
+/** Appends an admin audit entry to an already-loaded state (saved together with the caller's change). */
+function pushAdminAction(
+  db: DatabaseSchema,
+  actorAdmin: string,
+  targetUserId: string | undefined,
+  targetEmail: string | undefined,
+  action: string,
+  reason: string,
+  outcome: 'SUCCESS' | 'FAILED',
+  details?: Record<string, unknown>
+): AdminAuditLog {
+  const log: AdminAuditLog = {
+    id: crypto.randomUUID(),
+    actorAdmin,
+    targetUserId,
+    targetEmail,
+    action,
+    reason,
+    outcome,
+    details,
+    timestamp: new Date().toISOString(),
+  };
+  db.adminAuditLogs = [log, ...(db.adminAuditLogs || [])].slice(0, 1000);
+  return log;
+}
+
 
 // Password hashing with PBKDF2
 export function hashPassword(password: string): { hash: string; salt: string } {
@@ -683,10 +621,9 @@ export function hashPassword(password: string): { hash: string; salt: string } {
 }
 
 export function verifyPassword(password: string, hash: string, salt: string): boolean {
-  const checkHash = crypto
-    .pbkdf2Sync(password, salt, 100000, 64, 'sha512')
-    .toString('hex');
-  return checkHash === hash;
+  const checkHash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512');
+  const stored = Buffer.from(hash || '', 'hex');
+  return stored.length === checkHash.length && crypto.timingSafeEqual(stored, checkHash);
 }
 
 // Generate 6-digit verification code
@@ -695,27 +632,31 @@ export function generateVerificationCode(): string {
 }
 
 // User CRUD & queries
-export function findUserByEmail(identifier: string): User | undefined {
-  const db = ensureDb();
+export async function findUserByEmail(identifier: string): Promise<User | undefined> {
+  const db = await loadDb();
   const cleanId = identifier.trim().toLowerCase();
 
   return db.users.find(
     (u) =>
       !u.isDeleted &&
-      (u.email.toLowerCase() === cleanId ||
-        (cleanId === 'habibullah' && u.email === 'habibullah@pdfkitfree.com') ||
-        (cleanId === 'habibullah@pdfkitfree.com' && u.email === 'habibullah'))
+      u.email.toLowerCase() === cleanId
   );
 }
 
-export function findUserById(id: string): User | undefined {
-  const db = ensureDb();
+function isPrimaryAdmin(user: User): boolean {
+  const primary = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
+  return Boolean(primary) && user.email.toLowerCase() === primary;
+}
+
+export async function findUserById(id: string): Promise<User | undefined> {
+  const db = await loadDb();
   return db.users.find((u) => u.id === id && !u.isDeleted);
 }
 
-export function createUser(name: string, email: string, password: string, phone?: string): User {
-  const db = ensureDb();
-  const existing = findUserByEmail(email);
+async function createUser__impl(name: string, email: string, password: string, phone?: string): Promise<User> {
+  const db = await loadDb();
+  const cleanEmail = email.trim().toLowerCase();
+  const existing = db.users.find((u) => !u.isDeleted && u.email.toLowerCase() === cleanEmail);
   if (existing) {
     throw new Error('An account with this email or username already exists.');
   }
@@ -724,7 +665,8 @@ export function createUser(name: string, email: string, password: string, phone?
   const code = generateVerificationCode();
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-  const isSuper = email.trim().toLowerCase() === 'habibullah';
+  // New accounts are never admins; the super admin comes only from SUPERADMIN_* env vars.
+  const isSuper = false;
 
   const newUser: User = {
     id: crypto.randomUUID(),
@@ -768,7 +710,7 @@ export function createUser(name: string, email: string, password: string, phone?
 
   db.users.push(newUser);
 
-  logActivity({
+  pushActivity(db, {
     userId: newUser.id,
     userEmail: newUser.email,
     category: 'auth',
@@ -776,19 +718,18 @@ export function createUser(name: string, email: string, password: string, phone?
     details: `User registered with ${newUser.subscription.planId.toUpperCase()} tier`,
   });
 
-  saveDb(db);
+  await saveDb(db);
   return newUser;
 }
+export const createUser = withDbRetry(createUser__impl);
 
-export function recordUserLogin(userId: string, ip?: string, _userAgent?: string) {
-  const db = ensureDb();
+async function recordUserLogin__impl(userId: string, ip?: string, _userAgent?: string) {
+  const db = await loadDb();
   const u = db.users.find((user) => user.id === userId);
   if (u) {
     u.lastLoginAt = new Date().toISOString();
     if (ip) u.lastLoginIp = ip;
-    saveDb(db);
-
-    logActivity({
+    pushActivity(db, {
       userId: u.id,
       userEmail: u.email,
       category: 'auth',
@@ -796,11 +737,13 @@ export function recordUserLogin(userId: string, ip?: string, _userAgent?: string
       details: `Successful authentication from client IP: ${ip || 'internal'}`,
       ip,
     });
+    await saveDb(db);
   }
 }
+export const recordUserLogin = withDbRetry(recordUserLogin__impl);
 
-export function verifyUserEmail(userId: string, code: string): boolean {
-  const db = ensureDb();
+async function verifyUserEmail__impl(userId: string, code: string): Promise<boolean> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return false;
 
@@ -808,7 +751,7 @@ export function verifyUserEmail(userId: string, code: string): boolean {
     user.emailVerified = true;
     user.verificationCode = '';
 
-    logActivity({
+    pushActivity(db, {
       userId: user.id,
       userEmail: user.email,
       category: 'auth',
@@ -816,22 +759,24 @@ export function verifyUserEmail(userId: string, code: string): boolean {
       details: 'User verified email address via verification code',
     });
 
-    saveDb(db);
+    await saveDb(db);
     return true;
   }
   return false;
 }
+export const verifyUserEmail = withDbRetry(verifyUserEmail__impl);
 
-export function createPasswordResetToken(email: string): { user: User; token: string } | null {
-  const db = ensureDb();
-  const user = findUserByEmail(email);
+async function createPasswordResetToken__impl(email: string): Promise<{ user: User; token: string } | null> {
+  const db = await loadDb();
+  const cleanEmail = email.trim().toLowerCase();
+  const user = db.users.find((u) => !u.isDeleted && u.email.toLowerCase() === cleanEmail);
   if (!user) return null;
 
   const token = crypto.randomBytes(32).toString('hex');
   user.resetToken = token;
   user.resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'auth',
@@ -839,12 +784,13 @@ export function createPasswordResetToken(email: string): { user: User; token: st
     details: 'User requested password reset token',
   });
 
-  saveDb(db);
+  await saveDb(db);
   return { user, token };
 }
+export const createPasswordResetToken = withDbRetry(createPasswordResetToken__impl);
 
-export function resetUserPassword(token: string, newPassword: string): boolean {
-  const db = ensureDb();
+async function resetUserPassword__impl(token: string, newPassword: string): Promise<boolean> {
+  const db = await loadDb();
   const user = db.users.find(
     (u) =>
       u.resetToken === token &&
@@ -859,7 +805,7 @@ export function resetUserPassword(token: string, newPassword: string): boolean {
   user.resetToken = null;
   user.resetTokenExpires = null;
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'auth',
@@ -867,23 +813,26 @@ export function resetUserPassword(token: string, newPassword: string): boolean {
     details: 'Password was updated successfully with PBKDF2 hash',
   });
 
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
+export const resetUserPassword = withDbRetry(resetUserPassword__impl);
 
-export function refreshVerificationCode(userId: string): string | null {
-  const db = ensureDb();
+async function refreshVerificationCode__impl(userId: string): Promise<string | null> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return null;
 
   const code = generateVerificationCode();
   user.verificationCode = code;
   user.verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  saveDb(db);
+  await saveDb(db);
   return code;
 }
 
 // Safe user profile (never exposes passwords, salts, tokens, or raw payment details)
+export const refreshVerificationCode = withDbRetry(refreshVerificationCode__impl);
+
 export function sanitizeUser(user: User) {
   return {
     id: user.id,
@@ -900,7 +849,9 @@ export function sanitizeUser(user: User) {
     suspendedReason: user.suspendedReason,
     lastLoginAt: user.lastLoginAt,
     approxLocation: user.approxLocation,
-    devVerificationCode: !user.emailVerified ? user.verificationCode : undefined,
+    // Shown only on local dev servers (no email provider); never sent to browsers in production.
+    devVerificationCode:
+      process.env.NODE_ENV !== 'production' && !user.emailVerified ? user.verificationCode : undefined,
     mfaEnabled: user.mfa?.enabled || false,
     phoneVerified: user.phoneConfig?.verified || false,
     activeSessionsCount: user.activeSessions?.length || 1,
@@ -908,14 +859,14 @@ export function sanitizeUser(user: User) {
 }
 
 // Signing Requests CRUD
-export function getSigningRequestsByUserId(userId: string): SigningRequest[] {
-  const db = ensureDb();
+export async function getSigningRequestsByUserId(userId: string): Promise<SigningRequest[]> {
+  const db = await loadDb();
   return db.signingRequests
     .filter((r) => r.userId === userId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export function createSigningRequest(
+async function createSigningRequest__impl(
   userId: string,
   data: {
     title: string;
@@ -928,8 +879,8 @@ export function createSigningRequest(
     fileSize: number;
     pageCount: number;
   }
-): SigningRequest {
-  const db = ensureDb();
+): Promise<SigningRequest> {
+  const db = await loadDb();
   const newRecord: SigningRequest = {
     id: crypto.randomUUID(),
     userId,
@@ -964,29 +915,32 @@ export function createSigningRequest(
     user.usage.storageBytesUsed += data.fileSize || 0;
   }
 
-  logActivity({
+  pushActivity(db, {
     userId,
     category: 'tool',
     action: data.status === 'signed' ? 'PDF_SIGNED' : 'NDA_CREATED',
     details: `NDA document executed: ${data.title} (${data.documentType})`,
   });
 
-  saveDb(db);
+  await saveDb(db);
   return newRecord;
 }
+export const createSigningRequest = withDbRetry(createSigningRequest__impl);
 
-export function deleteSigningRequest(userId: string, requestId: string): boolean {
-  const db = ensureDb();
+async function deleteSigningRequest__impl(userId: string, requestId: string): Promise<boolean> {
+  const db = await loadDb();
   const index = db.signingRequests.findIndex((r) => r.id === requestId && r.userId === userId);
   if (index === -1) return false;
   db.signingRequests.splice(index, 1);
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
 
 // Activity Logging (Privacy Protected: no sensitive text, signatures, passwords or tokens)
-export function logActivity(entry: Omit<ActivityLog, 'id' | 'timestamp'>): ActivityLog {
-  const db = ensureDb();
+export const deleteSigningRequest = withDbRetry(deleteSigningRequest__impl);
+
+async function logActivity__impl(entry: Omit<ActivityLog, 'id' | 'timestamp'>): Promise<ActivityLog> {
+  const db = await loadDb();
   if (!db.activityLogs) db.activityLogs = [];
 
   const log: ActivityLog = {
@@ -1001,12 +955,13 @@ export function logActivity(entry: Omit<ActivityLog, 'id' | 'timestamp'>): Activ
     db.activityLogs = db.activityLogs.slice(0, 500);
   }
 
-  saveDb(db);
+  await saveDb(db);
   return log;
 }
+export const logActivity = withDbRetry(logActivity__impl);
 
-export function getActivityLogs(category?: string, search?: string): ActivityLog[] {
-  const db = ensureDb();
+export async function getActivityLogs(category?: string, search?: string): Promise<ActivityLog[]> {
+  const db = await loadDb();
   let logs = db.activityLogs || [];
   if (category && category !== 'all') {
     logs = logs.filter((l) => l.category === category);
@@ -1024,7 +979,7 @@ export function getActivityLogs(category?: string, search?: string): ActivityLog
 }
 
 // Append-only Admin Audit Logging
-export function logAdminAction(
+async function logAdminAction__impl(
   actorAdmin: string,
   targetUserId: string | undefined,
   targetEmail: string | undefined,
@@ -1032,8 +987,8 @@ export function logAdminAction(
   reason: string,
   outcome: 'SUCCESS' | 'FAILED',
   details?: Record<string, unknown>
-): AdminAuditLog {
-  const db = ensureDb();
+): Promise<AdminAuditLog> {
+  const db = await loadDb();
   if (!db.adminAuditLogs) db.adminAuditLogs = [];
 
   const log: AdminAuditLog = {
@@ -1053,27 +1008,28 @@ export function logAdminAction(
     db.adminAuditLogs = db.adminAuditLogs.slice(0, 1000);
   }
 
-  saveDb(db);
+  await saveDb(db);
   return log;
 }
+export const logAdminAction = withDbRetry(logAdminAction__impl);
 
-export function getAdminAuditLogs(): AdminAuditLog[] {
-  const db = ensureDb();
+export async function getAdminAuditLogs(): Promise<AdminAuditLog[]> {
+  const db = await loadDb();
   return db.adminAuditLogs || [];
 }
 
 // Plans & Entitlements configuration
-export function getPlansConfig(): PlanConfig[] {
-  const db = ensureDb();
+export async function getPlansConfig(): Promise<PlanConfig[]> {
+  const db = await loadDb();
   return db.plans || DEFAULT_PLANS;
 }
 
-export function updatePlanConfigAdmin(
+async function updatePlanConfigAdmin__impl(
   adminActor: string,
   planId: PlanTier,
   updates: Partial<PlanConfig>
-): PlanConfig {
-  const db = ensureDb();
+): Promise<PlanConfig> {
+  const db = await loadDb();
   if (!db.plans) db.plans = DEFAULT_PLANS;
 
   const idx = db.plans.findIndex((p) => p.id === planId);
@@ -1090,7 +1046,7 @@ export function updatePlanConfigAdmin(
     },
   };
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     undefined,
     undefined,
@@ -1100,35 +1056,41 @@ export function updatePlanConfigAdmin(
     { planId, updates }
   );
 
-  saveDb(db);
+  await saveDb(db);
   return db.plans[idx];
 }
 
 // Billing transactions
-export function getBillingTransactions(): BillingTransaction[] {
-  const db = ensureDb();
+export const updatePlanConfigAdmin = withDbRetry(updatePlanConfigAdmin__impl);
+
+export async function getBillingTransactions(): Promise<BillingTransaction[]> {
+  const db = await loadDb();
   return db.billingTransactions || [];
 }
 
-export function recordBillingTransaction(
+async function recordBillingTransaction__impl(
   tx: Omit<BillingTransaction, 'id' | 'createdAt'>
-): BillingTransaction {
-  const db = ensureDb();
-  if (!db.billingTransactions) db.billingTransactions = [];
+): Promise<BillingTransaction> {
+  const db = await loadDb();
+  const newTx = pushBillingTransaction(db, tx);
+  await saveDb(db);
+  return newTx;
+}
 
+function pushBillingTransaction(db: DatabaseSchema, tx: Omit<BillingTransaction, 'id' | 'createdAt'>): BillingTransaction {
   const newTx: BillingTransaction = {
     id: `inv_${crypto.randomUUID().slice(0, 12)}`,
     ...tx,
     createdAt: new Date().toISOString(),
   };
-
-  db.billingTransactions.unshift(newTx);
-  saveDb(db);
+  db.billingTransactions = [newTx, ...(db.billingTransactions || [])];
   return newTx;
 }
 
 // User Subscription Workflows (Upgrade, Downgrade, Cancel)
-export function changeUserSubscription(
+export const recordBillingTransaction = withDbRetry(recordBillingTransaction__impl);
+
+async function changeUserSubscription__impl(
   userId: string,
   planId: PlanTier,
   interval: 'monthly' | 'yearly',
@@ -1141,12 +1103,12 @@ export function changeUserSubscription(
     paymentMethod?: string;
     fee?: number;
   }
-): UserSubscription {
-  const db = ensureDb();
+): Promise<UserSubscription> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) throw new Error('User not found.');
 
-  const plans = getPlansConfig();
+  const plans = db.plans || DEFAULT_PLANS;
   const plan = plans.find((p) => p.id === planId);
   if (!plan) throw new Error('Invalid plan selected.');
 
@@ -1174,7 +1136,7 @@ export function changeUserSubscription(
     const fee = details?.fee ?? (provider === 'stripe' ? parseFloat((price * 0.029 + 0.3).toFixed(2)) : provider === 'paypal' ? parseFloat((price * 0.0349 + 0.49).toFixed(2)) : 0);
     const net = parseFloat((price - fee).toFixed(2));
 
-    recordBillingTransaction({
+    pushBillingTransaction(db, {
       userId: user.id,
       userEmail: user.email,
       planId,
@@ -1191,7 +1153,7 @@ export function changeUserSubscription(
     });
   }
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'billing',
@@ -1199,22 +1161,23 @@ export function changeUserSubscription(
     details: `Subscription set to ${plan.name} (${interval}) via ${provider.toUpperCase()} - Price: $${price}`,
   });
 
-  saveDb(db);
+  await saveDb(db);
   return user.subscription;
 }
+export const changeUserSubscription = withDbRetry(changeUserSubscription__impl);
 
-export function getTransactionsForUser(userId: string): BillingTransaction[] {
-  const db = ensureDb();
+export async function getTransactionsForUser(userId: string): Promise<BillingTransaction[]> {
+  const db = await loadDb();
   if (!db.billingTransactions) return [];
   return db.billingTransactions.filter((t) => t.userId === userId);
 }
 
-export function refundBillingTransactionAdmin(
+async function refundBillingTransactionAdmin__impl(
   adminActor: string,
   txId: string,
   reason: string
-): BillingTransaction {
-  const db = ensureDb();
+): Promise<BillingTransaction> {
+  const db = await loadDb();
   if (!db.billingTransactions) throw new Error('No transactions found.');
 
   const tx = db.billingTransactions.find((t) => t.id === txId);
@@ -1222,7 +1185,7 @@ export function refundBillingTransactionAdmin(
 
   tx.status = 'refunded';
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     tx.userId,
     tx.userEmail,
@@ -1232,12 +1195,13 @@ export function refundBillingTransactionAdmin(
     { txId, amount: tx.amount }
   );
 
-  saveDb(db);
+  await saveDb(db);
   return tx;
 }
+export const refundBillingTransactionAdmin = withDbRetry(refundBillingTransactionAdmin__impl);
 
-export function cancelUserSubscription(userId: string): UserSubscription {
-  const db = ensureDb();
+async function cancelUserSubscription__impl(userId: string): Promise<UserSubscription> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) throw new Error('User not found.');
 
@@ -1247,7 +1211,7 @@ export function cancelUserSubscription(userId: string): UserSubscription {
     user.subscription.status = 'canceled';
   }
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'billing',
@@ -1255,28 +1219,29 @@ export function cancelUserSubscription(userId: string): UserSubscription {
     details: 'User initiated subscription cancellation at period end',
   });
 
-  saveDb(db);
+  await saveDb(db);
   return user.subscription;
 }
 
 // ==========================================================
 // SUPER ADMIN QUERIES & MUTATIONS
 // ==========================================================
+export const cancelUserSubscription = withDbRetry(cancelUserSubscription__impl);
 
-export function getAllUsersAdmin(options?: {
+export async function getAllUsersAdmin(options?: {
   search?: string;
   role?: string;
   plan?: string;
   status?: string;
   page?: number;
   limit?: number;
-}): {
+}): Promise<{
   users: ReturnType<typeof sanitizeUser>[];
   total: number;
   page: number;
   totalPages: number;
-} {
-  const db = ensureDb();
+}> {
+  const db = await loadDb();
   let list = db.users.filter((u) => !u.isDeleted);
 
   if (options?.search) {
@@ -1318,19 +1283,19 @@ export function getAllUsersAdmin(options?: {
   };
 }
 
-export function updateUserProfileAdmin(
+async function updateUserProfileAdmin__impl(
   adminActor: string,
   userId: string,
   updates: { name?: string; phone?: string }
-): ReturnType<typeof sanitizeUser> {
-  const db = ensureDb();
+): Promise<ReturnType<typeof sanitizeUser>> {
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId && !u.isDeleted);
   if (!target) throw new Error('Target user not found.');
 
   if (updates.name) target.name = updates.name.trim();
   if (updates.phone !== undefined) target.phone = updates.phone.trim();
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     target.id,
     target.email,
@@ -1340,21 +1305,22 @@ export function updateUserProfileAdmin(
     updates
   );
 
-  saveDb(db);
+  await saveDb(db);
   return sanitizeUser(target);
 }
+export const updateUserProfileAdmin = withDbRetry(updateUserProfileAdmin__impl);
 
-export function adjustUserQuotaAdmin(
+async function adjustUserQuotaAdmin__impl(
   adminActor: string,
   userId: string,
   quotas: { maxFileSizeMb?: number; videoLimitMb?: number; aiCredits?: number },
   reason: string
-): ReturnType<typeof sanitizeUser> {
+): Promise<ReturnType<typeof sanitizeUser>> {
   if (!reason || reason.trim().length < 5) {
     throw new Error('A recorded reason (at least 5 characters) is strictly required to adjust quotas.');
   }
 
-  const db = ensureDb();
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId && !u.isDeleted);
   if (!target) throw new Error('Target user not found.');
 
@@ -1366,7 +1332,7 @@ export function adjustUserQuotaAdmin(
     quotaAdjustedBy: adminActor,
   };
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     target.id,
     target.email,
@@ -1376,22 +1342,23 @@ export function adjustUserQuotaAdmin(
     quotas
   );
 
-  saveDb(db);
+  await saveDb(db);
   return sanitizeUser(target);
 }
+export const adjustUserQuotaAdmin = withDbRetry(adjustUserQuotaAdmin__impl);
 
-export function grantPromotionalAccessAdmin(
+async function grantPromotionalAccessAdmin__impl(
   adminActor: string,
   userId: string,
   planId: PlanTier,
   durationMonths: number,
   reason: string
-): ReturnType<typeof sanitizeUser> {
+): Promise<ReturnType<typeof sanitizeUser>> {
   if (!reason || reason.trim().length < 5) {
     throw new Error('A documented reason is required to grant promotional access.');
   }
 
-  const db = ensureDb();
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId && !u.isDeleted);
   if (!target) throw new Error('Target user not found.');
 
@@ -1414,7 +1381,7 @@ export function grantPromotionalAccessAdmin(
     customerId: target.subscription?.customerId || `cus_${crypto.randomUUID().slice(0, 8)}`,
   };
 
-  recordBillingTransaction({
+  pushBillingTransaction(db, {
     userId: target.id,
     userEmail: target.email,
     planId,
@@ -1427,7 +1394,7 @@ export function grantPromotionalAccessAdmin(
     transactionRef: `promo_${crypto.randomUUID().slice(0, 10)}`,
   });
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     target.id,
     target.email,
@@ -1437,21 +1404,22 @@ export function grantPromotionalAccessAdmin(
     { planId, durationMonths, renewalDate }
   );
 
-  saveDb(db);
+  await saveDb(db);
   return sanitizeUser(target);
 }
+export const grantPromotionalAccessAdmin = withDbRetry(grantPromotionalAccessAdmin__impl);
 
-export function setUserAccountStatusAdmin(
+async function setUserAccountStatusAdmin__impl(
   adminActor: string,
   userId: string,
   status: AccountStatus,
   reason: string
-): ReturnType<typeof sanitizeUser> {
-  const db = ensureDb();
+): Promise<ReturnType<typeof sanitizeUser>> {
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId);
   if (!target) throw new Error('Target user not found.');
 
-  if (target.email === 'habibullah') {
+  if (isPrimaryAdmin(target)) {
     throw new Error('Primary Super Admin account status cannot be altered.');
   }
 
@@ -1462,7 +1430,7 @@ export function setUserAccountStatusAdmin(
     target.suspendedReason = undefined;
   }
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     target.id,
     target.email,
@@ -1472,27 +1440,28 @@ export function setUserAccountStatusAdmin(
     { status }
   );
 
-  saveDb(db);
+  await saveDb(db);
   return sanitizeUser(target);
 }
+export const setUserAccountStatusAdmin = withDbRetry(setUserAccountStatusAdmin__impl);
 
-export function softDeleteUserAdmin(
+async function softDeleteUserAdmin__impl(
   adminActor: string,
   userId: string,
   reason: string
-): boolean {
-  const db = ensureDb();
+): Promise<boolean> {
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId);
   if (!target) throw new Error('User not found.');
 
-  if (target.email === 'habibullah') {
+  if (isPrimaryAdmin(target)) {
     throw new Error('Primary Super Admin account cannot be deleted.');
   }
 
   target.isDeleted = true;
   target.accountStatus = 'soft_deleted';
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     target.id,
     target.email,
@@ -1501,15 +1470,16 @@ export function softDeleteUserAdmin(
     'SUCCESS'
   );
 
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
+export const softDeleteUserAdmin = withDbRetry(softDeleteUserAdmin__impl);
 
-export function triggerPasswordResetAdmin(
+async function triggerPasswordResetAdmin__impl(
   adminActor: string,
   userId: string
-): { resetUrl: string; token: string } {
-  const db = ensureDb();
+): Promise<{ resetUrl: string; token: string }> {
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId && !u.isDeleted);
   if (!target) throw new Error('User not found.');
 
@@ -1517,7 +1487,7 @@ export function triggerPasswordResetAdmin(
   target.resetToken = token;
   target.resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-  logAdminAction(
+  pushAdminAction(db, 
     adminActor,
     target.id,
     target.email,
@@ -1526,18 +1496,19 @@ export function triggerPasswordResetAdmin(
     'SUCCESS'
   );
 
-  saveDb(db);
+  await saveDb(db);
 
   return {
     token,
     resetUrl: `/reset-password?token=${token}`,
   };
 }
+export const triggerPasswordResetAdmin = withDbRetry(triggerPasswordResetAdmin__impl);
 
-export function deleteUserAdmin(userId: string): boolean {
-  const db = ensureDb();
+async function deleteUserAdmin__impl(userId: string): Promise<boolean> {
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId);
-  if (target && target.email === 'habibullah') {
+  if (target && isPrimaryAdmin(target)) {
     throw new Error('Primary Super Admin account cannot be deleted.');
   }
 
@@ -1546,22 +1517,24 @@ export function deleteUserAdmin(userId: string): boolean {
 
   db.users.splice(idx, 1);
   db.signingRequests = db.signingRequests.filter((r) => r.userId !== userId);
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
+export const deleteUserAdmin = withDbRetry(deleteUserAdmin__impl);
 
-export function toggleUserVerificationAdmin(userId: string): boolean {
-  const db = ensureDb();
+async function toggleUserVerificationAdmin__impl(userId: string): Promise<boolean> {
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId);
   if (!target) return false;
 
   target.emailVerified = !target.emailVerified;
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
+export const toggleUserVerificationAdmin = withDbRetry(toggleUserVerificationAdmin__impl);
 
-export function updateUserRoleAdmin(userId: string, role: 'superadmin' | 'user'): boolean {
-  const db = ensureDb();
+async function updateUserRoleAdmin__impl(userId: string, role: 'superadmin' | 'user'): Promise<boolean> {
+  const db = await loadDb();
   const target = db.users.find((u) => u.id === userId);
   if (!target) return false;
 
@@ -1570,12 +1543,13 @@ export function updateUserRoleAdmin(userId: string, role: 'superadmin' | 'user')
   }
 
   target.role = role;
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
+export const updateUserRoleAdmin = withDbRetry(updateUserRoleAdmin__impl);
 
-export function getAllSigningRequestsAdmin(): (SigningRequest & { userName?: string; userEmail?: string })[] {
-  const db = ensureDb();
+export async function getAllSigningRequestsAdmin(): Promise<(SigningRequest & { userName?: string; userEmail?: string })[]> {
+  const db = await loadDb();
   return db.signingRequests
     .map((req) => {
       const owner = db.users.find((u) => u.id === req.userId);
@@ -1588,18 +1562,19 @@ export function getAllSigningRequestsAdmin(): (SigningRequest & { userName?: str
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export function deleteSigningRequestAdmin(requestId: string): boolean {
-  const db = ensureDb();
+async function deleteSigningRequestAdmin__impl(requestId: string): Promise<boolean> {
+  const db = await loadDb();
   const idx = db.signingRequests.findIndex((r) => r.id === requestId);
   if (idx === -1) return false;
 
   db.signingRequests.splice(idx, 1);
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
+export const deleteSigningRequestAdmin = withDbRetry(deleteSigningRequestAdmin__impl);
 
-export function getComprehensiveAdminStats() {
-  const db = ensureDb();
+export async function getComprehensiveAdminStats() {
+  const db = await loadDb();
   const activeUsers = db.users.filter((u) => !u.isDeleted);
   const now = Date.now();
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
@@ -1636,7 +1611,7 @@ export function getComprehensiveAdminStats() {
   const totalRevenue = paidTransactions.reduce((acc, t) => acc + t.amount, 0);
 
   // Calculate MRR / ARR from verified active paid subscriptions
-  const plans = getPlansConfig();
+  const plans = db.plans || DEFAULT_PLANS;
   const proPlan = plans.find((p) => p.id === 'pro');
   const bizPlan = plans.find((p) => p.id === 'business');
 
@@ -1713,41 +1688,42 @@ export function getComprehensiveAdminStats() {
   };
 }
 
-export function getPlatformStatsAdmin() {
+export async function getPlatformStatsAdmin() {
   return getComprehensiveAdminStats();
 }
 
-export function getPlatformSettingsAdmin(): PlatformSettings {
-  const db = ensureDb();
+export async function getPlatformSettingsAdmin(): Promise<PlatformSettings> {
+  const db = await loadDb();
   return db.settings || DEFAULT_SETTINGS;
 }
 
-export function updatePlatformSettingsAdmin(newSettings: Partial<PlatformSettings>): PlatformSettings {
-  const db = ensureDb();
+async function updatePlatformSettingsAdmin__impl(newSettings: Partial<PlatformSettings>): Promise<PlatformSettings> {
+  const db = await loadDb();
   db.settings = { ...(db.settings || DEFAULT_SETTINGS), ...newSettings };
-  saveDb(db);
+  await saveDb(db);
   return db.settings;
 }
 
 // =========================================================================
 // AI CONVERSATION & HISTORY METHODS
 // =========================================================================
+export const updatePlatformSettingsAdmin = withDbRetry(updatePlatformSettingsAdmin__impl);
 
-export function getAiConversationsByUser(userId: string): AiConversation[] {
-  const db = ensureDb();
+export async function getAiConversationsByUser(userId: string): Promise<AiConversation[]> {
+  const db = await loadDb();
   if (!db.aiConversations) return [];
   return db.aiConversations
     .filter((c) => c.userId === userId)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 }
 
-export function getAiConversationById(userId: string, conversationId: string): AiConversation | null {
-  const db = ensureDb();
+export async function getAiConversationById(userId: string, conversationId: string): Promise<AiConversation | null> {
+  const db = await loadDb();
   if (!db.aiConversations) return null;
   return db.aiConversations.find((c) => c.id === conversationId && c.userId === userId) || null;
 }
 
-export function saveAiConversation(
+async function saveAiConversation__impl(
   userId: string,
   data: {
     id?: string;
@@ -1756,8 +1732,8 @@ export function saveAiConversation(
     documentSummary?: string;
     messages: AiChatMessageRecord[];
   }
-): AiConversation {
-  const db = ensureDb();
+): Promise<AiConversation> {
+  const db = await loadDb();
   if (!db.aiConversations) db.aiConversations = [];
 
   const existingIdx = data.id ? db.aiConversations.findIndex((c) => c.id === data.id && c.userId === userId) : -1;
@@ -1770,7 +1746,7 @@ export function saveAiConversation(
     existing.documentSummary = data.documentSummary ?? existing.documentSummary;
     existing.messages = data.messages;
     existing.updatedAt = now;
-    saveDb(db);
+    await saveDb(db);
     return existing;
   } else {
     const newConv: AiConversation = {
@@ -1784,32 +1760,35 @@ export function saveAiConversation(
       updatedAt: now,
     };
     db.aiConversations.unshift(newConv);
-    saveDb(db);
+    await saveDb(db);
     return newConv;
   }
 }
+export const saveAiConversation = withDbRetry(saveAiConversation__impl);
 
-export function deleteAiConversation(userId: string, conversationId: string): boolean {
-  const db = ensureDb();
+async function deleteAiConversation__impl(userId: string, conversationId: string): Promise<boolean> {
+  const db = await loadDb();
   if (!db.aiConversations) return false;
   const initialLen = db.aiConversations.length;
   db.aiConversations = db.aiConversations.filter((c) => !(c.id === conversationId && c.userId === userId));
   const changed = db.aiConversations.length !== initialLen;
-  if (changed) saveDb(db);
+  if (changed) await saveDb(db);
   return changed;
 }
+export const deleteAiConversation = withDbRetry(deleteAiConversation__impl);
 
-export function deleteAllAiConversationsForUser(userId: string): number {
-  const db = ensureDb();
+async function deleteAllAiConversationsForUser__impl(userId: string): Promise<number> {
+  const db = await loadDb();
   if (!db.aiConversations) return 0;
   const count = db.aiConversations.filter((c) => c.userId === userId).length;
   db.aiConversations = db.aiConversations.filter((c) => c.userId !== userId);
-  if (count > 0) saveDb(db);
+  if (count > 0) await saveDb(db);
   return count;
 }
+export const deleteAllAiConversationsForUser = withDbRetry(deleteAllAiConversationsForUser__impl);
 
-export function incrementUserAiCredits(userId: string, count: number = 1): number {
-  const db = ensureDb();
+async function incrementUserAiCredits__impl(userId: string, count: number = 1): Promise<number> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return 0;
   if (!user.usage) {
@@ -1822,16 +1801,17 @@ export function incrementUserAiCredits(userId: string, count: number = 1): numbe
     };
   }
   user.usage.aiCreditsUsed = (user.usage.aiCreditsUsed || 0) + count;
-  saveDb(db);
+  await saveDb(db);
   return user.usage.aiCreditsUsed;
 }
 
 // =========================================================================
 // PHONE OTP VERIFICATION METHODS
 // =========================================================================
+export const incrementUserAiCredits = withDbRetry(incrementUserAiCredits__impl);
 
-export function setPhoneOtpForUser(userId: string, phone: string, otpCode: string): void {
-  const db = ensureDb();
+async function setPhoneOtpForUser__impl(userId: string, phone: string, otpCode: string): Promise<void> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) throw new Error('User not found');
 
@@ -1849,7 +1829,7 @@ export function setPhoneOtpForUser(userId: string, phone: string, otpCode: strin
     lastSentAt: new Date().toISOString(),
   };
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'auth',
@@ -1857,11 +1837,12 @@ export function setPhoneOtpForUser(userId: string, phone: string, otpCode: strin
     details: `SMS OTP token requested for phone ${phone.slice(0, 4)}***`,
   });
 
-  saveDb(db);
+  await saveDb(db);
 }
+export const setPhoneOtpForUser = withDbRetry(setPhoneOtpForUser__impl);
 
-export function verifyPhoneOtpForUser(userId: string, inputCode: string): boolean {
-  const db = ensureDb();
+async function verifyPhoneOtpForUser__impl(userId: string, inputCode: string): Promise<boolean> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user || !user.phoneConfig) return false;
 
@@ -1881,7 +1862,7 @@ export function verifyPhoneOtpForUser(userId: string, inputCode: string): boolea
   const hash = crypto.createHash('sha256').update(inputCode.trim()).digest('hex');
   if (hash !== cfg.otpHash) {
     cfg.attemptsCount = (cfg.attemptsCount || 0) + 1;
-    saveDb(db);
+    await saveDb(db);
     return false;
   }
 
@@ -1891,7 +1872,7 @@ export function verifyPhoneOtpForUser(userId: string, inputCode: string): boolea
   cfg.otpExpires = undefined;
   cfg.attemptsCount = 0;
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'auth',
@@ -1899,16 +1880,17 @@ export function verifyPhoneOtpForUser(userId: string, inputCode: string): boolea
     details: 'User phone number verified successfully via SMS OTP',
   });
 
-  saveDb(db);
+  await saveDb(db);
   return true;
 }
 
 // =========================================================================
 // MFA CONFIGURATION METHODS
 // =========================================================================
+export const verifyPhoneOtpForUser = withDbRetry(verifyPhoneOtpForUser__impl);
 
-export function setUserMfaSecret(userId: string, secret: string, recoveryCodes: string[]): void {
-  const db = ensureDb();
+async function setUserMfaSecret__impl(userId: string, secret: string, recoveryCodes: string[]): Promise<void> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) throw new Error('User not found');
 
@@ -1917,18 +1899,19 @@ export function setUserMfaSecret(userId: string, secret: string, recoveryCodes: 
     secret,
     recoveryCodes,
   };
-  saveDb(db);
+  await saveDb(db);
 }
+export const setUserMfaSecret = withDbRetry(setUserMfaSecret__impl);
 
-export function enableUserMfa(userId: string): void {
-  const db = ensureDb();
+async function enableUserMfa__impl(userId: string): Promise<void> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user || !user.mfa || !user.mfa.secret) throw new Error('MFA setup incomplete');
 
   user.mfa.enabled = true;
   user.mfa.verifiedAt = new Date().toISOString();
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'security',
@@ -1936,11 +1919,12 @@ export function enableUserMfa(userId: string): void {
     details: 'TOTP Multi-Factor Authentication successfully enabled on account',
   });
 
-  saveDb(db);
+  await saveDb(db);
 }
+export const enableUserMfa = withDbRetry(enableUserMfa__impl);
 
-export function disableUserMfa(userId: string): void {
-  const db = ensureDb();
+async function disableUserMfa__impl(userId: string): Promise<void> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) throw new Error('User not found');
 
@@ -1950,7 +1934,7 @@ export function disableUserMfa(userId: string): void {
     recoveryCodes: [],
   };
 
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'security',
@@ -1958,15 +1942,16 @@ export function disableUserMfa(userId: string): void {
     details: 'TOTP Multi-Factor Authentication disabled on account',
   });
 
-  saveDb(db);
+  await saveDb(db);
 }
 
 // =========================================================================
 // SESSION MANAGEMENT METHODS
 // =========================================================================
+export const disableUserMfa = withDbRetry(disableUserMfa__impl);
 
-export function registerUserSession(userId: string, token: string, ip?: string, userAgent?: string): void {
-  const db = ensureDb();
+async function registerUserSession__impl(userId: string, token: string, ip?: string, userAgent?: string): Promise<void> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return;
 
@@ -1993,34 +1978,37 @@ export function registerUserSession(userId: string, token: string, ip?: string, 
     }
   }
 
-  saveDb(db);
+  await saveDb(db);
 }
+export const registerUserSession = withDbRetry(registerUserSession__impl);
 
-export function revokeAllSessionsForUser(userId: string): void {
-  const db = ensureDb();
+async function revokeAllSessionsForUser__impl(userId: string): Promise<void> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return;
 
   user.activeSessions = [];
-  logActivity({
+  pushActivity(db, {
     userId: user.id,
     userEmail: user.email,
     category: 'security',
     action: 'ALL_SESSIONS_REVOKED',
     details: 'User revoked all active browser sessions',
   });
-  saveDb(db);
+  await saveDb(db);
 }
+export const revokeAllSessionsForUser = withDbRetry(revokeAllSessionsForUser__impl);
 
-export function revokeUserSessionById(userId: string, sessionId: string): boolean {
-  const db = ensureDb();
+async function revokeUserSessionById__impl(userId: string, sessionId: string): Promise<boolean> {
+  const db = await loadDb();
   const user = db.users.find((u) => u.id === userId);
   if (!user || !user.activeSessions) return false;
 
   const initialLen = user.activeSessions.length;
   user.activeSessions = user.activeSessions.filter((s) => s.id !== sessionId);
   const changed = user.activeSessions.length !== initialLen;
-  if (changed) saveDb(db);
+  if (changed) await saveDb(db);
   return changed;
 }
+export const revokeUserSessionById = withDbRetry(revokeUserSessionById__impl);
 

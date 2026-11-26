@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const user = findUserById(session.user.id);
+    const user = await findUserById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
@@ -44,7 +44,7 @@ export async function DELETE(req: NextRequest) {
     const all = searchParams.get('all') === 'true';
 
     if (all) {
-      revokeAllSessionsForUser(session.user.id);
+      await revokeAllSessionsForUser(session.user.id);
       return NextResponse.json({ success: true, message: 'All active sessions have been signed out.' });
     }
 
@@ -52,7 +52,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Session ID is required.' }, { status: 400 });
     }
 
-    revokeUserSessionById(session.user.id, sessionId);
+    await revokeUserSessionById(session.user.id, sessionId);
     return NextResponse.json({ success: true, message: 'Session revoked successfully.' });
   } catch (err: unknown) {
     const error = err as Error;

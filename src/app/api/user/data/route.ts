@@ -16,13 +16,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const user = findUserById(session.user.id);
+    const user = await findUserById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
 
-    const signingRecords = getSigningRequestsByUserId(user.id);
-    const aiConversations = getAiConversationsByUser(user.id);
+    const signingRecords = await getSigningRequestsByUserId(user.id);
+    const aiConversations = await getAiConversationsByUser(user.id);
 
     const exportData = {
       userProfile: {
@@ -73,10 +73,10 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Delete user's AI conversations
-    deleteAllAiConversationsForUser(session.user.id);
+    await deleteAllAiConversationsForUser(session.user.id);
 
     // Soft delete the user record
-    softDeleteUserAdmin(
+    await softDeleteUserAdmin(
       'Self-Service Privacy Workflow',
       session.user.id,
       'User requested account closure and data erasure under privacy policy'

@@ -16,12 +16,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid 6-digit confirmation code.' }, { status: 400 });
     }
 
-    const success = verifyPhoneOtpForUser(session.user.id, code.trim());
+    const success = await verifyPhoneOtpForUser(session.user.id, code.trim());
     if (!success) {
       return NextResponse.json({ error: 'Invalid or incorrect verification code.' }, { status: 400 });
     }
 
-    const updated = findUserById(session.user.id);
+    const updated = await findUserById(session.user.id);
 
     return NextResponse.json({
       success: true,

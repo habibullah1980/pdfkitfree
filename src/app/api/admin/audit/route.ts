@@ -8,6 +8,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized. Super Admin only.' }, { status: 403 });
   }
 
-  const auditLogs = getAdminAuditLogs();
+  const auditLogs = await getAdminAuditLogs();
   return NextResponse.json({ success: true, auditLogs });
 }

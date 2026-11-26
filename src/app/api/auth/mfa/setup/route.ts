@@ -10,7 +10,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const user = findUserById(session.user.id);
+    const user = await findUserById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
@@ -18,7 +18,7 @@ export async function POST() {
     const { secret, otpauthUrl, recoveryCodes } = MfaService.generateSecret(user.email);
 
     // Save pending setup to user (not yet activated until verified)
-    setUserMfaSecret(user.id, secret, recoveryCodes);
+    await setUserMfaSecret(user.id, secret, recoveryCodes);
 
     return NextResponse.json({
       success: true,

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (verification.payload) {
-        PaymentGateway.applyVerifiedPayment({
+        await PaymentGateway.applyVerifiedPayment({
           ...verification.payload,
           provider: 'stripe',
         });
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (verification.payload) {
-        PaymentGateway.applyVerifiedPayment({
+        await PaymentGateway.applyVerifiedPayment({
           ...verification.payload,
           provider: 'paypal',
         });
@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
 
     // 3. Custom / Sandbox Webhook Signature
     if (sandboxSig) {
-      const verification = PaymentGateway.verifyAndProcessEvent(rawBody, sandboxSig);
+      const verification = await PaymentGateway.verifyAndProcessEvent(rawBody, sandboxSig);
       if (!verification.isValid || !verification.payload) {
         return NextResponse.json({ error: verification.error || 'Signature error' }, { status: 400 });
       }
 
-      PaymentGateway.applyVerifiedPayment(verification.payload);
+      await PaymentGateway.applyVerifiedPayment(verification.payload);
       return NextResponse.json({ received: true, provider: 'sandbox', event: verification.eventType });
     }
 

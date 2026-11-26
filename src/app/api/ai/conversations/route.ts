@@ -18,14 +18,14 @@ export async function GET(req: NextRequest) {
     const id = searchParams.get('id');
 
     if (id) {
-      const conv = getAiConversationById(session.user.id, id);
+      const conv = await getAiConversationById(session.user.id, id);
       if (!conv) {
         return NextResponse.json({ error: 'Conversation not found.' }, { status: 404 });
       }
       return NextResponse.json({ success: true, conversation: conv });
     }
 
-    const conversations = getAiConversationsByUser(session.user.id);
+    const conversations = await getAiConversationsByUser(session.user.id);
     return NextResponse.json({ success: true, conversations });
   } catch (err: unknown) {
     const error = err as Error;
@@ -45,7 +45,7 @@ export async function DELETE(req: NextRequest) {
     const all = searchParams.get('all') === 'true';
 
     if (all) {
-      const deletedCount = deleteAllAiConversationsForUser(session.user.id);
+      const deletedCount = await deleteAllAiConversationsForUser(session.user.id);
       return NextResponse.json({
         success: true,
         message: `Deleted all ${deletedCount} chat history records.`,
@@ -56,7 +56,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Conversation ID required.' }, { status: 400 });
     }
 
-    const success = deleteAiConversation(session.user.id, id);
+    const success = await deleteAiConversation(session.user.id, id);
     if (!success) {
       return NextResponse.json({ error: 'Conversation not found or already deleted.' }, { status: 404 });
     }

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'New password must be at least 6 characters.' }, { status: 400 });
     }
 
-    const success = resetUserPassword(token, newPassword);
+    const success = await resetUserPassword(token, newPassword);
     if (!success) {
       return NextResponse.json({ error: 'Password reset token is invalid or has expired.' }, { status: 400 });
     }

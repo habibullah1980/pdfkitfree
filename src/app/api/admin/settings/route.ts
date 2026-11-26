@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized. Super Admin only.' }, { status: 403 });
   }
 
-  const settings = getPlatformSettingsAdmin();
+  const settings = await getPlatformSettingsAdmin();
   return NextResponse.json({ success: true, settings });
 }
 
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const updated = updatePlatformSettingsAdmin(body);
+    const updated = await updatePlatformSettingsAdmin(body);
     return NextResponse.json({ success: true, settings: updated });
   } catch (err: unknown) {
     const error = err as Error;

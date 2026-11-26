@@ -45,3 +45,6 @@ next-env.d.ts
 
 !.env.example
 .neon
+
+# local dev data store
+/.data/

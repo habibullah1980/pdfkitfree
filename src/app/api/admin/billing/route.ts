@@ -8,6 +8,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized. Super Admin only.' }, { status: 403 });
   }
 
-  const transactions = getBillingTransactions();
+  const transactions = await getBillingTransactions();
   return NextResponse.json({ success: true, transactions });
 }

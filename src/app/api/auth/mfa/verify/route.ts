@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const user = findUserById(session.user.id);
+    const user = await findUserById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
     const { token, action = 'enable' } = body;
 
     if (action === 'disable') {
-      disableUserMfa(user.id);
-      const updated = findUserById(user.id);
+      await disableUserMfa(user.id);
+      const updated = await findUserById(user.id);
       return NextResponse.json({
         success: true,
         message: 'MFA has been disabled.',
@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid verification code. Please check your authenticator clock.' }, { status: 400 });
     }
 
-    enableUserMfa(user.id);
-    const updated = findUserById(user.id);
+    await enableUserMfa(user.id);
+    const updated = await findUserById(user.id);
 
     return NextResponse.json({
       success: true,

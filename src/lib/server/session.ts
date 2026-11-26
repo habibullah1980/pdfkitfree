@@ -1,9 +1,38 @@
 import { cookies } from 'next/headers';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { findUserById, sanitizeUser } from './auth-store';
 
 const SESSION_COOKIE_NAME = 'fpk_session';
-const SESSION_SECRET = process.env.AUTH_SECRET || 'freepdfkit-secure-session-key-2026-xyz';
+let devFallbackSecret: string | null = null;
+
+/**
+ * The session signing key. There is no built-in default: a key committed to the
+ * repository would let anyone forge a session for any account.
+ * Production requires AUTH_SECRET (at least 32 characters). Local development
+ * without it uses a random key saved in the git-ignored .data folder.
+ */
+export function getSessionSecret(): string {
+  const configured = process.env.AUTH_SECRET;
+  if (configured && configured.length >= 32) return configured;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AUTH_SECRET must be set to a random value of at least 32 characters.');
+  }
+  if (!devFallbackSecret) {
+    // Kept in the git-ignored .data folder so every route of the dev server shares one key.
+    const file = path.join(process.env.DATA_DIR || path.join(process.cwd(), '.data'), 'dev-auth-secret');
+    try {
+      devFallbackSecret = fs.readFileSync(file, 'utf-8').trim();
+    } catch {
+      devFallbackSecret = crypto.randomBytes(32).toString('hex');
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, devFallbackSecret, { mode: 0o600 });
+    }
+    console.warn('[session] AUTH_SECRET is not set; using a random local development key.');
+  }
+  return devFallbackSecret;
+}
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 interface SessionPayload {
@@ -13,7 +42,7 @@ interface SessionPayload {
 }
 
 function signPayload(payloadStr: string): string {
-  const hmac = crypto.createHmac('sha256', SESSION_SECRET);
+  const hmac = crypto.createHmac('sha256', getSessionSecret());
   hmac.update(payloadStr);
   return hmac.digest('hex');
 }
@@ -35,8 +64,9 @@ export function verifySessionToken(token: string): SessionPayload | null {
     const [base64, signature] = token.split('.');
     if (!base64 || !signature) return null;
 
-    const expectedSig = signPayload(base64);
-    if (expectedSig !== signature) return null;
+    const expectedSig = Buffer.from(signPayload(base64), 'utf-8');
+    const givenSig = Buffer.from(signature, 'utf-8');
+    if (expectedSig.length !== givenSig.length || !crypto.timingSafeEqual(expectedSig, givenSig)) return null;
 
     const jsonStr = Buffer.from(base64, 'base64url').toString('utf-8');
     const payload = JSON.parse(jsonStr) as SessionPayload;
@@ -63,7 +93,7 @@ export async function setSessionCookie(userId: string, email: string, ip?: strin
   });
 
   const { registerUserSession } = await import('./auth-store');
-  registerUserSession(userId, token, ip, userAgent);
+  await registerUserSession(userId, token, ip, userAgent);
 }
 
 export async function clearSessionCookie() {
@@ -73,7 +103,7 @@ export async function clearSessionCookie() {
     const payload = verifySessionToken(token);
     if (payload) {
       const { revokeUserSessionById } = await import('./auth-store');
-      revokeUserSessionById(payload.userId, token);
+      await revokeUserSessionById(payload.userId, token);
     }
   }
 
@@ -94,7 +124,7 @@ export async function getServerSession() {
   const payload = verifySessionToken(token);
   if (!payload) return null;
 
-  const user = findUserById(payload.userId);
+  const user = await findUserById(payload.userId);
   if (!user || user.isDeleted || user.accountStatus === 'suspended') return null;
 
   // Session revocation validation if activeSessions exists

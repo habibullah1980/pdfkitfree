@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = findUserById(session.user.id);
+    const user = await findUserById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: 'User account not found.' }, { status: 404 });
     }
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const isSuperAdmin = user.role === 'superadmin';
     let effectiveLimit = 999999;
     if (!isSuperAdmin) {
-      const plans = getPlansConfig();
+      const plans = await getPlansConfig();
       const userPlan = plans.find((p) => p.id === (user.subscription?.planId || 'free'));
       const baseQuota = userPlan?.limits.aiCreditsPerMonth || 0;
       const customQuota = user.customQuotas?.aiCredits;
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Deduct / Track credit
-    const updatedCredits = incrementUserAiCredits(user.id, 1);
+    const updatedCredits = await incrementUserAiCredits(user.id, 1);
 
     // Persist conversation
     const lastUserQuery = [...messages].reverse().find((m) => m.role === 'user')?.content || 'Document Discussion';
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    const savedConv = saveAiConversation(user.id, {
+    const savedConv = await saveAiConversation(user.id, {
       id: conversationId,
       title: conversationTitle,
       fileName,

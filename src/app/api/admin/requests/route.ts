@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized. Super Admin only.' }, { status: 403 });
   }
 
-  const requests = getAllSigningRequestsAdmin();
+  const requests = await getAllSigningRequestsAdmin();
   return NextResponse.json({ success: true, requests });
 }
 
@@ -28,7 +28,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Request ID is required.' }, { status: 400 });
     }
 
-    const deleted = deleteSigningRequestAdmin(requestId);
+    const deleted = await deleteSigningRequestAdmin(requestId);
     if (!deleted) {
       return NextResponse.json({ error: 'Record not found.' }, { status: 404 });
     }

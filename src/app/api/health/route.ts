@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getPlatformSettingsAdmin } from '@/lib/server/auth-store';
 
+
+// Reads live data from the database on every request (never prerendered at build time).
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const startTime = Date.now();
   let dbStatus = 'healthy';
   let settings;
 
   try {
-    settings = getPlatformSettingsAdmin();
+    settings = await getPlatformSettingsAdmin();
   } catch {
     dbStatus = 'degraded';
   }
