@@ -168,39 +168,53 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
       try {
         const buffer = await file.arrayBuffer();
         const zip = await JSZip.loadAsync(buffer);
-        // Shared strings
+        const parse = (xml: string) => new DOMParser().parseFromString(xml, 'application/xml');
+        const byTag = (node: Document | Element, tag: string) => Array.from(node.getElementsByTagNameNS('*', tag));
+
+        // Shared strings: one <si> per entry; rich text splits an entry into several <t> runs.
         const sharedStrings: string[] = [];
         const ssFile = zip.file('xl/sharedStrings.xml');
         if (ssFile) {
-          const ssXml = await ssFile.async('text');
-          const sRegex = /<t\b[^>]*>([^<]*)<\/t>/g;
-          let sMatch;
-          while ((sMatch = sRegex.exec(ssXml)) !== null) {
-            sharedStrings.push(sMatch[1]);
+          const ssDoc = parse(await ssFile.async('text'));
+          for (const si of byTag(ssDoc, 'si')) {
+            sharedStrings.push(byTag(si, 't').map((t) => t.textContent || '').join(''));
           }
         }
 
-        // Sheet 1
-        const sheetFile = zip.file('xl/worksheets/sheet1.xml');
+        // First worksheet in workbook order (not always sheet1.xml).
+        let sheetPath = 'xl/worksheets/sheet1.xml';
+        const wbFile = zip.file('xl/workbook.xml');
+        const relsFile = zip.file('xl/_rels/workbook.xml.rels');
+        if (wbFile && relsFile) {
+          const firstSheet = byTag(parse(await wbFile.async('text')), 'sheet')[0];
+          const rid = firstSheet?.getAttribute('r:id') || firstSheet?.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+          const rel = byTag(parse(await relsFile.async('text')), 'Relationship').find((r) => r.getAttribute('Id') === rid);
+          const target = rel?.getAttribute('Target');
+          if (target) sheetPath = target.startsWith('/') ? target.slice(1) : `xl/${target.replace(/^\.\//, '')}`;
+        }
+
+        const sheetFile = zip.file(sheetPath) || zip.file('xl/worksheets/sheet1.xml');
         if (sheetFile) {
-          const sheetXml = await sheetFile.async('text');
+          const sheetDoc = parse(await sheetFile.async('text'));
+          const colIndex = (ref: string | null, fallback: number) => {
+            const letters = (ref || '').match(/^[A-Z]+/)?.[0];
+            if (!letters) return fallback;
+            return letters.split('').reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0) - 1;
+          };
           const rows: string[][] = [];
-          const rowRegex = /<row\b[^>]*>([\s\S]*?)<\/row>/g;
-          let rMatch;
-          while ((rMatch = rowRegex.exec(sheetXml)) !== null) {
-            const cellRegex = /<c\b[^>]*?(?:\bt="([^"]*)")?[^>]*>(?:<v>([^<]*)<\/v>)?<\/c>/g;
-            let cMatch;
+          for (const row of byTag(sheetDoc, 'row')) {
             const rowCells: string[] = [];
-            while ((cMatch = cellRegex.exec(rMatch[1])) !== null) {
-              const type = cMatch[1];
-              const val = cMatch[2] || '';
-              if (type === 's') {
-                const idx = parseInt(val, 10);
-                rowCells.push(sharedStrings[idx] || '');
-              } else {
-                rowCells.push(val);
-              }
-            }
+            byTag(row, 'c').forEach((c, i) => {
+              const type = c.getAttribute('t');
+              const v = byTag(c, 'v')[0]?.textContent ?? '';
+              let value = v;
+              if (type === 's') value = sharedStrings[parseInt(v, 10)] ?? '';
+              else if (type === 'inlineStr') value = byTag(c, 't').map((t) => t.textContent || '').join('');
+              else if (type === 'b') value = v === '1' ? 'TRUE' : 'FALSE';
+              const idx = colIndex(c.getAttribute('r'), i);
+              while (rowCells.length < idx) rowCells.push('');
+              rowCells[idx] = value;
+            });
             if (rowCells.some((c) => c.trim().length > 0)) {
               rows.push(rowCells);
             }

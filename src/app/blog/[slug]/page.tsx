@@ -197,7 +197,7 @@ export default function ArticleTemplatePage({ params }: ArticlePageProps) {
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
             <Link
-              href={`/tools/${post.primaryToolSlug}`}
+              href={post.primaryToolHref ?? `/tools/${post.primaryToolSlug}`}
               className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-brand-700 transition"
             >
               <span>Launch {post.primaryToolName}</span>

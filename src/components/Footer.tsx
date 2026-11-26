@@ -10,9 +10,9 @@ export function Footer() {
     <footer className="bg-ink text-white" aria-labelledby="footer-heading">
       <h2 id="footer-heading" className="sr-only">Footer</h2>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand Info */}
-          <div className="space-y-4 md:col-span-1">
+          <div className="space-y-4 sm:col-span-2 lg:col-span-1">
             <Link href="/" className="inline-flex rounded-lg" aria-label="PDFKitFree home">
               <Logo size={36} tone="light" />
             </Link>
@@ -36,6 +36,25 @@ export function Footer() {
             </h3>
             <ul className="mt-4 space-y-2.5">
               {SITE_CONFIG.footerLinks.tools.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-sm text-[#C9C7EA] transition-colors hover:text-sun"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Popular searches */}
+          <div>
+            <h3 className="font-display text-base font-bold text-white">
+              Popular
+            </h3>
+            <ul className="mt-4 space-y-2.5">
+              {SITE_CONFIG.footerLinks.popular.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}

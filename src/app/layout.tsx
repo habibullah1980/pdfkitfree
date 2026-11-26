@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Figtree } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
@@ -15,8 +15,9 @@ const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-di
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.url),
+  applicationName: 'PDFKitFree',
   title: {
-    default: 'PDFKitFree - Fast, Secure & Private PDF Tools SaaS',
+    default: 'Free PDF Tools Online: Merge, Compress, Sign & Convert | PDFKitFree',
     template: '%s | PDFKitFree',
   },
   description: SITE_CONFIG.description,
@@ -35,32 +36,23 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'PDFKitFree Team' }],
   creator: 'PDFKitFree',
-  alternates: {
-    canonical: '/',
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: SITE_CONFIG.url,
-    title: 'PDFKitFree - All-In-One Private PDF Utilities & eSign SaaS',
+    title: 'Free PDF Tools Online: Merge, Compress, Sign & Convert | PDFKitFree',
     description: SITE_CONFIG.description,
     siteName: 'PDFKitFree',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'PDFKitFree Tools & eSign SaaS',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PDFKitFree - All-In-One Private PDF Utilities & eSign SaaS',
+    title: 'Free PDF Tools Online: Merge, Compress, Sign & Convert | PDFKitFree',
     description: SITE_CONFIG.description,
     creator: SITE_CONFIG.creator,
-    images: ['/og-image.png'],
   },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
   robots: {
     index: true,
     follow: true,
@@ -74,6 +66,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#4B3FE4' },
+    { media: '(prefers-color-scheme: dark)', color: '#100F24' },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -83,11 +82,6 @@ export default function RootLayout({
     <html lang="en" className={`${figtree.variable} ${bricolage.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        {/* Verification meta tag placeholder for Google Search Console */}
-        <meta
-          name="google-site-verification"
-          content="google-search-console-verification-token"
-        />
         {/* Verification meta tag for Bing Webmaster Tools */}
         <meta name="msvalidate.01" content="DAFB040EA71026356781552808195EAC" />
       </head>

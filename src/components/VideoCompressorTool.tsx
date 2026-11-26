@@ -34,7 +34,20 @@ interface DetectedMetadata {
   engine: 'browser-native' | 'ffmpeg-worker';
 }
 
-export function VideoCompressorTool() {
+interface VideoCompressorToolProps {
+  /** When set, the bitrate is chosen so the output should land under this many bytes. */
+  targetBytes?: number;
+  targetLabel?: string;
+}
+
+const AUDIO_BPS = 128000;
+const MAX_TARGET_RETRIES = 2;
+/** Hosting platforms such as Vercel reject request bodies over about 4.5 MB, so larger files cannot reach the server converter. */
+const SERVER_UPLOAD_LIMIT_BYTES = 4 * 1024 * 1024;
+const TOO_BIG_FOR_SERVER =
+  'Your browser cannot read this video format, and files over 4 MB in this format cannot be sent to our converter. Save or export it as MP4 first (most phones and editors can), then try again.';
+
+export function VideoCompressorTool({ targetBytes, targetLabel }: VideoCompressorToolProps = {}) {
   const [file, setFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   
@@ -67,6 +80,7 @@ export function VideoCompressorTool() {
   const processingVideoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -186,6 +200,9 @@ export function VideoCompressorTool() {
     // Browser cannot natively decode container or codec (e.g. MKV, AVI, ProRes, HEVC, MPEG-4).
     // Automatically fallback to our server-side FFmpeg worker engine for exact metadata inspection.
     try {
+      if (selectedFile.size > SERVER_UPLOAD_LIMIT_BYTES) {
+        throw new Error(TOO_BIG_FOR_SERVER);
+      }
       setProcessingStatus('Inspecting media container with FFmpeg worker...');
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -210,7 +227,9 @@ export function VideoCompressorTool() {
       const error = err as Error;
       setIsReadingMetadata(false);
       setErrorMessage(
-        `Unable to extract video metadata: ${error.message || 'Corrupt or unsupported container'}. Please verify the file integrity.`
+        error.message === TOO_BIG_FOR_SERVER
+          ? TOO_BIG_FOR_SERVER
+          : `Unable to extract video metadata: ${error.message || 'Corrupt or unsupported container'}. Please verify the file integrity.`
       );
     }
   };
@@ -257,8 +276,21 @@ export function VideoCompressorTool() {
     else if (preset === 'balanced') mult = 0.95;
     else if (preset === 'high') mult = 1.6;
 
-    const targetBitrate = Math.round(baseBps * mult);
-    const estSizeBytes = duration > 0 ? Math.round(((targetBitrate + 128000) / 8) * duration) : Math.round((file?.size || 1000000) * 0.5);
+    let targetBitrate = Math.round(baseBps * mult);
+
+    // Size-target mode: spend the byte budget (with a safety margin) across the whole clip,
+    // then lower the resolution so a small bitrate still looks clean.
+    if (targetBytes && duration > 0) {
+      const budgetBps = Math.floor(((targetBytes * 0.85 * 8) / duration) - AUDIO_BPS);
+      targetBitrate = Math.max(120000, budgetBps);
+      const cap = targetBitrate < 350000 ? 360 : targetBitrate < 700000 ? 480 : targetBitrate < 1500000 ? 720 : 1080;
+      if (outHeight > cap) {
+        outHeight = cap;
+        outWidth = Math.round(cap * aspect);
+        outWidth = outWidth % 2 === 0 ? outWidth : outWidth - 1;
+      }
+    }
+    const estSizeBytes = duration > 0 ? Math.round(((targetBitrate + AUDIO_BPS) / 8) * duration) : Math.round((file?.size || 1000000) * 0.5);
     const estReduction = file ? Math.max(10, Math.min(85, Math.round(((file.size - estSizeBytes) / file.size) * 100))) : 45;
 
     return {
@@ -268,7 +300,7 @@ export function VideoCompressorTool() {
       estSize: estSizeBytes,
       estReduction,
     };
-  }, [dimensions, resolution, preset, duration, file]);
+  }, [dimensions, resolution, preset, duration, file, targetBytes]);
 
   // 2. Dual-Engine Video Compression Execution
   const handleCompressVideo = async () => {
@@ -286,16 +318,32 @@ export function VideoCompressorTool() {
   };
 
   // Server-Side FFmpeg Worker Execution
-  const handleServerWorkerCompression = async () => {
+  /** In size-target mode, a result over the target is retried at a proportionally lower bitrate. */
+  const retryScaleFor = (blob: Blob, scale: number, attempt: number): number | null => {
+    if (!targetBytes || blob.size <= targetBytes || attempt >= MAX_TARGET_RETRIES) return null;
+    return scale * (targetBytes / blob.size) * 0.88;
+  };
+
+  const handleServerWorkerCompression = async (bitrateScale = 1, attempt = 0): Promise<void> => {
     if (!file) return;
-    setProcessingStatus('Uploading to secure FFmpeg worker for multi-codec compression...');
+    if (file.size > SERVER_UPLOAD_LIMIT_BYTES) {
+      setErrorMessage(TOO_BIG_FOR_SERVER);
+      setIsProcessing(false);
+      return;
+    }
+    setProcessingStatus(
+      attempt > 0
+        ? `A little over ${targetLabel}, compressing again (try ${attempt + 1} of ${MAX_TARGET_RETRIES + 1})...`
+        : 'Uploading to secure FFmpeg worker for multi-codec compression...'
+    );
     setProgress(15);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('preset', preset);
-      formData.append('resolution', resolution);
+      formData.append('resolution', targetBytes ? `${computedSettings.outHeight}p` : resolution);
+      if (targetBytes) formData.append('targetBitrateKbps', String(Math.round((computedSettings.targetBitrate * bitrateScale) / 1000)));
       formData.append('outputFormat', outputFormat);
 
       setProgress(35);
@@ -318,6 +366,12 @@ export function VideoCompressorTool() {
       const mime = outputFormat === 'webm' ? 'video/webm' : 'video/mp4';
       const typedBlob = new Blob([blob], { type: mime });
 
+      const nextScale = retryScaleFor(typedBlob, bitrateScale, attempt);
+      if (nextScale !== null) {
+        await handleServerWorkerCompression(nextScale, attempt + 1);
+        return;
+      }
+
       const downloadUrl = URL.createObjectURL(typedBlob);
       setCompressedBlob(typedBlob);
       setCompressedUrl(downloadUrl);
@@ -334,9 +388,13 @@ export function VideoCompressorTool() {
   };
 
   // Browser-Native Canvas + MediaRecorder Execution
-  const handleBrowserNativeCompression = async () => {
+  const handleBrowserNativeCompression = async (bitrateScale = 1, attempt = 0): Promise<void> => {
     if (!file || !videoUrl) return;
-    setProcessingStatus('Initializing browser media engine...');
+    setProcessingStatus(
+      attempt > 0
+        ? `A little over ${targetLabel}, compressing again (try ${attempt + 1} of ${MAX_TARGET_RETRIES + 1})...`
+        : 'Initializing browser media engine...'
+    );
 
     try {
       const vid = processingVideoRef.current;
@@ -345,7 +403,8 @@ export function VideoCompressorTool() {
         throw new Error('Video elements could not be initialized.');
       }
 
-      const { outWidth, outHeight, targetBitrate } = computedSettings;
+      const { outWidth, outHeight } = computedSettings;
+      const targetBitrate = Math.max(100000, Math.round(computedSettings.targetBitrate * bitrateScale));
       canvas.width = outWidth;
       canvas.height = outHeight;
       const ctx = canvas.getContext('2d', { alpha: false });
@@ -364,11 +423,16 @@ export function VideoCompressorTool() {
 
       try {
         const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (AudioCtx) {
+        if (audioDestRef.current) {
+          // A media element can only be wired to Web Audio once, so retries reuse the first route.
+          const reused = audioDestRef.current.stream.getAudioTracks();
+          if (reused.length > 0) canvasStream.addTrack(reused[0]);
+        } else if (AudioCtx) {
           const audioCtx = new AudioCtx();
           audioContextRef.current = audioCtx;
           const source = audioCtx.createMediaElementSource(vid);
           const dest = audioCtx.createMediaStreamDestination();
+          audioDestRef.current = dest;
           source.connect(dest);
           const gain = audioCtx.createGain();
           gain.gain.value = 0;
@@ -460,6 +524,13 @@ export function VideoCompressorTool() {
       setProcessingStatus('Finalizing compressed container...');
       const outputBlob = await completionPromise;
 
+      const nextScale = retryScaleFor(outputBlob, bitrateScale, attempt);
+      if (nextScale !== null) {
+        if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+        await handleBrowserNativeCompression(nextScale, attempt + 1);
+        return;
+      }
+
       const outUrl = URL.createObjectURL(outputBlob);
       setCompressedBlob(outputBlob);
       setCompressedUrl(outUrl);
@@ -469,7 +540,7 @@ export function VideoCompressorTool() {
       const error = err as Error;
       console.warn('Browser compression failed, redirecting to FFmpeg worker:', error);
       // Auto-fallback to FFmpeg server worker if browser MediaRecorder stalls or fails
-      await handleServerWorkerCompression();
+      await handleServerWorkerCompression(bitrateScale, attempt);
     } finally {
       setIsProcessing(false);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -688,8 +759,19 @@ export function VideoCompressorTool() {
 
             {/* Right: Compression Controls & Live Estimates */}
             <div className="lg:col-span-6 space-y-6">
+              {targetBytes && (
+                <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm text-slate-800">
+                  <p className="font-bold text-slate-900">Target: under {targetLabel}</p>
+                  <p className="mt-1">
+                    We pick the bitrate and resolution for this clip
+                    {duration > 0 ? ` (${Math.round(computedSettings.targetBitrate / 1000)} kbps at ${computedSettings.outHeight}p)` : ''}. Long clips may
+                    need trimming to fit.
+                  </p>
+                </div>
+              )}
               {/* Presets */}
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+                {!targetBytes && (<>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                     <Sliders className="h-4 w-4 text-brand-600" />
@@ -767,6 +849,7 @@ export function VideoCompressorTool() {
                   </div>
                 </div>
 
+                </>)}
                 {/* Output Format Selector */}
                 <div className="pt-2">
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
@@ -885,6 +968,18 @@ export function VideoCompressorTool() {
                       </p>
                     </div>
                   </div>
+
+                  {targetBytes && (
+                    <p
+                      className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                        compressedBlob.size <= targetBytes ? 'bg-teal-100 text-teal-900' : 'bg-amber-100 text-amber-900'
+                      }`}
+                    >
+                      {compressedBlob.size <= targetBytes
+                        ? `Under ${targetLabel}, ready to send.`
+                        : `This came out at ${formatFileSize(compressedBlob.size)}, above ${targetLabel}. Trimming the clip is the best way to fit.`}
+                    </p>
+                  )}
 
                   {/* Size comparison */}
                   <div className="grid grid-cols-3 gap-3 p-3.5 rounded-lg bg-white border border-teal-200 text-center">

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { TOOLS, TOOL_CATEGORIES } from '@/lib/tools';
 import { ToolCard } from '@/components/ToolCard';
 import Image from 'next/image';
 import heroPhoto from '@/assets/hero-office.jpg';
+import { DemoVideo } from '@/components/landing/DemoVideo';
 import { FolderOpen, Lock, Minimize2, Monitor, Search, ShieldCheck, Upload, Zap, Download, Video } from 'lucide-react';
 
 const POPULAR = ['compress-pdf', 'merge-pdf', 'pdf-to-word', 'sign-pdf'];
@@ -39,6 +40,16 @@ export default function HomePage() {
       return matchesSearch && matchesCat;
     });
   }, [searchQuery, selectedCategory]);
+
+  // Support links like /?q=compress (used by Google's sitelinks search box).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q');
+    if (q) {
+      setSearchQuery(q);
+      setShowAll(true);
+      requestAnimationFrame(() => catalogRef.current?.scrollIntoView({ block: 'start' }));
+    }
+  }, []);
 
   const collapsed = !showAll && !searchQuery.trim() && selectedCategory === 'all';
   const visibleTools = collapsed ? filteredTools.slice(0, 8) : filteredTools;
@@ -151,6 +162,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <DemoVideo />
 
       {/* Tools catalog */}
       <section ref={catalogRef} id="tools-catalog" className="scroll-mt-24 bg-[#FFFBF0] py-20 sm:py-24">
