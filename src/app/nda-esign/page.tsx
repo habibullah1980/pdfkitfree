@@ -3,16 +3,16 @@ import { SITE_CONFIG } from '@/lib/site-config';
 import NdaEsignClient from './page-client';
 
 export const metadata: Metadata = {
-  title: { absolute: 'NDA & eSign Workspace - Legally Binding | PDFKitFree' },
+  title: { absolute: 'Free NDA Template & eSign - Create a Mutual NDA Online | PDFKitFree' },
   description:
-    'Secure, legally binding electronic signatures and mutual non-disclosure agreement workflow. Sign, request, and verify contracts privately in your browser.',
+    'Generate one-way or mutual non-disclosure agreements from editable templates and sign them electronically. Free account required.',
   alternates: {
     canonical: '/nda-esign',
   },
   openGraph: {
-    title: 'NDA & eSign Workspace - Legally Binding | PDFKitFree',
+    title: 'Free NDA Template & eSign - Create a Mutual NDA Online | PDFKitFree',
     description:
-      'Manage legal agreements and electronic signatures with zero third-party cloud data risks.',
+      'Create and eSign NDAs online from free templates.',
     url: `${SITE_CONFIG.url}/nda-esign`,
     type: 'website',
   },

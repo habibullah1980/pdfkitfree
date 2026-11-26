@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized. Super Admin only.' }, { status: 403 });
   }
 
-  const plans = getPlansConfig();
+  const plans = await getPlansConfig();
   return NextResponse.json({ success: true, plans });
 }
 
@@ -26,8 +26,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Valid plan ID required.' }, { status: 400 });
     }
 
-    const updated = updatePlanConfigAdmin(
-      session.user.name || 'habibullah',
+    const updated = await updatePlanConfigAdmin(
+      session.user.email,
       planId as PlanTier,
       updates
     );

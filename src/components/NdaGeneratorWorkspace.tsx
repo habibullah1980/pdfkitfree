@@ -588,7 +588,7 @@ Date: _________________________`;
               type="button"
               disabled={isPreparingSign}
               onClick={handleProceedToSign}
-              className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow hover:bg-teal-700 transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow hover:bg-teal-700 transition disabled:opacity-50"
             >
               {isPreparingSign ? (
                 <>

@@ -15,9 +15,19 @@ import {
   GitCompare,
   CheckSquare
 } from 'lucide-react';
+import { diffLines, textItemsToRows } from '@/lib/pdf-export-formats';
+import { openPdfDocument } from '@/lib/pdfjs-client';
 
 interface OtherPdfToolProps {
-  toolType: 'extract-text' | 'extract-images' | 'compare' | 'fill-form' | 'ocr';
+  toolType: 'extract-text' | 'extract-images' | 'compare' | 'fill-form';
+}
+
+type FormFieldKind = 'text' | 'checkbox' | 'dropdown' | 'radio' | 'other';
+interface FormFieldInfo {
+  name: string;
+  value: string;
+  kind: FormFieldKind;
+  options: string[];
 }
 
 export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
@@ -31,11 +41,12 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
     textSimilarity: number;
     differenceNotes: string[];
   } | null>(null);
-  const [formFieldsList, setFormFieldsList] = useState<{ name: string; value: string; type: string }[]>([]);
+  const [formFieldsList, setFormFieldsList] = useState<FormFieldInfo[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>('output.txt');
+  const [resultNote, setResultNote] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const secondFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,15 +86,20 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
     if (toolType === 'fill-form') {
       try {
         const buffer = await selectedFile.arrayBuffer();
-        const { PDFDocument } = await import('pdf-lib');
+        const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFOptionList, PDFRadioGroup } = await import('pdf-lib');
         const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
         const form = pdfDoc.getForm();
         const fields = form.getFields();
-        const fieldDetails = fields.map((f) => ({
-          name: f.getName(),
-          value: '',
-          type: f.constructor.name.replace('PDF', ''),
-        }));
+        // instanceof, not constructor names: class names are minified in production builds.
+        const fieldDetails: FormFieldInfo[] = fields.map((f) => {
+          const name = f.getName();
+          if (f instanceof PDFTextField) return { name, kind: 'text', value: f.getText() || '', options: [] };
+          if (f instanceof PDFCheckBox) return { name, kind: 'checkbox', value: f.isChecked() ? 'true' : '', options: [] };
+          if (f instanceof PDFDropdown || f instanceof PDFOptionList)
+            return { name, kind: 'dropdown', value: f.getSelected()[0] || '', options: f.getOptions() };
+          if (f instanceof PDFRadioGroup) return { name, kind: 'radio', value: f.getSelected() || '', options: f.getOptions() };
+          return { name, kind: 'other', value: '', options: [] };
+        });
         setFormFieldsList(fieldDetails);
       } catch {
         // Document has no form
@@ -95,15 +111,15 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
     if (!file) return;
     setIsProcessing(true);
     setErrorMessage(null);
+    setResultNote(null);
+    setDownloadUrl(null);
 
     try {
       const buffer = await file.arrayBuffer();
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const doc = await openPdfDocument(buffer);
       const base = file.name.replace(/\.[^/.]+$/, '');
 
-      if (toolType === 'extract-text' || toolType === 'ocr') {
+      if (toolType === 'extract-text') {
         let fullText = '';
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i);
@@ -116,37 +132,32 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
           fullText += `=== Page ${i} ===\n` + (pageStr || '[No selectable text detected on this page]') + '\n\n';
         }
 
-        if (!fullText.trim()) {
-          fullText = '[Scanned Document Detected]\nText transcribed from document page layers.';
-        }
 
         setExtractedResult(fullText);
         const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
-        setDownloadName(`${base}-${toolType === 'ocr' ? 'ocr-transcribed' : 'extracted-text'}.txt`);
+        setDownloadName(`${base}-extracted-text.txt`);
       } else if (toolType === 'extract-images') {
-        const zip = new JSZip();
-        for (let i = 1; i <= doc.numPages; i++) {
-          const page = await doc.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            await page.render({ canvasContext: ctx, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-            zip.file(`extracted-image-p${i}.png`, base64Data, { base64: true });
-          }
+        const { extractPdfImages } = await import('@/lib/pdf-image-extract');
+        const { images, skipped } = await extractPdfImages(buffer);
+        if (images.length === 0) {
+          setErrorMessage(
+            skipped > 0
+              ? `Found ${skipped} image${skipped === 1 ? '' : 's'} in an unusual format that could not be converted. Try PDF to JPG to save whole pages instead.`
+              : 'This PDF has no embedded images. If the pages are scans or drawings, use PDF to JPG to save whole pages as images.'
+          );
+          return;
         }
+        const zip = new JSZip();
+        for (const img of images) zip.file(img.name, img.bytes);
         const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(zipBlob);
-        setDownloadUrl(url);
-        setDownloadName(`${base}-extracted-images.zip`);
+        setDownloadUrl(URL.createObjectURL(zipBlob));
+        setDownloadName(`${base}-images.zip`);
+        setResultNote(
+          `Extracted ${images.length} image${images.length === 1 ? '' : 's'} at original resolution` +
+            (skipped > 0 ? `. ${skipped} image${skipped === 1 ? '' : 's'} in an unusual format could not be converted.` : '.')
+        );
       } else if (toolType === 'compare') {
         if (!secondFile) {
           setErrorMessage('Please select a second PDF file to compare.');
@@ -155,54 +166,66 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
         }
 
         const bufferB = await secondFile.arrayBuffer();
-        const docB = await pdfjsLib.getDocument({ data: bufferB }).promise;
+        const docB = await openPdfDocument(bufferB);
 
-        // Extract text from both docs
-        let textA = '';
-        for (let i = 1; i <= doc.numPages; i++) {
-          const p = await doc.getPage(i);
-          const tc = await p.getTextContent();
-          textA += tc.items.map((it: unknown) => (it as { str?: string }).str || '').join(' ');
-        }
+        // Read each page as lines (rebuilt from text positions), then diff page against page.
+        const pageLines = async (d: typeof doc, n: number) => {
+          const pg = await d.getPage(n);
+          const tc = await pg.getTextContent();
+          const items = tc.items
+            .map((it: unknown) => it as { str?: string; transform?: number[]; width?: number; height?: number })
+            .filter((it) => typeof it.str === 'string' && Array.isArray(it.transform))
+            .map((it) => ({ str: it.str as string, x: it.transform![4], y: it.transform![5], width: it.width || 0, height: it.height || 10 }));
+          return textItemsToRows(items).map((r) => r.join(' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+        };
 
-        let textB = '';
-        for (let i = 1; i <= docB.numPages; i++) {
-          const p = await docB.getPage(i);
-          const tc = await p.getTextContent();
-          textB += tc.items.map((it: unknown) => (it as { str?: string }).str || '').join(' ');
-        }
-
-        // Calculate simple character / word similarity
-        const wordsA = new Set(textA.toLowerCase().split(/\s+/).filter(Boolean));
-        const wordsB = new Set(textB.toLowerCase().split(/\s+/).filter(Boolean));
-        const commonWords = Array.from(wordsA).filter((w) => wordsB.has(w));
-        const unionList = Array.from(wordsA).concat(Array.from(wordsB));
-        const unionWords = new Set(unionList);
-        const similarity = unionWords.size > 0 ? Math.round((commonWords.length / unionWords.size) * 100) : 100;
-
+        const maxPages = Math.max(doc.numPages, docB.numPages);
+        let same = 0;
+        let totalA = 0;
+        let totalB = 0;
         const diffNotes: string[] = [];
+        const reportPages: string[] = [];
         if (doc.numPages !== docB.numPages) {
-          diffNotes.push(`Page counts differ: Document A has ${doc.numPages} pages, Document B has ${docB.numPages} pages.`);
-        } else {
-          diffNotes.push(`Both documents have identical page count (${doc.numPages} pages).`);
+          diffNotes.push(`Page counts differ: ${file.name} has ${doc.numPages}, ${secondFile.name} has ${docB.numPages}.`);
         }
-
-        if (file.size !== secondFile.size) {
-          diffNotes.push(`File sizes differ: Doc A is ${(file.size / 1024).toFixed(1)} KB, Doc B is ${(secondFile.size / 1024).toFixed(1)} KB.`);
+        for (let n = 1; n <= maxPages; n++) {
+          const a = n <= doc.numPages ? await pageLines(doc, n) : [];
+          const b = n <= docB.numPages ? await pageLines(docB, n) : [];
+          totalA += a.length;
+          totalB += b.length;
+          if (n > doc.numPages) {
+            diffNotes.push(`Page ${n} only exists in the second file.`);
+            reportPages.push(`Page ${n}: only in second file\n${b.map((l) => `+ ${l}`).join('\n')}`);
+            continue;
+          }
+          if (n > docB.numPages) {
+            diffNotes.push(`Page ${n} only exists in the first file.`);
+            reportPages.push(`Page ${n}: only in first file\n${a.map((l) => `- ${l}`).join('\n')}`);
+            continue;
+          }
+          const ops = diffLines(a, b);
+          same += ops.filter((o) => o.type === 'same').length;
+          const removed = ops.filter((o) => o.type === 'removed');
+          const added = ops.filter((o) => o.type === 'added');
+          if (removed.length || added.length) {
+            const sample = [...removed.slice(0, 2).map((o) => `removed "${o.line.slice(0, 80)}"`), ...added.slice(0, 2).map((o) => `added "${o.line.slice(0, 80)}"`)];
+            diffNotes.push(`Page ${n}: ${sample.join('; ')}${removed.length + added.length > 4 ? ' …' : ''}`);
+            reportPages.push(`Page ${n}\n${ops.filter((o) => o.type !== 'same').map((o) => `${o.type === 'removed' ? '-' : '+'} ${o.line}`).join('\n')}`);
+          }
         }
-
-        diffNotes.push(`Text vocabulary overlap: ${similarity}% match.`);
+        const similarity = totalA + totalB > 0 ? Math.round(((2 * same) / (totalA + totalB)) * 100) : 100;
+        const identical = diffNotes.length === 0;
+        if (identical) diffNotes.push(`No text differences found across ${doc.numPages} page${doc.numPages === 1 ? '' : 's'}. Only the text is compared, not images or layout.`);
 
         setComparisonSummary({
           pagesA: doc.numPages,
           pagesB: docB.numPages,
-          match: doc.numPages === docB.numPages && similarity === 100 && file.size === secondFile.size,
+          match: identical,
           textSimilarity: similarity,
-          differenceNotes: diffNotes,
+          differenceNotes: diffNotes.slice(0, 12),
         });
 
-        // Generate comparison report download
-        const reportText = `PDF COMPARISON AUDIT REPORT\n=========================\nDocument A: ${file.name} (${doc.numPages} pages, ${(file.size / 1024).toFixed(1)} KB)\nDocument B: ${secondFile.name} (${docB.numPages} pages, ${(secondFile.size / 1024).toFixed(1)} KB)\n\nAudit Results:\n- Overall Match: ${doc.numPages === docB.numPages && similarity === 100 ? 'EXACT MATCH' : 'DIFFERENCES DETECTED'}\n- Vocabulary Similarity: ${similarity}%\n\nDetailed Notes:\n${diffNotes.map((n) => `• ${n}`).join('\n')}\n`;
+        const reportText = `PDF COMPARISON REPORT\n=====================\nFirst file:  ${file.name} (${doc.numPages} pages)\nSecond file: ${secondFile.name} (${docB.numPages} pages)\nMatching lines: ${similarity}%\nResult: ${identical ? 'No text differences' : 'Differences found'}\n\nLines starting with - are only in the first file, + only in the second.\n\n${reportPages.join('\n\n') || 'No differences.'}\n`;
 
         const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -212,20 +235,30 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
         const { PDFDocument } = await import('pdf-lib');
         const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
         const form = pdfDoc.getForm();
-        const fields = form.getFields();
-
-        if (fields.length > 0) {
-          formFieldsList.forEach((ff) => {
-            if (ff.value) {
+        const skipped: string[] = [];
+        formFieldsList.forEach((ff) => {
+          try {
+            if (ff.kind === 'text') form.getTextField(ff.name).setText(ff.value || undefined);
+            else if (ff.kind === 'checkbox') {
+              const cb = form.getCheckBox(ff.name);
+              if (ff.value === 'true') cb.check();
+              else cb.uncheck();
+            } else if (ff.kind === 'dropdown' && ff.value) {
               try {
-                const tf = form.getTextField(ff.name);
-                tf.setText(ff.value);
+                form.getDropdown(ff.name).select(ff.value);
               } catch {
-                // Not a textfield or different field type
+                form.getOptionList(ff.name).select(ff.value);
               }
-            }
-          });
-        }
+            } else if (ff.kind === 'radio' && ff.value) form.getRadioGroup(ff.name).select(ff.value);
+          } catch {
+            skipped.push(ff.name);
+          }
+        });
+        setResultNote(
+          skipped.length
+            ? `Saved. ${skipped.length} field${skipped.length === 1 ? '' : 's'} could not be filled: ${skipped.slice(0, 3).join(', ')}.`
+            : 'All fields saved. The form stays fillable; use Flatten PDF if you want to lock it.'
+        );
 
         const bytes = await pdfDoc.save();
         const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
@@ -250,21 +283,19 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
             e.preventDefault();
             if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
           }}
-          className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-8 sm:p-12 text-center hover:border-brand-400 hover:bg-brand-50/70 transition"
+          className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[#CFCBFF] bg-white p-8 sm:p-12 text-center hover:border-brand-600 hover:bg-brand-50 transition"
         >
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm border border-brand-100 mb-4">
             {toolType === 'extract-text' && <ScanText className="h-7 w-7" />}
             {toolType === 'extract-images' && <ImageIcon className="h-7 w-7" />}
             {toolType === 'compare' && <GitCompare className="h-7 w-7" />}
             {toolType === 'fill-form' && <CheckSquare className="h-7 w-7" />}
-            {toolType === 'ocr' && <ScanText className="h-7 w-7" />}
           </div>
           <h3 className="text-xl font-bold text-slate-900">
             {toolType === 'extract-text' && 'Choose a PDF to extract text'}
             {toolType === 'extract-images' && 'Choose a PDF to extract images'}
             {toolType === 'compare' && 'Choose primary PDF for comparison'}
             {toolType === 'fill-form' && 'Choose a PDF form to inspect & fill'}
-            {toolType === 'ocr' && 'Choose a scanned PDF for OCR text recognition'}
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md">
             100% in-browser processing. Document text and images are extracted directly in memory.
@@ -273,7 +304,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
             >
               <Upload className="h-4 w-4" />
               <span>Select PDF File</span>
@@ -288,7 +319,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border-[1.5px] border-[#ECEBF8] bg-white p-6 shadow-lift sm:p-8">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <div className="flex items-center gap-3">
               <FileIcon className="h-6 w-6 text-brand-600" />
@@ -353,13 +384,13 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
 
               {comparisonSummary && (
                 <div className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-2 text-xs">
-                  <h5 className="font-bold text-slate-900">Comparison Audit Results:</h5>
+                  <h5 className="font-bold text-slate-900">Comparison results</h5>
                   <p>
                     Status: <strong className={comparisonSummary.match ? 'text-teal-700' : 'text-amber-700'}>
-                      {comparisonSummary.match ? 'Identical Documents' : 'Differences Detected'}
+                      {comparisonSummary.match ? 'Same text' : 'Differences found'}
                     </strong>
                   </p>
-                  <p>Similarity Index: <strong>{comparisonSummary.textSimilarity}%</strong></p>
+                  <p>Matching lines: <strong>{comparisonSummary.textSimilarity}%</strong></p>
                   <div className="pt-2 border-t border-slate-200 space-y-1">
                     {comparisonSummary.differenceNotes.map((note, idx) => (
                       <p key={idx} className="text-slate-600">&bull; {note}</p>
@@ -379,19 +410,52 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
                 <div className="space-y-3 max-h-60 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
                   {formFieldsList.map((ff, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
-                      <label className="text-xs font-medium text-slate-700">{ff.name} ({ff.type})</label>
-                      <input
-                        type="text"
-                        value={ff.value}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFormFieldsList((prev) =>
-                            prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
-                          );
-                        }}
-                        placeholder={`Value for ${ff.name}...`}
-                        className="rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                      />
+                      <label htmlFor={`ff-${idx}`} className="text-xs font-medium text-slate-700">
+                        {ff.name}
+                      </label>
+                      {ff.kind === 'checkbox' ? (
+                        <input
+                          id={`ff-${idx}`}
+                          type="checkbox"
+                          checked={ff.value === 'true'}
+                          onChange={(e) => {
+                            const val = e.target.checked ? 'true' : '';
+                            setFormFieldsList((prev) => prev.map((item, i) => (i === idx ? { ...item, value: val } : item)));
+                          }}
+                          className="h-5 w-5 rounded border-slate-300 text-brand-600"
+                        />
+                      ) : ff.kind === 'dropdown' || ff.kind === 'radio' ? (
+                        <select
+                          id={`ff-${idx}`}
+                          value={ff.value}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormFieldsList((prev) => prev.map((item, i) => (i === idx ? { ...item, value: val } : item)));
+                          }}
+                          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900"
+                        >
+                          <option value="">Choose…</option>
+                          {ff.options.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      ) : ff.kind === 'other' ? (
+                        <p className="text-xs text-slate-500">Signature or button field, kept as it is.</p>
+                      ) : (
+                        <input
+                          id={`ff-${idx}`}
+                          type="text"
+                          value={ff.value}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFormFieldsList((prev) => prev.map((item, i) => (i === idx ? { ...item, value: val } : item)));
+                          }}
+                          placeholder={`Value for ${ff.name}...`}
+                          className="rounded border border-slate-300 px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -417,7 +481,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
               type="button"
               disabled={isProcessing}
               onClick={handleExecute}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
             >
               {isProcessing ? (
                 <>
@@ -427,10 +491,9 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
               ) : (
                 <span>
                   {toolType === 'extract-text' && 'Extract Text Now'}
-                  {toolType === 'extract-images' && 'Extract All Images (ZIP)'}
+                  {toolType === 'extract-images' && 'Extract Images (ZIP)'}
                   {toolType === 'compare' && 'Compare Two PDFs'}
                   {toolType === 'fill-form' && 'Save & Export Form'}
-                  {toolType === 'ocr' && 'Run Optical Recognition (OCR)'}
                 </span>
               )}
             </button>
@@ -451,12 +514,12 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
             <CheckCircle className="h-6 w-6" />
           </div>
           <h4 className="text-xl font-bold text-slate-900">Task Completed Successfully!</h4>
-          <p className="text-xs text-slate-600 mt-1">Your generated output is ready for download.</p>
+          <p className="text-xs text-slate-600 mt-1">{resultNote ?? 'Your generated output is ready for download.'}</p>
           <div className="mt-6 flex justify-center gap-4">
             <a
               href={downloadUrl}
               download={downloadName}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
             >
               <Download className="h-4 w-4" />
               <span>Download Output</span>

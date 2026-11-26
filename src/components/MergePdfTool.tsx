@@ -165,7 +165,7 @@ export function MergePdfTool() {
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
-        className="relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-8 sm:p-12 text-center transition-colors hover:border-brand-400 hover:bg-brand-50/70"
+        className="relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[#CFCBFF] bg-white p-8 sm:p-12 text-center transition-colors hover:border-brand-600 hover:bg-brand-50"
       >
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm border border-brand-100 mb-4">
           <Upload className="h-8 w-8" />
@@ -179,7 +179,7 @@ export function MergePdfTool() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
           >
             <Upload className="h-4 w-4" />
             <span>Select PDF Files</span>
@@ -209,7 +209,7 @@ export function MergePdfTool() {
 
       {/* Selected Files List & Sorting */}
       {files.length > 0 && (
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mt-8 rounded-3xl border-[1.5px] border-[#ECEBF8] bg-white p-6 shadow-lift sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
               <h4 className="text-base font-semibold text-slate-900">
@@ -300,7 +300,7 @@ export function MergePdfTool() {
               type="button"
               disabled={files.length < 2 || isProcessing}
               onClick={mergePdfs}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               {isProcessing ? (
                 <>
@@ -335,7 +335,7 @@ export function MergePdfTool() {
             <a
               href={downloadUrl}
               download={downloadName}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3.5 text-base font-semibold text-white shadow hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3.5 text-base font-semibold text-white shadow hover:bg-brand-700 transition"
             >
               <Download className="h-5 w-5" />
               <span>Download Merged PDF</span>

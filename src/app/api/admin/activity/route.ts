@@ -12,6 +12,6 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get('category') || undefined;
   const search = searchParams.get('search') || undefined;
 
-  const logs = getActivityLogs(category, search);
+  const logs = await getActivityLogs(category, search);
   return NextResponse.json({ success: true, logs });
 }

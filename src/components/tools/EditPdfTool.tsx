@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFString, rgb, StandardFonts, degrees } from 'pdf-lib';
 import { 
   Upload, 
   File as FileIcon, 
@@ -17,6 +17,33 @@ import {
   Highlighter
 } from 'lucide-react';
 
+type Position = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
+const POSITIONS: { id: Position; label: string }[] = [
+  { id: 'top-left', label: 'Top left' },
+  { id: 'top-center', label: 'Top centre' },
+  { id: 'top-right', label: 'Top right' },
+  { id: 'middle-left', label: 'Middle left' },
+  { id: 'center', label: 'Centre' },
+  { id: 'middle-right', label: 'Middle right' },
+  { id: 'bottom-left', label: 'Bottom left' },
+  { id: 'bottom-center', label: 'Bottom centre' },
+  { id: 'bottom-right', label: 'Bottom right' },
+];
+
+/** Bottom-left corner (PDF coordinates) for a box of w×h placed at a preset spot with a half-inch margin. */
+function place(pageW: number, pageH: number, w: number, h: number, pos: Position, margin = 36) {
+  const [v, hz] = pos === 'center' ? ['middle', 'center'] : pos.split('-');
+  const x = hz === 'left' ? margin : hz === 'right' ? pageW - w - margin : (pageW - w) / 2;
+  const y = v === 'top' ? pageH - h - margin : v === 'bottom' ? margin : (pageH - h) / 2;
+  return { x: Math.max(0, x), y: Math.max(0, y) };
+}
+
+function hexToRgb(hex: string) {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+}
+
 interface EditPdfToolProps {
   toolType: 'add-text' | 'add-image' | 'annotate' | 'watermark' | 'crop' | 'flatten';
 }
@@ -29,6 +56,12 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
   const [watermarkOpacity, setWatermarkOpacity] = useState<number>(0.3);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [cropMargin, setCropMargin] = useState<number>(36); // Points (0.5 inch)
+  const [pageChoice, setPageChoice] = useState<string>(toolType === 'add-text' ? 'all' : '1');
+  const [position, setPosition] = useState<Position>('top-left');
+  const [textSize, setTextSize] = useState<number>(14);
+  const [textColor, setTextColor] = useState<string>('#1F2A8A');
+  const [imageWidthPct, setImageWidthPct] = useState<number>(30);
+  const [noteText, setNoteText] = useState<string>('Please review this section.');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -82,19 +115,19 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
       const buffer = await file.arrayBuffer();
       const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
       const base = file.name.replace(/\.[^/.]+$/, '');
+      const total = doc.getPageCount();
+      const chosen = Math.min(Math.max(parseInt(pageChoice, 10) || 1, 1), total) - 1;
+      const targetPages = pageChoice === 'all' ? Array.from({ length: total }, (_, i) => i) : [chosen];
 
       if (toolType === 'add-text') {
+        if (!customText.trim()) throw new Error('Type the text you want to add.');
         const font = await doc.embedFont(StandardFonts.Helvetica);
-        const total = doc.getPageCount();
-        for (let i = 0; i < total; i++) {
+        const w = font.widthOfTextAtSize(customText, textSize);
+        const h = font.heightAtSize(textSize);
+        for (const i of targetPages) {
           const page = doc.getPage(i);
-          page.drawText(customText, {
-            x: 50,
-            y: page.getHeight() - 50,
-            size: 13,
-            font,
-            color: rgb(0.1, 0.2, 0.7),
-          });
+          const { x, y } = place(page.getWidth(), page.getHeight(), w, h, position);
+          page.drawText(customText, { x, y, size: textSize, font, color: hexToRgb(textColor) });
         }
         setDownloadName(`${base}-text-added.pdf`);
       } else if (toolType === 'add-image') {
@@ -129,19 +162,13 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
         });
 
         const embeddedImg = await doc.embedPng(imgBytes);
-        const page = doc.getPage(0);
-        const maxW = 200;
-        const maxH = 150;
-        const scale = Math.min(maxW / embeddedImg.width, maxH / embeddedImg.height, 1);
-        const renderW = embeddedImg.width * scale;
-        const renderH = embeddedImg.height * scale;
-
-        page.drawImage(embeddedImg, {
-          x: 50,
-          y: page.getHeight() - renderH - 50,
-          width: renderW,
-          height: renderH,
-        });
+        for (const i of targetPages) {
+          const page = doc.getPage(i);
+          const renderW = Math.min(page.getWidth() * (imageWidthPct / 100), page.getWidth() - 72);
+          const renderH = (embeddedImg.height / embeddedImg.width) * renderW;
+          const { x, y } = place(page.getWidth(), page.getHeight(), renderW, renderH, position);
+          page.drawImage(embeddedImg, { x, y, width: renderW, height: renderH });
+        }
         setDownloadName(`${base}-image-stamped.pdf`);
       } else if (toolType === 'watermark') {
         const font = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -188,24 +215,46 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
         }
         setDownloadName(`${base}-flattened.pdf`);
       } else if (toolType === 'annotate') {
-        // Draw highlight bar and callout marker
-        const page = doc.getPage(0);
-        page.drawRectangle({
-          x: 50,
-          y: page.getHeight() - 100,
-          width: 300,
-          height: 22,
-          color: rgb(1, 0.95, 0.3),
-          opacity: 0.5,
-        });
+        // A real PDF comment (shows in the comments panel of Acrobat, Preview, Chrome and Edge)
+        // plus a visible note box so the comment also appears when the page is printed.
+        if (!noteText.trim()) throw new Error('Type the comment you want to add.');
         const font = await doc.embedFont(StandardFonts.Helvetica);
-        page.drawText('Annotated Note', {
-          x: 55,
-          y: page.getHeight() - 94,
-          size: 11,
-          font,
-          color: rgb(0.2, 0.2, 0.2),
-        });
+        const size = 11;
+        const maxLine = 240;
+        const words = noteText.trim().split(/\s+/);
+        const lines: string[] = [];
+        let line = '';
+        for (const word of words) {
+          const next = line ? `${line} ${word}` : word;
+          if (font.widthOfTextAtSize(next, size) > maxLine && line) {
+            lines.push(line);
+            line = word;
+          } else line = next;
+        }
+        if (line) lines.push(line);
+        const boxW = Math.max(...lines.map((l) => font.widthOfTextAtSize(l, size))) + 16;
+        const boxH = lines.length * (size + 4) + 12;
+        for (const i of targetPages) {
+          const page = doc.getPage(i);
+          const { x, y } = place(page.getWidth(), page.getHeight(), boxW, boxH, position);
+          page.drawRectangle({ x, y, width: boxW, height: boxH, color: rgb(1, 0.95, 0.55), opacity: 0.85, borderColor: rgb(0.85, 0.65, 0.1), borderWidth: 1 });
+          lines.forEach((l, li) => page.drawText(l, { x: x + 8, y: y + boxH - 8 - size - li * (size + 4), size, font, color: rgb(0.15, 0.15, 0.15) }));
+          const annot = doc.context.obj({
+            Type: 'Annot',
+            Subtype: 'Text',
+            Rect: [x + boxW - 4, y + boxH - 4, x + boxW + 16, y + boxH + 16],
+            Contents: PDFString.of(noteText.trim()),
+            T: PDFString.of('PDFKitFree'),
+            Name: 'Comment',
+            C: [1, 0.8, 0.2],
+            F: 4,
+            M: PDFString.fromDate(new Date()),
+          });
+          const ref = doc.context.register(annot);
+          const existing = page.node.Annots();
+          if (existing) existing.push(ref);
+          else page.node.set(PDFName.of('Annots'), doc.context.obj([ref]));
+        }
         setDownloadName(`${base}-annotated.pdf`);
       }
 
@@ -230,7 +279,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
             e.preventDefault();
             if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
           }}
-          className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-8 sm:p-12 text-center hover:border-brand-400 hover:bg-brand-50/70 transition"
+          className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[#CFCBFF] bg-white p-8 sm:p-12 text-center hover:border-brand-600 hover:bg-brand-50 transition"
         >
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm border border-brand-100 mb-4">
             {toolType === 'add-text' && <Type className="h-7 w-7" />}
@@ -255,7 +304,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
             >
               <Upload className="h-4 w-4" />
               <span>Select PDF File</span>
@@ -270,7 +319,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border-[1.5px] border-[#ECEBF8] bg-white p-6 shadow-lift sm:p-8">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <div className="flex items-center gap-3">
               <FileIcon className="h-6 w-6 text-brand-600" />
@@ -291,6 +340,46 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
               <Trash2 className="h-3.5 w-3.5" /> Remove
             </button>
           </div>
+
+          {(toolType === 'add-text' || toolType === 'add-image' || toolType === 'annotate') && (
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="edit-page" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Page</label>
+                <select id="edit-page" value={pageChoice} onChange={(e) => setPageChoice(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 w-full">
+                  <option value="all">All pages</option>
+                  {Array.from({ length: numPages }, (_, i) => (
+                    <option key={i} value={String(i + 1)}>Page {i + 1}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="edit-position" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Position</label>
+                <select id="edit-position" value={position} onChange={(e) => setPosition(e.target.value as Position)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 w-full">
+                  {POSITIONS.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+              {toolType === 'add-text' && (
+                <>
+                  <div>
+                    <label htmlFor="edit-size" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Text size: {textSize} pt</label>
+                    <input id="edit-size" type="range" min="8" max="72" step="1" value={textSize} onChange={(e) => setTextSize(parseInt(e.target.value, 10))} className="w-full" />
+                  </div>
+                  <div>
+                    <label htmlFor="edit-color" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Colour</label>
+                    <input id="edit-color" type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="h-10 w-20 cursor-pointer rounded-lg border border-slate-300 bg-white" />
+                  </div>
+                </>
+              )}
+              {toolType === 'add-image' && (
+                <div className="sm:col-span-2">
+                  <label htmlFor="edit-imgw" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Image width: {imageWidthPct}% of the page</label>
+                  <input id="edit-imgw" type="range" min="5" max="100" step="5" value={imageWidthPct} onChange={(e) => setImageWidthPct(parseInt(e.target.value, 10))} className="w-full max-w-md" />
+                </div>
+              )}
+            </div>
+          )}
 
           {toolType === 'add-text' && (
             <div className="space-y-4 mb-6">
@@ -389,8 +478,16 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
           )}
 
           {toolType === 'annotate' && (
-            <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 mb-6">
-              Adds standardized highlight box and annotation callouts onto the document canvas.
+            <div className="mb-6">
+              <label htmlFor="edit-note" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Your comment</label>
+              <textarea
+                id="edit-note"
+                rows={3}
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 w-full max-w-xl"
+              />
+              <p className="mt-1 text-xs text-slate-500">Saved as a real PDF comment (visible in the comments panel of Acrobat, Preview, Chrome and Edge) and as a yellow note on the page so it also prints.</p>
             </div>
           )}
 
@@ -399,7 +496,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
               type="button"
               disabled={isProcessing}
               onClick={handleApplyEdit}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
             >
               {isProcessing ? (
                 <>
@@ -439,7 +536,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
             <a
               href={downloadUrl}
               download={downloadName}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
             >
               <Download className="h-4 w-4" />
               <span>Download Edited PDF</span>

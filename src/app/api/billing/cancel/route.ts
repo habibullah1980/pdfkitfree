@@ -9,7 +9,7 @@ export async function POST() {
   }
 
   try {
-    const updatedSub = cancelUserSubscription(session.user.id);
+    const updatedSub = await cancelUserSubscription(session.user.id);
     return NextResponse.json({
       success: true,
       subscription: updatedSub,

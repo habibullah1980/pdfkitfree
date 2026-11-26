@@ -59,9 +59,9 @@ export interface ToolIconConfig {
 
 /**
  * Brand Color Mapping:
- * - Brand Purple (#4b49ac / brand-600): Core PDF Manipulation & Structure
- * - Supporting Blue (#7DA0FA / text-blue-600): Document Conversions (Word, Excel, PPT, etc.)
- * - Lavender (#7978e3 / text-indigo-600): PDF Editing, Annotations & Content Enhancement
+ * - Brand Purple (#4B3FE4 / brand-600): Core PDF Manipulation & Structure
+ * - Supporting Blue (#8F86F5 / text-blue-600): Document Conversions (Word, Excel, PPT, etc.)
+ * - Lavender (#6C61EE / text-indigo-600): PDF Editing, Annotations & Content Enhancement
  * - Coral (#f3797e / text-rose-500): Compression, Security, Protection & Page Removal
  * - Teal / Emerald: Verification, Validation, Web Optimization & Signatures
  */

@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { VideoCompressorTool } from '@/components/VideoCompressorTool';
+import { VIDEO_SIZE_TARGETS } from '@/lib/size-targets';
 import { 
   ShieldCheck, 
   Cpu, 
@@ -14,14 +15,14 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Video Compressor Online - Reduce Video Size | PDFKitFree' },
+  title: { absolute: 'Video Compressor Online Free - Compress MP4, MOV & WebM | PDFKitFree' },
   description:
-    'Compress video files (MP4, MOV, WebM, AVI, MKV) directly in your browser without uploading to external servers. Reduce file size up to 80% with presets for Discord, email, and web.',
+    'Free online video compressor with no watermark. Shrink MP4, MOV, WebM and phone videos for email, Discord and WhatsApp. Most videos are compressed right in your browser.',
   alternates: {
     canonical: '/video-compressor',
   },
   openGraph: {
-    title: 'Video Compressor Online - Reduce Video Size | PDFKitFree',
+    title: 'Video Compressor Online Free - Compress MP4, MOV & WebM | PDFKitFree',
     description:
       'Fast, private client-side video compressor. Shrink video size with zero cloud uploads or privacy leaks.',
     url: 'https://www.pdfkitfree.online/video-compressor',
@@ -73,6 +74,15 @@ export default function VideoCompressorPage() {
             Shrink MP4, MOV, and WebM video files without third-party cloud uploads. Reduce file size up to 80% for email, messaging, and web publishing.
           </p>
         </div>
+
+        <nav aria-label="Compress to a size" className="mb-6 flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-semibold text-slate-600">Need an exact size?</span>
+          {VIDEO_SIZE_TARGETS.filter((t) => ['8mb', '10mb', '16mb', '25mb', '50mb'].includes(t.slug)).map((t) => (
+            <Link key={t.slug} href={`/compress-video-to/${t.slug}`} className="rounded-full bg-brand-50 px-3 py-1.5 font-bold text-brand-700 hover:bg-brand-100">
+              Under {t.label}
+            </Link>
+          ))}
+        </nav>
 
         {/* Interactive Video Compressor Component */}
         <div className="mb-16">

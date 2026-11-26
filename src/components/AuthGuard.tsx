@@ -54,7 +54,7 @@ export function AuthGuard({
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={`/login?returnUrl=${returnUrl}&reason=nda-required`}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
             >
               <span>Sign In</span>
               <ArrowRight className="h-4 w-4" />

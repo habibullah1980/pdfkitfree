@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid plan selected.' }, { status: 400 });
     }
 
-    const plans = getPlansConfig();
+    const plans = await getPlansConfig();
     const plan = plans.find((p) => p.id === planId);
     if (!plan) {
       return NextResponse.json({ error: 'Plan not found.' }, { status: 404 });

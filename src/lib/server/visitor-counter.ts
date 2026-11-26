@@ -95,7 +95,7 @@ export async function incrementVisitorCount(): Promise<number> {
       await ensureNeonTable();
       const rows = await executeNeonQuery<{ value: string | number }>(`
         INSERT INTO site_stats (key, value, updated_at)
-        VALUES ('website_visits', 12459, NOW())
+        VALUES ('website_visits', 1, NOW())
         ON CONFLICT (key) DO UPDATE
         SET value = site_stats.value + 1, updated_at = NOW()
         RETURNING value;

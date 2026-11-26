@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Verify that document actually exists in user's signing records
-  const userRequests = getSigningRequestsByUserId(session.user.id);
+  const userRequests = await getSigningRequestsByUserId(session.user.id);
   const hasRecord = userRequests.some((r) => r.storagePath === path || path.includes(r.id));
   if (!hasRecord && !path.startsWith(`${session.user.id}/`)) {
     return NextResponse.json({ error: 'Document record not found in user account.' }, { status: 404 });

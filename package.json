@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-ocr-assets.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-ocr-assets.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "for f in tests/*.test.ts; do echo \"=== $f\"; tsx \"$f\" || exit 1; done"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -16,28 +20,44 @@
     "@pdfsmaller/pdf-decrypt": "^1.0.1",
     "@pdfsmaller/pdf-encrypt": "^1.2.0",
     "@supabase/supabase-js": "^2.117.3",
+    "@tesseract.js-data/eng": "1.0.0",
     "clsx": "^2.1.1",
     "ffprobe-static": "^3.1.0",
+    "heic-to": "^1.6.7",
     "jszip": "^3.10.2",
     "lucide-react": "^1.56.0",
     "next": "14.2.15",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^3.11.174",
+    "qrcode": "^1.5.4",
     "react": "^18",
     "react-dom": "^18",
     "resend": "^6.33.0",
     "stripe": "^23.0.0",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
     "@types/jszip": "^3.4.0",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
     "eslint": "^8",
     "eslint-config-next": "14.2.15",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.19.2",
     "typescript": "^5"
-  }
+  },
+  "browserslist": [
+    "> 0.3%",
+    "last 2 versions",
+    "not dead",
+    "safari >= 14",
+    "ios_saf >= 14",
+    "samsung >= 14"
+  ]
 }

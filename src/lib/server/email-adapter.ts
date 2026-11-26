@@ -44,12 +44,12 @@ export class EmailProviderAdapter {
             subject: 'Verify your pdfkitfree account',
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                <h2 style="color: #4b49ac;">Verify Your Email Address</h2>
+                <h2 style="color: #4B3FE4;">Verify Your Email Address</h2>
                 <p>Thank you for joining pdfkitfree. Use the 6-digit confirmation code below or click the verification link:</p>
                 <div style="background-color: #f3f2fd; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                  <span style="font-family: monospace; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #4b49ac;">${code}</span>
+                  <span style="font-family: monospace; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #4B3FE4;">${code}</span>
                 </div>
-                <p><a href="${verifyLink}" style="display: inline-block; background-color: #4b49ac; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">Verify Email</a></p>
+                <p><a href="${verifyLink}" style="display: inline-block; background-color: #4B3FE4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">Verify Email</a></p>
                 <p style="font-size: 12px; color: #64748b; margin-top: 24px;">This code expires in 24 hours. If you did not create an account, you can safely ignore this email.</p>
               </div>
             `,
@@ -111,9 +111,9 @@ export class EmailProviderAdapter {
             subject: 'Reset your pdfkitfree password',
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                <h2 style="color: #4b49ac;">Password Reset Request</h2>
+                <h2 style="color: #4B3FE4;">Password Reset Request</h2>
                 <p>We received a request to reset your password. Click the secure link below to set a new password:</p>
-                <p style="margin: 24px 0;"><a href="${resetLink}" style="background-color: #4b49ac; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset Password</a></p>
+                <p style="margin: 24px 0;"><a href="${resetLink}" style="background-color: #4B3FE4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset Password</a></p>
                 <p style="font-size: 12px; color: #64748b;">This link is single-use and expires in 1 hour. If you did not make this request, please contact support.</p>
               </div>
             `,
@@ -201,8 +201,8 @@ export class EmailProviderAdapter {
             subject: `[PDFKitFree Inquiry] ${safeSubject}`,
             html: `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-                <div style="border-bottom: 2px solid #4b49ac; padding-bottom: 12px; margin-bottom: 20px;">
-                  <h2 style="color: #4b49ac; margin: 0; font-size: 20px;">New Contact Form Submission</h2>
+                <div style="border-bottom: 2px solid #4B3FE4; padding-bottom: 12px; margin-bottom: 20px;">
+                  <h2 style="color: #4B3FE4; margin: 0; font-size: 20px;">New Contact Form Submission</h2>
                   <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Received via PDFKitFree Support Portal</p>
                 </div>
                 <div style="margin-bottom: 16px;">

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Verification token is required.' }, { status: 400 });
     }
 
-    const verification = PaymentGateway.verifyAndProcessEvent(token);
+    const verification = await PaymentGateway.verifyAndProcessEvent(token);
     if (!verification.isValid || !verification.payload) {
       return NextResponse.json(
         { error: verification.error || 'Payment verification failed.' },
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User mismatch during verification.' }, { status: 403 });
     }
 
-    const updatedSub = PaymentGateway.applyVerifiedPayment(verification.payload);
+    const updatedSub = await PaymentGateway.applyVerifiedPayment(verification.payload);
 
     return NextResponse.json({
       success: true,

@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { TOOLS, getToolBySlug } from '@/lib/tools';
 import { getToolSeoData } from '@/lib/tool-content';
 import { getBlogPostBySlug } from '@/lib/blog-data';
+import { ShareTool } from '@/components/ShareTool';
+import { SIZE_TARGETS, IMAGE_SIZE_TARGETS } from '@/lib/size-targets';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ToolDispatcher } from '@/components/ToolDispatcher';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { getToolIconConfig } from '@/lib/tool-icons';
 
 interface ToolPageProps {
   params: {
@@ -88,8 +91,11 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
     })),
   } : null;
 
+  const toolIcon = getToolIconConfig(tool.id || tool.slug);
+  const ToolIcon = toolIcon.icon;
+
   return (
-    <div className="py-10 bg-white min-h-screen">
+    <div className="pk-tool-hero min-h-screen bg-[radial-gradient(800px_420px_at_92%_0%,#FFE7A8_0%,rgba(255,231,168,0)_62%),radial-gradient(600px_400px_at_0%_0%,#FFD9CC_0%,rgba(255,217,204,0)_60%),linear-gradient(#E6E4FF,#F3F2FF_420px,#fff_760px)] py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -110,18 +116,41 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
         />
 
         {/* Tool Header */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800 mb-4">
-            <ShieldCheck className="h-4 w-4 text-teal-600" />
-            <span>Zero Server Uploads • Secure Browser Execution</span>
+        <div className="mb-8 mt-2 flex flex-col gap-5 sm:flex-row sm:items-center">
+          <span className="flex h-16 w-16 flex-none items-center justify-center rounded-[20px] bg-white shadow-lift">
+            <ToolIcon className={`h-8 w-8 ${toolIcon.colorClass}`} strokeWidth={2} aria-hidden="true" />
+          </span>
+          <div>
+            <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{tool.title}</h1>
+            <p className="mt-2 max-w-3xl text-base text-ink-soft sm:text-lg">{tool.longDescription}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-teal-800 shadow-sm">
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                Runs in your browser
+              </p>
+              <ShareTool title={tool.title} path={`/tools/${tool.slug}`} />
+            </div>
+            {tool.slug === 'compress-pdf' && (
+              <nav aria-label="Compress to a size" className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-semibold text-ink-muted">Need an exact size?</span>
+                {SIZE_TARGETS.filter((t) => ['50kb', '100kb', '200kb', '500kb', '1mb'].includes(t.slug)).map((t) => (
+                  <Link key={t.slug} href={`/compress-pdf-to/${t.slug}`} className="rounded-full bg-white px-3 py-1.5 font-bold text-brand-600 shadow-sm hover:bg-brand-50">
+                    Under {t.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+            {['jpg-to-pdf', 'png-to-pdf'].includes(tool.slug) && (
+              <nav aria-label="Compress an image" className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-semibold text-ink-muted">Just need a smaller image?</span>
+                {IMAGE_SIZE_TARGETS.filter((t) => ['20kb', '50kb', '100kb', '200kb'].includes(t.slug)).map((t) => (
+                  <Link key={t.slug} href={`/compress-image-to/${t.slug}`} className="rounded-full bg-white px-3 py-1.5 font-bold text-brand-600 shadow-sm hover:bg-brand-50">
+                    Image under {t.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
           </div>
-
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            {tool.title}
-          </h1>
-          <p className="mt-3 text-base sm:text-lg text-slate-600">
-            {tool.longDescription}
-          </p>
         </div>
 
         {/* Functional Tool Workspace */}
@@ -130,31 +159,31 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
         </div>
 
         {/* SEO Explanations, Instructions, Use Cases & FAQs */}
-        <div className="border-t border-slate-200 pt-12 space-y-12">
+        <div className="space-y-14">
           {/* Detailed Intro */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 sm:p-8">
-            <h2 className="text-xl font-bold text-slate-900 mb-3">
+          <div className="rounded-3xl bg-[#FFF1CC] p-6 sm:p-8">
+            <h2 className="text-xl font-bold text-ink mb-3">
               About {tool.title} by PDFKitFree
             </h2>
-            <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
+            <p className="text-sm sm:text-base text-ink-soft leading-relaxed">
               {seoData.introParagraph}
             </p>
           </div>
 
           {/* How-To Steps */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+            <h2 className="text-2xl font-bold text-ink mb-6">
               How to Use {tool.title} Step-by-Step
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {seoData.howToSteps.map((step, idx) => (
-                <div key={idx} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-sm font-bold text-brand-700 mb-3">
+                <div key={idx} className="rounded-[20px] border-[1.5px] border-[#EEEDF8] bg-white p-6">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sun font-display text-base font-extrabold text-ink mb-3">
                     {idx + 1}
                   </span>
-                  <h3 className="font-semibold text-slate-900">{step.title}</h3>
-                  <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
+                  <h3 className="font-semibold text-ink">{step.title}</h3>
+                  <p className="mt-1.5 text-sm text-ink-muted leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -165,14 +194,14 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
           {/* Real-World Use Cases */}
           {seoData.useCases && seoData.useCases.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              <h2 className="text-2xl font-bold text-ink mb-6">
                 Common Practical Use Cases
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {seoData.useCases.map((uc, idx) => (
-                  <div key={idx} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h3 className="font-semibold text-slate-900 text-base mb-2">{uc.title}</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{uc.description}</p>
+                  <div key={idx} className="rounded-[20px] border-[1.5px] border-[#EEEDF8] bg-white p-6">
+                    <h3 className="font-semibold text-ink text-base mb-2">{uc.title}</h3>
+                    <p className="text-sm text-ink-muted leading-relaxed">{uc.description}</p>
                   </div>
                 ))}
               </div>
@@ -182,14 +211,14 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
           {/* Frequently Asked Questions */}
           {seoData.faqs && seoData.faqs.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              <h2 className="text-2xl font-bold text-ink mb-6">
                 Frequently Asked Questions
               </h2>
               <div className="space-y-4">
                 {seoData.faqs.map((faq, idx) => (
-                  <div key={idx} className="rounded-xl border border-slate-200 bg-white p-5">
-                    <h3 className="text-base font-semibold text-slate-900">{faq.question}</h3>
-                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{faq.answer}</p>
+                  <div key={idx} className="rounded-[20px] border-[1.5px] border-[#EEEDF8] bg-white p-6">
+                    <h3 className="text-base font-semibold text-ink">{faq.question}</h3>
+                    <p className="mt-2 text-sm text-ink-muted leading-relaxed">{faq.answer}</p>
                   </div>
                 ))}
               </div>
@@ -197,17 +226,17 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
           )}
 
           {/* Related Tools & Relevant Blog Articles */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Related PDF Tools & Guides</h2>
+          <div className="rounded-3xl border-[1.5px] border-[#EEEDF8] bg-white p-6 sm:p-8">
+            <h2 className="text-xl font-bold text-ink mb-4">Related PDF Tools & Guides</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {relatedTools.map((relTool) => (
                 <Link
                   key={relTool.slug}
                   href={`/tools/${relTool.slug}`}
-                  className="group flex flex-col justify-between rounded-xl border border-slate-200 p-4 hover:border-brand-300 hover:shadow-sm transition"
+                  className="group flex flex-col justify-between rounded-[18px] border-[1.5px] border-[#EEEDF8] p-4 transition hover:-translate-y-0.5 hover:border-brand-600"
                 >
                   <div>
-                    <h4 className="font-semibold text-sm text-slate-900 group-hover:text-brand-600 transition">
+                    <h4 className="font-semibold text-sm text-ink group-hover:text-brand-600 transition">
                       {relTool.title}
                     </h4>
                     <p className="mt-1 text-xs text-slate-500 line-clamp-2">
@@ -228,7 +257,7 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
                   <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
                     Recommended Reading
                   </span>
-                  <p className="text-sm font-semibold text-slate-900 mt-0.5">
+                  <p className="text-sm font-semibold text-ink mt-0.5">
                     {relatedBlog.title}
                   </p>
                   <p className="text-xs text-slate-500 line-clamp-1">{relatedBlog.excerpt}</p>

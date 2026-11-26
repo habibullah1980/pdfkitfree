@@ -403,7 +403,7 @@ export function SharedSignerWorkspace({
             <a
               href={signedPdfUrl}
               download={downloadName}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow hover:bg-brand-700 transition"
             >
               <Download className="h-4 w-4" />
               <span>Download Signed PDF</span>
@@ -449,7 +449,7 @@ export function SharedSignerWorkspace({
                   type="button"
                   disabled={isSigning}
                   onClick={handleExecuteSigning}
-                  className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2 text-xs sm:text-sm font-bold text-white shadow hover:bg-teal-700 transition disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-xs sm:text-sm font-bold text-white shadow hover:bg-teal-700 transition disabled:opacity-50"
                 >
                   {isSigning ? (
                     <>

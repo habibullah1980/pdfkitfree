@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
-    const user = findUserById(session.user.id);
+    const user = await findUserById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: 'User account not found.' }, { status: 404 });
     }
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Store hash & expiry in user record
-    setPhoneOtpForUser(user.id, normalizedPhone, otpCode);
+    await setPhoneOtpForUser(user.id, normalizedPhone, otpCode);
     rateLimitMap.set(normalizedPhone, now);
 
     // Dispatch via SMS Adapter

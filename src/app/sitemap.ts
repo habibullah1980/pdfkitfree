@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next';
 import { TOOLS } from '@/lib/tools';
 import { BLOG_POSTS } from '@/lib/blog-data';
 import { SITE_CONFIG } from '@/lib/site-config';
+import { SIZE_TARGETS, VIDEO_SIZE_TARGETS, IMAGE_SIZE_TARGETS } from '@/lib/size-targets';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = SITE_CONFIG.url;
@@ -15,6 +16,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/video-compressor`, lastModified: currentDate, changeFrequency: 'daily' as const, priority: 0.9 },
     { url: `${baseUrl}/nda-esign`, lastModified: currentDate, changeFrequency: 'daily' as const, priority: 0.9 },
     { url: `${baseUrl}/sign-pdf`, lastModified: currentDate, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...['/qr-code-generator', '/heic-to-jpg', '/heic-to-png', '/resize-image'].map((p) => ({
+      url: `${baseUrl}${p}`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly' as const,
+      priority: 0.85,
+    })),
     { url: `${baseUrl}/nda-generator`, lastModified: currentDate, changeFrequency: 'weekly' as const, priority: 0.8 },
     { url: `${baseUrl}/blog`, lastModified: currentDate, changeFrequency: 'daily' as const, priority: 0.8 },
     { url: `${baseUrl}/about`, lastModified: currentDate, changeFrequency: 'monthly' as const, priority: 0.5 },
@@ -37,5 +44,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...toolPages, ...blogPages];
+  const sizePages = [
+    ...SIZE_TARGETS.map((t) => `/compress-pdf-to/${t.slug}`),
+    ...VIDEO_SIZE_TARGETS.map((t) => `/compress-video-to/${t.slug}`),
+    ...IMAGE_SIZE_TARGETS.map((t) => `/compress-image-to/${t.slug}`),
+  ].map((path) => ({
+    url: `${baseUrl}${path}`,
+    lastModified: currentDate,
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...toolPages, ...sizePages, ...blogPages];
 }

@@ -46,7 +46,22 @@ export interface WebhookVerificationResult {
   error?: string;
 }
 
-const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || 'fpk_webhook_secret_sign_2026_xyz';
+/**
+ * Key for signing sandbox (test) checkout tokens. Sandbox checkout grants a paid
+ * plan without charging anyone, so it is disabled in production unless
+ * ENABLE_SANDBOX_PAYMENTS=true, and it never uses a built-in key.
+ * Returns null when sandbox payments are not allowed.
+ */
+let devSandboxSecret: string | null = null;
+export function getSandboxSigningSecret(): string | null {
+  const isProd = process.env.NODE_ENV === 'production';
+  if (isProd && process.env.ENABLE_SANDBOX_PAYMENTS !== 'true') return null;
+  const configured = process.env.PAYMENT_WEBHOOK_SECRET;
+  if (configured && configured.length >= 32) return configured;
+  if (isProd) return null;
+  if (!devSandboxSecret) devSandboxSecret = crypto.randomBytes(32).toString('hex');
+  return devSandboxSecret;
+}
 
 // In-memory set to prevent replay attacks / duplicate submission of the same nonce
 const processedNonces = new Set<string>();
@@ -261,6 +276,10 @@ export class PaymentGateway {
 
     // 3. Cryptographically Signed Sandbox Session (when live API keys are not supplied)
     // Uses HMAC-SHA256 signature to guarantee server verification before any subscription grant
+    const sandboxSecret = getSandboxSigningSecret();
+    if (!sandboxSecret) {
+      throw new Error('Online payments are not available right now. Please try again later.');
+    }
     const canonicalPayloadString = serializeCanonicalJson({
       amount: opts.amount,
       billingInterval: opts.billingInterval,
@@ -276,7 +295,7 @@ export class PaymentGateway {
     const payloadBase64Url = Buffer.from(canonicalPayloadString, 'utf-8').toString('base64url');
 
     const signature = crypto
-      .createHmac('sha256', WEBHOOK_SECRET)
+      .createHmac('sha256', sandboxSecret)
       .update(payloadBase64Url)
       .digest('hex');
 
@@ -500,11 +519,15 @@ export class PaymentGateway {
   }
 
   // Verify and process secure webhook / HMAC sandbox token
-  static verifyAndProcessEvent(
+  static async verifyAndProcessEvent(
     tokenOrPayload: string,
     signatureHeader?: string
-  ): WebhookVerificationResult {
+  ): Promise<WebhookVerificationResult> {
     try {
+      const WEBHOOK_SECRET = getSandboxSigningSecret();
+      if (!WEBHOOK_SECRET) {
+        return { isValid: false, provider: 'sandbox', error: 'Sandbox payments are disabled.' };
+      }
       if (tokenOrPayload.includes('.')) {
         const parts = tokenOrPayload.split('.');
         if (parts.length !== 2) {
@@ -539,7 +562,7 @@ export class PaymentGateway {
         processedNonces.add(data.nonce);
 
         // Server-side Plan & Price Validation: Never trust client amount
-        const plans = getPlansConfig();
+        const plans = await getPlansConfig();
         const plan = plans.find((p) => p.id === data.planId);
         if (!plan) {
           return { isValid: false, provider: 'sandbox', error: 'Invalid plan tier in token payload.' };
@@ -597,7 +620,7 @@ export class PaymentGateway {
   }
 
   // Execute subscription activation upon verified payment event
-  static applyVerifiedPayment(payload: {
+  static async applyVerifiedPayment(payload: {
     userId: string;
     planId: PlanTier;
     billingInterval: 'monthly' | 'yearly';
@@ -609,7 +632,7 @@ export class PaymentGateway {
     provider?: 'mock' | 'stripe' | 'paypal';
   }) {
     const provider = payload.provider || 'mock';
-    return changeUserSubscription(
+    return await changeUserSubscription(
       payload.userId,
       payload.planId,
       payload.billingInterval,

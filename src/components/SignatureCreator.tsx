@@ -189,7 +189,7 @@ export function SignatureCreator({ onSignatureReady }: SignatureCreatorProps) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-3xl border-[1.5px] border-[#ECEBF8] bg-white p-6 shadow-lift sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-5">
         <div>
           <h3 className="text-base font-bold text-slate-900">Create or Choose Signature</h3>
@@ -404,7 +404,7 @@ export function SignatureCreator({ onSignatureReady }: SignatureCreatorProps) {
         <button
           type="button"
           onClick={handleApplySignature}
-          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition"
+          className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition"
         >
           <Check className="h-4 w-4" />
           <span>Save & Use Signature</span>

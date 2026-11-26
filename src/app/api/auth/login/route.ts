@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
     }
 
-    const user = findUserByEmail(email);
+    const user = await findUserByEmail(email);
     if (!user) {
       // Record failed attempt
       const current = loginAttemptMap.get(ip) || { count: 0, lastAttempt: now };
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check Multi-Factor Authentication requirement
-    const platformSettings = getPlatformSettingsAdmin();
+    const platformSettings = await getPlatformSettingsAdmin();
     const isSuperAdmin = user.role === 'superadmin';
     const isMfaEnforced = user.mfa?.enabled || (isSuperAdmin && platformSettings.requireMfaForAdmin);
 
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    recordUserLogin(user.id, ip, userAgent);
+    await recordUserLogin(user.id, ip, userAgent);
     await setSessionCookie(user.id, user.email, ip, userAgent);
 
     return NextResponse.json({

@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { useAuth } from '@/contexts/AuthContext';
+import { Logo } from '@/components/brand/Logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
-  FileText, 
   Menu, 
   X, 
-  ShieldCheck, 
   ShieldAlert,
   LogOut, 
   FileSignature, 
@@ -41,32 +41,25 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-[#F0EFF8] bg-white/90 backdrop-blur-md pk-header">
+      <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#4b49ac] text-white shadow-sm">
-            <FileText className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              pdfkit<span className="text-[#4b49ac]">free</span>
-            </span>
-          </div>
+        <Link href="/" className="flex items-center rounded-lg" aria-label="PDFKitFree home">
+          <Logo size={38} />
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+        <nav className="hidden items-center gap-1 xl:flex" aria-label="Main navigation">
           {SITE_CONFIG.navLinks.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${
+                className={`relative whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
                   isActive
-                    ? 'bg-[#4b49ac]/10 text-[#4b49ac] font-bold'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-brand-50 text-brand-600'
+                    : 'text-[#3D3B63] hover:text-brand-600'
                 }`}
               >
                 {item.label}
@@ -76,11 +69,8 @@ export function Header() {
         </nav>
 
         {/* Desktop Auth & CTA */}
-        <div className="hidden items-center gap-3 md:flex">
-          <div className="flex items-center gap-1.5 rounded-full border border-[#98dbff] bg-[#98dbff]/15 px-3 py-1 text-xs font-semibold text-[#2f2d66]">
-            <ShieldCheck className="h-3.5 w-3.5 text-[#4b49ac]" />
-            <span>100% In-Browser Privacy</span>
-          </div>
+        <div className="hidden items-center gap-3 xl:flex">
+          <ThemeToggle />
 
           {isAuthenticated && user ? (
             <div className="relative" ref={dropdownRef}>
@@ -89,11 +79,11 @@ export function Header() {
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                 className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#4b49ac] text-white text-xs font-bold">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#4B3FE4] text-white text-xs font-bold">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <span className="max-w-[120px] truncate">{user.name.split(' ')[0]}</span>
-                <span className="rounded-full bg-[#98dbff]/40 text-[#2f2d66] px-1.5 py-0.2 text-[9px] font-black uppercase">
+                <span className="rounded-full bg-[#CFCBFF]/40 text-[#221A7A] px-1.5 py-0.2 text-[9px] font-black uppercase">
                   {user.subscription?.planId || 'Free'}
                 </span>
                 <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
@@ -105,7 +95,7 @@ export function Header() {
                     <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
                     <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
                     <div className="mt-1 flex items-center justify-between text-[10px]">
-                      <span className="font-bold uppercase text-[#4b49ac] bg-[#4b49ac]/10 px-2 py-0.5 rounded-full">
+                      <span className="font-bold uppercase text-[#4B3FE4] bg-[#4B3FE4]/10 px-2 py-0.5 rounded-full">
                         {user.subscription?.planId || 'Free'} Plan
                       </span>
                       {user.emailVerified ? (
@@ -128,9 +118,9 @@ export function Header() {
                     <Link
                       href="/admin"
                       onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-[#4b49ac] bg-[#4b49ac]/10 hover:bg-[#4b49ac]/20 transition mb-1"
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-[#4B3FE4] bg-[#4B3FE4]/10 hover:bg-[#4B3FE4]/20 transition mb-1"
                     >
-                      <ShieldAlert className="h-3.5 w-3.5 text-[#4b49ac]" />
+                      <ShieldAlert className="h-3.5 w-3.5 text-[#4B3FE4]" />
                       <span>Super Admin Portal</span>
                     </Link>
                   )}
@@ -138,9 +128,9 @@ export function Header() {
                   <Link
                     href="/ai"
                     onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#4b49ac] hover:bg-[#4b49ac]/10 transition"
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#4B3FE4] hover:bg-[#4B3FE4]/10 transition"
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-[#4b49ac]" />
+                    <Sparkles className="h-3.5 w-3.5 text-[#4B3FE4]" />
                     <span>AI Document Assistant</span>
                   </Link>
 
@@ -158,7 +148,7 @@ export function Header() {
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                   >
-                    <CreditCard className="h-3.5 w-3.5 text-[#7978e3]" />
+                    <CreditCard className="h-3.5 w-3.5 text-[#6C61EE]" />
                     <span>Manage Subscription</span>
                   </Link>
 
@@ -167,7 +157,7 @@ export function Header() {
                     onClick={() => setUserDropdownOpen(false)}
                     className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                   >
-                    <FileSignature className="h-3.5 w-3.5 text-[#4b49ac]" />
+                    <FileSignature className="h-3.5 w-3.5 text-[#4B3FE4]" />
                     <span>My NDA Agreements</span>
                   </Link>
 
@@ -189,22 +179,23 @@ export function Header() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
+                className="inline-flex min-h-[44px] items-center rounded-full border-[1.5px] border-[#D9D7F2] px-5 text-[15px] font-bold text-ink transition hover:border-brand-600 hover:text-brand-600"
               >
-                Log In
+                Log in
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-xl bg-[#4b49ac] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#413e96] transition"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-brand-600 px-5 text-[15px] font-bold text-white shadow-glow transition hover:bg-brand-700"
               >
-                Sign Up
+                Sign up free
               </Link>
             </div>
           )}
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex md:hidden">
+        <div className="flex items-center gap-2 xl:hidden">
+          <ThemeToggle />
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -219,7 +210,7 @@ export function Header() {
 
       {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
-        <div className="border-b border-slate-200 bg-white px-4 pt-2 pb-6 md:hidden">
+        <div className="border-b border-slate-200 bg-white px-4 pt-2 pb-6 xl:hidden">
           <div className="space-y-1">
             {SITE_CONFIG.navLinks.map((item) => (
               <Link
@@ -245,7 +236,7 @@ export function Header() {
                     <p className="text-sm font-bold text-slate-900">{user.name}</p>
                     <p className="text-xs text-slate-500">{user.email}</p>
                   </div>
-                  <span className="rounded-full bg-[#98dbff]/40 text-[#2f2d66] px-2 py-0.5 text-[10px] font-black uppercase">
+                  <span className="rounded-full bg-[#CFCBFF]/40 text-[#221A7A] px-2 py-0.5 text-[10px] font-black uppercase">
                     {user.subscription?.planId || 'Free'} Plan
                   </span>
                 </div>
@@ -253,18 +244,18 @@ export function Header() {
                   <Link
                     href="/admin"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-xl bg-[#4b49ac]/10 border border-[#4b49ac]/30 px-4 py-2.5 text-sm font-bold text-[#4b49ac]"
+                    className="flex items-center gap-2 rounded-xl bg-[#4B3FE4]/10 border border-[#4B3FE4]/30 px-4 py-2.5 text-sm font-bold text-[#4B3FE4]"
                   >
-                    <ShieldAlert className="h-4 w-4 text-[#4b49ac]" />
+                    <ShieldAlert className="h-4 w-4 text-[#4B3FE4]" />
                     <span>Super Admin Portal</span>
                   </Link>
                 )}
                 <Link
                   href="/ai"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-xl bg-[#4b49ac]/10 px-4 py-2.5 text-sm font-bold text-[#4b49ac]"
+                  className="flex items-center gap-2 rounded-xl bg-[#4B3FE4]/10 px-4 py-2.5 text-sm font-bold text-[#4B3FE4]"
                 >
-                  <Sparkles className="h-4 w-4 text-[#4b49ac]" />
+                  <Sparkles className="h-4 w-4 text-[#4B3FE4]" />
                   <span>AI Document Assistant</span>
                 </Link>
                 <Link
@@ -280,7 +271,7 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-800"
                 >
-                  <CreditCard className="h-4 w-4 text-[#7978e3]" />
+                  <CreditCard className="h-4 w-4 text-[#6C61EE]" />
                   <span>Manage Subscription</span>
                 </Link>
                 <Link
@@ -288,7 +279,7 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-800"
                 >
-                  <FileSignature className="h-4 w-4 text-[#4b49ac]" />
+                  <FileSignature className="h-4 w-4 text-[#4B3FE4]" />
                   <span>My NDA Agreements</span>
                 </Link>
                 <button
@@ -315,7 +306,7 @@ export function Header() {
                 <Link
                   href="/signup"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center rounded-xl bg-[#4b49ac] px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-[#413e96]"
+                  className="flex items-center justify-center rounded-xl bg-[#4B3FE4] px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-[#3326C4]"
                 >
                   Sign Up
                 </Link>

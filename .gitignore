@@ -45,3 +45,7 @@ next-env.d.ts
 
 !.env.example
 .neon
+/public/tesseract/
+
+# local dev data store
+/.data/

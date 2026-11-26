@@ -12,6 +12,8 @@ import {
   Trash2,
   FileText
 } from 'lucide-react';
+import { openPdfDocument } from '@/lib/pdfjs-client';
+import { buildPptxFromImages, preparePdfA, rowsToCsv, textItemsToRows } from '@/lib/pdf-export-formats';
 
 interface ConvertFromPdfToolProps {
   targetFormat: 'image' | 'word' | 'excel' | 'powerpoint' | 'pdfa';
@@ -22,6 +24,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
   const [file, setFile] = useState<File | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [extractedPreview, setExtractedPreview] = useState<string | null>(null);
+  const [resultNote, setResultNote] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -50,6 +53,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
     setErrorMessage(null);
     setDownloadUrl(null);
     setExtractedPreview(null);
+    setResultNote(null);
 
     if (!selectedFile.type.includes('pdf') && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
       setErrorMessage('Please upload a valid PDF document.');
@@ -58,9 +62,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
 
     try {
       const buffer = await selectedFile.arrayBuffer();
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const doc = await openPdfDocument(buffer);
       setFile(selectedFile);
       setNumPages(doc.numPages);
     } catch {
@@ -106,9 +108,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
 
     try {
       const buffer = await file.arrayBuffer();
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const doc = await openPdfDocument(buffer);
       const base = file.name.replace(/\.[^/.]+$/, '');
 
       if (targetFormat === 'image') {
@@ -165,54 +165,56 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
         setDownloadUrl(url);
         setDownloadName(`${base}-converted.docx`);
       } else if (targetFormat === 'excel') {
-        // Extract tabular data / rows into clean CSV with UTF-8 BOM
-        let csvText = '\uFEFF"Page Number","Extracted Content / Table Row"\n';
+        // Rebuild rows and columns from text positions, page by page, then write CSV (UTF-8 with BOM for Excel).
+        const allRows: string[][] = [];
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i);
           const textContent = await page.getTextContent();
-          const pageStrings = textContent.items.map((item: unknown) => {
-            const strItem = item as { str?: string };
-            return strItem.str || '';
-          });
-          const fullPageText = pageStrings.join(' ').replace(/"/g, '""');
-          csvText += `"${i}","${fullPageText}"\n`;
+          const items = textContent.items
+            .map((item: unknown) => item as { str?: string; transform?: number[]; width?: number; height?: number })
+            .filter((it) => typeof it.str === 'string' && Array.isArray(it.transform))
+            .map((it) => ({ str: it.str as string, x: it.transform![4], y: it.transform![5], width: it.width || 0, height: it.height || 10 }));
+          if (doc.numPages > 1) allRows.push([`Page ${i}`]);
+          allRows.push(...textItemsToRows(items));
         }
-
+        const csvText = rowsToCsv(allRows);
         setExtractedPreview(csvText.slice(0, 1000));
         const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
         setDownloadName(`${base}-data.csv`);
       } else if (targetFormat === 'powerpoint') {
-        // Render each page into slide images package ready for PowerPoint
-        const zip = new JSZip();
+        // Render each page to an image and place it on its own slide in a real .pptx file.
+        const slides: { png: Uint8Array; widthPt: number; heightPt: number }[] = [];
         for (let i = 1; i <= doc.numPages; i++) {
           const page = await doc.getPage(i);
+          const base1 = page.getViewport({ scale: 1 });
           const viewport = page.getViewport({ scale: 2.0 });
           const canvas = document.createElement('canvas');
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            await page.render({ canvasContext: ctx, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-            zip.file(`slide-${i}.png`, base64Data, { base64: true });
-          }
+          if (!ctx) throw new Error('Your browser blocked page rendering.');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          const pngBlob = await new Promise<Blob>((resolve, reject) =>
+            canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not render a page.'))), 'image/png')
+          );
+          slides.push({ png: new Uint8Array(await pngBlob.arrayBuffer()), widthPt: base1.width, heightPt: base1.height });
         }
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(zipBlob);
+        const pptxBlob = await buildPptxFromImages(slides);
+        const url = URL.createObjectURL(pptxBlob);
         setDownloadUrl(url);
-        setDownloadName(`${base}-powerpoint-slides.zip`);
+        setDownloadName(`${base}.pptx`);
       } else if (targetFormat === 'pdfa') {
-        // PDF/A standardized archival re-serialization
-        const { PDFDocument } = await import('pdf-lib');
-        const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
-        pdfDoc.setTitle(`${base} (Archival PDF/A Compliance)`);
-        pdfDoc.setProducer('PDFKitFree Archival Engine');
-        const bytes = await pdfDoc.save();
+        // Add PDF/A-2b metadata, colour profile and file ID; report fonts that are not embedded.
+        const { bytes, unembeddedFonts } = await preparePdfA(buffer, base);
+        setResultNote(
+          unembeddedFonts.length === 0
+            ? 'PDF/A-2b metadata, sRGB colour profile and file ID added. All fonts are embedded.'
+            : `PDF/A-2b metadata and colour profile added, but ${unembeddedFonts.length} font${unembeddedFonts.length === 1 ? ' is' : 's are'} not embedded in your original (${unembeddedFonts.slice(0, 3).join(', ')}${unembeddedFonts.length > 3 ? '…' : ''}). Strict PDF/A checkers will flag this. Re-export from the original app with "embed fonts" on for full compliance.`
+        );
         const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
@@ -235,7 +237,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
             e.preventDefault();
             if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
           }}
-          className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-8 sm:p-12 text-center hover:border-brand-400 hover:bg-brand-50/70 transition"
+          className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[#CFCBFF] bg-white p-8 sm:p-12 text-center hover:border-brand-600 hover:bg-brand-50 transition"
         >
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm border border-brand-100 mb-4">
             <Upload className="h-7 w-7" />
@@ -244,8 +246,8 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
             {targetFormat === 'image' && (imageFormat === 'png' ? 'Convert PDF to PNG Images' : 'Convert PDF to JPG Images')}
             {targetFormat === 'word' && 'Convert PDF to editable Word document (.docx)'}
             {targetFormat === 'excel' && 'Convert PDF tables to Excel / CSV'}
-            {targetFormat === 'powerpoint' && 'Convert PDF slides to PowerPoint package'}
-            {targetFormat === 'pdfa' && 'Convert PDF to standardized PDF/A archival format'}
+            {targetFormat === 'powerpoint' && 'Convert PDF pages to a PowerPoint (.pptx) deck'}
+            {targetFormat === 'pdfa' && 'Prepare a PDF/A-2b archival copy'}
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md">
             Processes 100% locally in your web browser. Zero server transmission.
@@ -254,7 +256,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
             >
               <Upload className="h-4 w-4" />
               <span>Select PDF File</span>
@@ -269,7 +271,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border-[1.5px] border-[#ECEBF8] bg-white p-6 shadow-lift sm:p-8">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <div className="flex items-center gap-3">
               <FileIcon className="h-6 w-6 text-brand-600" />
@@ -284,6 +286,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
                 setFile(null);
                 setDownloadUrl(null);
                 setExtractedPreview(null);
+                setResultNote(null);
               }}
               className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1"
             >
@@ -305,7 +308,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
               type="button"
               disabled={isProcessing}
               onClick={handleConvert}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-brand-700 disabled:opacity-50 transition"
             >
               {isProcessing ? (
                 <>
@@ -319,7 +322,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
                     {targetFormat === 'image' && (imageFormat === 'png' ? 'Export as PNG' : 'Export as JPG')}
                     {targetFormat === 'word' && 'Convert to Word (.docx)'}
                     {targetFormat === 'excel' && 'Convert to Excel (.csv)'}
-                    {targetFormat === 'powerpoint' && 'Export Slide Deck'}
+                    {targetFormat === 'powerpoint' && 'Convert to PowerPoint (.pptx)'}
                     {targetFormat === 'pdfa' && 'Convert to PDF/A'}
                   </span>
                 </>
@@ -343,11 +346,12 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
           </div>
           <h4 className="text-xl font-bold text-slate-900">Conversion Complete!</h4>
           <p className="text-xs text-slate-600 mt-1">Your exported document is ready for download.</p>
+          {resultNote && <p className="mx-auto mt-3 max-w-xl text-sm text-slate-700">{resultNote}</p>}
           <div className="mt-6 flex justify-center gap-4">
             <a
               href={downloadUrl}
               download={downloadName}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
             >
               <Download className="h-4 w-4" />
               <span>Download File</span>
