@@ -587,7 +587,7 @@ export default function SuperAdminPage() {
   if (authLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#4b49ac] mb-2" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#4B3FE4] mb-2" />
         <p className="text-xs text-slate-500">Checking credentials...</p>
       </div>
     );
@@ -595,15 +595,15 @@ export default function SuperAdminPage() {
 
   // ==========================================================
   // LOGIN SCREEN (When not authenticated as Super Admin)
-  // Uses exact brand palette (#4b49ac, #f3797e, #98dbff)
+  // Uses exact brand palette (#4B3FE4, #f3797e, #CFCBFF)
   // ==========================================================
   if (!isSuperAdmin) {
     return (
       <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-900">
         <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-2xl text-white">
           <div className="text-center mb-6">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#4b49ac]/20 border border-[#4b49ac]/40 text-[#98dbff] mb-3 shadow-lg">
-              <ShieldAlert className="h-8 w-8 text-[#98dbff]" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#4B3FE4]/20 border border-[#4B3FE4]/40 text-[#CFCBFF] mb-3 shadow-lg">
+              <ShieldAlert className="h-8 w-8 text-[#CFCBFF]" />
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white">
               Super Admin Control Portal
@@ -631,7 +631,7 @@ export default function SuperAdminPage() {
                 value={adminId}
                 onChange={(e) => setAdminId(e.target.value)}
                 placeholder="habibullah"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 px-3 text-sm text-white focus:border-[#4b49ac] focus:outline-none focus:ring-1 focus:ring-[#4b49ac]"
+                className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 px-3 text-sm text-white focus:border-[#4B3FE4] focus:outline-none focus:ring-1 focus:ring-[#4B3FE4]"
               />
             </div>
 
@@ -645,14 +645,14 @@ export default function SuperAdminPage() {
                 value={adminPass}
                 onChange={(e) => setAdminPass(e.target.value)}
                 placeholder="habib8963"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 px-3 text-sm text-white focus:border-[#4b49ac] focus:outline-none focus:ring-1 focus:ring-[#4b49ac]"
+                className="w-full rounded-xl border border-slate-700 bg-slate-900 py-2.5 px-3 text-sm text-white focus:border-[#4B3FE4] focus:outline-none focus:ring-1 focus:ring-[#4B3FE4]"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoggingIn}
-              className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-[#4b49ac] py-3 px-4 text-xs font-bold text-white shadow-lg hover:bg-[#413e96] transition disabled:opacity-50"
+              className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-[#4B3FE4] py-3 px-4 text-xs font-bold text-white shadow-lg hover:bg-[#3326C4] transition disabled:opacity-50"
             >
               {isLoggingIn ? (
                 <>
@@ -681,7 +681,7 @@ export default function SuperAdminPage() {
 
   // ==========================================================
   // SUPER ADMIN DASHBOARD
-  // Brand palette: Primary #4b49ac, Light blue #98dbff, Supporting blue #7DA0FA, Lavender #7978e3, Coral #f3797e
+  // Brand palette: Primary #4B3FE4, Light blue #CFCBFF, Supporting blue #8F86F5, Lavender #6C61EE, Coral #f3797e
   // ==========================================================
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -689,7 +689,7 @@ export default function SuperAdminPage() {
         {/* Top Master Admin Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4b49ac] text-white shadow-lg">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4B3FE4] text-white shadow-lg">
               <ShieldAlert className="h-7 w-7" />
             </div>
             <div>
@@ -697,7 +697,7 @@ export default function SuperAdminPage() {
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
                   Super Admin Console
                 </h1>
-                <span className="rounded-full bg-[#4b49ac]/30 border border-[#4b49ac] px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#98dbff]">
+                <span className="rounded-full bg-[#4B3FE4]/30 border border-[#4B3FE4] px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#CFCBFF]">
                   Full Root Authority
                 </span>
               </div>
@@ -775,7 +775,7 @@ export default function SuperAdminPage() {
               onClick={() => setActiveTab(id as typeof activeTab)}
               className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
                 activeTab === id
-                  ? 'bg-[#4b49ac] text-white shadow-lg'
+                  ? 'bg-[#4B3FE4] text-white shadow-lg'
                   : 'bg-slate-900 text-slate-300 hover:bg-slate-850 hover:text-white'
               }`}
             >
@@ -796,11 +796,11 @@ export default function SuperAdminPage() {
               <div className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-bold uppercase tracking-wider">Registered Users</span>
-                  <Users className="h-5 w-5 text-[#98dbff]" />
+                  <Users className="h-5 w-5 text-[#CFCBFF]" />
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-3xl font-black text-white">{stats.totalUsers}</span>
-                  <span className="text-xs text-[#98dbff]">({stats.verifiedUsers} verified)</span>
+                  <span className="text-xs text-[#CFCBFF]">({stats.verifiedUsers} verified)</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-2">
                   Today: +{stats.newToday} • Week: +{stats.newThisWeek} • Month: +{stats.newThisMonth}
@@ -811,13 +811,13 @@ export default function SuperAdminPage() {
               <div className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-bold uppercase tracking-wider">Subscribers</span>
-                  <CreditCard className="h-5 w-5 text-[#7DA0FA]" />
+                  <CreditCard className="h-5 w-5 text-[#8F86F5]" />
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-3xl font-black text-white">
                     {stats.subscribersByPlan.pro + stats.subscribersByPlan.business}
                   </span>
-                  <span className="text-xs text-[#7DA0FA]">
+                  <span className="text-xs text-[#8F86F5]">
                     ({stats.subscribersByPlan.pro} Pro / {stats.subscribersByPlan.business} Biz)
                   </span>
                 </div>
@@ -830,13 +830,13 @@ export default function SuperAdminPage() {
               <div className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-bold uppercase tracking-wider">MRR / ARR</span>
-                  <DollarSign className="h-5 w-5 text-[#7978e3]" />
+                  <DollarSign className="h-5 w-5 text-[#6C61EE]" />
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-3xl font-black text-white">
                     ${stats.revenueMetrics.mrr.toFixed(2)}
                   </span>
-                  <span className="text-xs text-[#7978e3]">
+                  <span className="text-xs text-[#6C61EE]">
                     (ARR: ${stats.revenueMetrics.arr.toFixed(0)})
                   </span>
                 </div>
@@ -849,7 +849,7 @@ export default function SuperAdminPage() {
               <div className="rounded-3xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="text-xs font-bold uppercase tracking-wider">Processing &amp; Storage</span>
-                  <HardDrive className="h-5 w-5 text-[#98dbff]" />
+                  <HardDrive className="h-5 w-5 text-[#CFCBFF]" />
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-3xl font-black text-white">
@@ -865,7 +865,7 @@ export default function SuperAdminPage() {
               </div>
             </div>
 
-            {/* Visual Charts Section using Brand Palette (#4b49ac, #7DA0FA, #7978e3, #98dbff, #f3797e) */}
+            {/* Visual Charts Section using Brand Palette (#4B3FE4, #8F86F5, #6C61EE, #CFCBFF, #f3797e) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Chart 1: Plan Distribution */}
               <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 space-y-4">
@@ -885,7 +885,7 @@ export default function SuperAdminPage() {
                     </div>
                     <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
                       <div
-                        className="bg-[#98dbff] h-3 rounded-full transition-all duration-500"
+                        className="bg-[#CFCBFF] h-3 rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.max(
                             8,
@@ -899,12 +899,12 @@ export default function SuperAdminPage() {
                   {/* Pro */}
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-[#7DA0FA] font-semibold">Pro Tier ($4.99/mo)</span>
+                      <span className="text-[#8F86F5] font-semibold">Pro Tier ($4.99/mo)</span>
                       <span className="font-mono text-slate-400">{stats.subscribersByPlan.pro} users</span>
                     </div>
                     <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
                       <div
-                        className="bg-[#7DA0FA] h-3 rounded-full transition-all duration-500"
+                        className="bg-[#8F86F5] h-3 rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.max(
                             6,
@@ -918,12 +918,12 @@ export default function SuperAdminPage() {
                   {/* Business */}
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-[#4b49ac] font-semibold">Business Tier ($12/user)</span>
+                      <span className="text-[#4B3FE4] font-semibold">Business Tier ($12/user)</span>
                       <span className="font-mono text-slate-400">{stats.subscribersByPlan.business} users</span>
                     </div>
                     <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
                       <div
-                        className="bg-[#4b49ac] h-3 rounded-full transition-all duration-500"
+                        className="bg-[#4B3FE4] h-3 rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.max(
                             6,
@@ -1010,7 +1010,7 @@ export default function SuperAdminPage() {
                       setUserSearch(e.target.value);
                       setUserPage(1);
                     }}
-                    className="rounded-xl border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 text-xs text-white focus:border-[#4b49ac] focus:outline-none w-56"
+                    className="rounded-xl border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 text-xs text-white focus:border-[#4B3FE4] focus:outline-none w-56"
                   />
                 </div>
 
@@ -1061,7 +1061,7 @@ export default function SuperAdminPage() {
                   {users.map((u) => (
                     <tr key={u.id} className="hover:bg-slate-800/40 transition">
                       <td className="py-3.5 px-4 font-bold text-white flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#4b49ac] text-xs font-black text-white">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#4B3FE4] text-xs font-black text-white">
                           {u.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -1079,7 +1079,7 @@ export default function SuperAdminPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded-full bg-[#4b49ac]/20 text-[#98dbff] border border-[#4b49ac]/40">
+                        <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded-full bg-[#4B3FE4]/20 text-[#CFCBFF] border border-[#4B3FE4]/40">
                           {u.subscription?.planId || 'free'}
                         </span>
                         <span className="block text-[10px] text-slate-400 capitalize mt-0.5">
@@ -1141,7 +1141,7 @@ export default function SuperAdminPage() {
                               reason: '',
                             });
                           }}
-                          className="p-1.5 rounded-lg bg-slate-800 text-[#98dbff] hover:bg-slate-700"
+                          className="p-1.5 rounded-lg bg-slate-800 text-[#CFCBFF] hover:bg-slate-700"
                           title="Adjust Quotas"
                         >
                           <Sliders className="h-3.5 w-3.5" />
@@ -1154,7 +1154,7 @@ export default function SuperAdminPage() {
                             setPromoModalUser(u);
                             setPromoForm({ planId: 'pro', durationMonths: 3, reason: '' });
                           }}
-                          className="p-1.5 rounded-lg bg-slate-800 text-[#7978e3] hover:bg-slate-700"
+                          className="p-1.5 rounded-lg bg-slate-800 text-[#6C61EE] hover:bg-slate-700"
                           title="Grant Promotional Access"
                         >
                           <Gift className="h-3.5 w-3.5" />
@@ -1267,7 +1267,7 @@ export default function SuperAdminPage() {
 
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-1">
                 <span className="text-slate-400 text-xs">Stripe Revenue</span>
-                <p className="text-2xl font-black text-[#98dbff]">
+                <p className="text-2xl font-black text-[#CFCBFF]">
                   ${stats?.revenueMetrics?.stripeRevenue?.toFixed(2) || '0.00'}
                 </p>
                 <span className="text-[10px] text-slate-400 block">
@@ -1277,7 +1277,7 @@ export default function SuperAdminPage() {
 
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-1">
                 <span className="text-slate-400 text-xs">PayPal Revenue</span>
-                <p className="text-2xl font-black text-[#7DA0FA]">
+                <p className="text-2xl font-black text-[#8F86F5]">
                   ${stats?.revenueMetrics?.paypalRevenue?.toFixed(2) || '0.00'}
                 </p>
                 <span className="text-[10px] text-slate-400 block">
@@ -1315,7 +1315,7 @@ export default function SuperAdminPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold text-white capitalize">{p.name} Plan</span>
-                      <span className="text-xs text-[#98dbff] font-mono">
+                      <span className="text-xs text-[#CFCBFF] font-mono">
                         ${p.monthlyPrice}/mo • ${p.yearlyPrice}/yr
                       </span>
                     </div>
@@ -1329,7 +1329,7 @@ export default function SuperAdminPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedPlanEdit(p)}
-                      className="w-full mt-2 rounded-xl border border-[#4b49ac] bg-[#4b49ac]/20 py-2 text-xs font-bold text-[#98dbff] hover:bg-[#4b49ac] hover:text-white transition"
+                      className="w-full mt-2 rounded-xl border border-[#4B3FE4] bg-[#4B3FE4]/20 py-2 text-xs font-bold text-[#CFCBFF] hover:bg-[#4B3FE4] hover:text-white transition"
                     >
                       Edit Entitlements
                     </button>
@@ -1365,7 +1365,7 @@ export default function SuperAdminPage() {
                       <tr key={tx.id} className="hover:bg-slate-800/40 transition">
                         <td className="py-3.5 px-4 font-mono text-slate-400">{tx.id}</td>
                         <td className="py-3.5 px-4 font-medium text-white">{tx.userEmail}</td>
-                        <td className="py-3.5 px-4 uppercase font-semibold text-[#98dbff]">
+                        <td className="py-3.5 px-4 uppercase font-semibold text-[#CFCBFF]">
                           {tx.planId} ({tx.billingInterval})
                         </td>
                         <td className="py-3.5 px-4 font-bold text-white">${tx.amount.toFixed(2)}</td>
@@ -1485,7 +1485,7 @@ export default function SuperAdminPage() {
                   Append-only record of all administrative actions. Administrators cannot edit or delete this history.
                 </p>
               </div>
-              <span className="rounded-full bg-[#4b49ac]/30 border border-[#4b49ac] px-3 py-1 text-[10px] font-bold text-[#98dbff]">
+              <span className="rounded-full bg-[#4B3FE4]/30 border border-[#4B3FE4] px-3 py-1 text-[10px] font-bold text-[#CFCBFF]">
                 🔒 Append-Only Protection
               </span>
             </div>
@@ -1508,7 +1508,7 @@ export default function SuperAdminPage() {
                       <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
                         {new Date(log.timestamp).toLocaleString()}
                       </td>
-                      <td className="py-3 px-4 font-bold text-[#98dbff]">{log.actorAdmin}</td>
+                      <td className="py-3 px-4 font-bold text-[#CFCBFF]">{log.actorAdmin}</td>
                       <td className="py-3 px-4 font-bold text-white">{log.action}</td>
                       <td className="py-3 px-4 text-slate-300 font-mono text-[11px]">
                         {log.targetEmail || 'Platform'}
@@ -1555,7 +1555,7 @@ export default function SuperAdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3 text-xs">
                 <h4 className="font-bold text-white flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-[#98dbff]" />
+                  <ShieldCheck className="h-4 w-4 text-[#CFCBFF]" />
                   <span>Privacy Rules &amp; Zero GPS Policy</span>
                 </h4>
                 <p className="text-slate-400 leading-relaxed">
@@ -1574,7 +1574,7 @@ export default function SuperAdminPage() {
 
               <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3 text-xs">
                 <h4 className="font-bold text-white flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-[#7DA0FA]" />
+                  <Globe className="h-4 w-4 text-[#8F86F5]" />
                   <span>Approximate Geolocation Distribution</span>
                 </h4>
                 {stats?.locationBreakdown.map((item, idx) => (
@@ -1608,7 +1608,7 @@ export default function SuperAdminPage() {
                     type="checkbox"
                     checked={settings.enforceNdaAuth}
                     onChange={(e) => setSettings({ ...settings, enforceNdaAuth: e.target.checked })}
-                    className="h-4 w-4 rounded accent-[#4b49ac]"
+                    className="h-4 w-4 rounded accent-[#4B3FE4]"
                   />
                 </div>
                 <p className="text-[11px] text-slate-400">
@@ -1623,7 +1623,7 @@ export default function SuperAdminPage() {
                     type="checkbox"
                     checked={settings.allowPublicSignups}
                     onChange={(e) => setSettings({ ...settings, allowPublicSignups: e.target.checked })}
-                    className="h-4 w-4 rounded accent-[#4b49ac]"
+                    className="h-4 w-4 rounded accent-[#4B3FE4]"
                   />
                 </div>
                 <p className="text-[11px] text-slate-400">
@@ -1653,7 +1653,7 @@ export default function SuperAdminPage() {
                     type="checkbox"
                     checked={settings.requireMfaForAdmin}
                     onChange={(e) => setSettings({ ...settings, requireMfaForAdmin: e.target.checked })}
-                    className="h-4 w-4 rounded accent-[#4b49ac]"
+                    className="h-4 w-4 rounded accent-[#4B3FE4]"
                   />
                 </div>
                 <p className="text-[11px] text-slate-400">
@@ -1668,7 +1668,7 @@ export default function SuperAdminPage() {
                     type="checkbox"
                     checked={settings.telemetryEnabled}
                     onChange={(e) => setSettings({ ...settings, telemetryEnabled: e.target.checked })}
-                    className="h-4 w-4 rounded accent-[#4b49ac]"
+                    className="h-4 w-4 rounded accent-[#4B3FE4]"
                   />
                 </div>
                 <p className="text-[11px] text-slate-400">
@@ -1695,7 +1695,7 @@ export default function SuperAdminPage() {
             <div className="pt-2 flex justify-end">
               <button
                 type="submit"
-                className="rounded-xl bg-[#4b49ac] px-6 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-[#413e96] transition"
+                className="rounded-xl bg-[#4B3FE4] px-6 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-[#3326C4] transition"
               >
                 Save Platform Policies
               </button>
@@ -1720,7 +1720,7 @@ export default function SuperAdminPage() {
                 <p>Name: <span className="text-white">{selectedUserModal.name}</span></p>
                 <p>Email: <span className="text-white">{selectedUserModal.email}</span></p>
                 <p>Phone: <span className="text-white">{selectedUserModal.phone || 'Not provided'}</span></p>
-                <p>Plan: <span className="text-[#98dbff] uppercase font-bold">{selectedUserModal.subscription?.planId}</span></p>
+                <p>Plan: <span className="text-[#CFCBFF] uppercase font-bold">{selectedUserModal.subscription?.planId}</span></p>
                 <p>Created: <span className="text-slate-400">{new Date(selectedUserModal.createdAt).toLocaleString()}</span></p>
               </div>
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1 text-[11px]">
@@ -1749,7 +1749,7 @@ export default function SuperAdminPage() {
               <button
                 type="button"
                 onClick={() => setSelectedUserModal(null)}
-                className="px-4 py-2 rounded-xl bg-[#4b49ac] text-xs font-bold text-white hover:bg-[#413e96]"
+                className="px-4 py-2 rounded-xl bg-[#4B3FE4] text-xs font-bold text-white hover:bg-[#3326C4]"
               >
                 Close
               </button>
@@ -1823,7 +1823,7 @@ export default function SuperAdminPage() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-[#4b49ac] text-xs font-bold text-white hover:bg-[#413e96]"
+                className="px-4 py-2 rounded-xl bg-[#4B3FE4] text-xs font-bold text-white hover:bg-[#3326C4]"
               >
                 Record &amp; Save Quota
               </button>
@@ -1889,7 +1889,7 @@ export default function SuperAdminPage() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-[#7978e3] text-xs font-bold text-white hover:bg-[#6362ce]"
+                className="px-4 py-2 rounded-xl bg-[#6C61EE] text-xs font-bold text-white hover:bg-[#6362ce]"
               >
                 Grant Access With Audit
               </button>
@@ -1995,7 +1995,7 @@ export default function SuperAdminPage() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-[#4b49ac] text-xs font-bold text-white hover:bg-[#413e96]"
+                className="px-4 py-2 rounded-xl bg-[#4B3FE4] text-xs font-bold text-white hover:bg-[#3326C4]"
               >
                 Save Changes
               </button>
@@ -2094,7 +2094,7 @@ export default function SuperAdminPage() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl bg-[#4b49ac] text-xs font-bold text-white hover:bg-[#413e96]"
+                className="px-4 py-2 rounded-xl bg-[#4B3FE4] text-xs font-bold text-white hover:bg-[#3326C4]"
               >
                 Save Plan Settings
               </button>

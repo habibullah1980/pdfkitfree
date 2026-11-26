@@ -110,8 +110,8 @@ export async function POST(req: NextRequest) {
       subject: `[PDFKitFree Inquiry] ${safeSubject}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-          <div style="border-bottom: 2px solid #4b49ac; padding-bottom: 12px; margin-bottom: 20px;">
-            <h2 style="color: #4b49ac; margin: 0; font-size: 20px;">New Contact Form Submission</h2>
+          <div style="border-bottom: 2px solid #4B3FE4; padding-bottom: 12px; margin-bottom: 20px;">
+            <h2 style="color: #4B3FE4; margin: 0; font-size: 20px;">New Contact Form Submission</h2>
             <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Received via PDFKitFree Support Portal</p>
           </div>
           <div style="margin-bottom: 16px;">

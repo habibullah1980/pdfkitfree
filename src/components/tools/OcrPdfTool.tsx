@@ -233,7 +233,7 @@ export function OcrPdfTool() {
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
           >
             <Upload className="h-4 w-4" /> Select PDF
           </button>
@@ -281,7 +281,7 @@ export function OcrPdfTool() {
             type="button"
             onClick={run}
             disabled={isBusy}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
           >
             {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanText className="h-4 w-4" />}
             {isBusy ? 'Recognising text…' : 'Run OCR'}

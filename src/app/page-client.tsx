@@ -1,333 +1,337 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { TOOLS, TOOL_CATEGORIES } from '@/lib/tools';
 import { ToolCard } from '@/components/ToolCard';
-import { 
-  Search, 
-  ShieldCheck, 
-  Zap, 
-  Lock, 
-  FileCheck2, 
-  CheckCircle2, 
-  ArrowRight,
-  FolderOpen,
-  Combine,
-  PenTool,
-  Video
-} from 'lucide-react';
+import Image from 'next/image';
+import heroPhoto from '@/assets/hero-office.jpg';
+import { FolderOpen, Lock, Minimize2, Monitor, Search, ShieldCheck, Upload, Zap, Download, Video } from 'lucide-react';
+
+const POPULAR = ['compress-pdf', 'merge-pdf', 'pdf-to-word', 'sign-pdf'];
+
+/** Colour dot for each category filter, matching the tool card tints. */
+const CATEGORY_DOT: Record<string, string> = {
+  organize: 'bg-[#6C61EE]',
+  optimize: 'bg-[#2CC59A]',
+  'convert-to': 'bg-[#FFC83D]',
+  'convert-from': 'bg-[#FF8A65]',
+  edit: 'bg-[#A78BFA]',
+  security: 'bg-[#5B7BFF]',
+  other: 'bg-[#38BDF8]',
+};
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showAll, setShowAll] = useState(false);
+  const catalogRef = useRef<HTMLElement>(null);
 
   const filteredTools = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return TOOLS.filter((tool) => {
       const matchesSearch =
-        tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.keywords.some((kw) => kw.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      const matchesCat =
-        selectedCategory === 'all' || tool.category === selectedCategory;
-
+        !q ||
+        tool.title.toLowerCase().includes(q) ||
+        tool.shortDescription.toLowerCase().includes(q) ||
+        tool.keywords.some((kw) => kw.toLowerCase().includes(q));
+      const matchesCat = selectedCategory === 'all' || tool.category === selectedCategory;
       return matchesSearch && matchesCat;
     });
   }, [searchQuery, selectedCategory]);
 
+  const collapsed = !showAll && !searchQuery.trim() && selectedCategory === 'all';
+  const visibleTools = collapsed ? filteredTools.slice(0, 8) : filteredTools;
+
+  const popularTools = POPULAR.map((slug) => TOOLS.find((t) => t.slug === slug)).filter(Boolean) as typeof TOOLS;
+
+  const goToCatalog = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSelectedCategory('all');
+    setShowAll(true);
+    catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50/70 via-white to-white py-16 sm:py-24 border-b border-slate-100">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-semibold text-teal-800 mb-6 shadow-sm">
-            <ShieldCheck className="h-4 w-4 text-teal-600" />
-            <span>Zero-Upload Guarantee: 100% Client-Side Processing</span>
-          </div>
-
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl max-w-4xl mx-auto">
-            The Private, High-Speed <span className="text-brand-600">PDF Utility Suite</span> & eSign SaaS
-          </h1>
-
-          <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Merge, split, protect, and electronically sign contracts directly inside your web browser. Free from cloud queues, data leaks, and restrictive limits.
-          </p>
-
-          {/* Search bar */}
-          <div className="mt-8 max-w-xl mx-auto">
-            <div className="relative flex items-center">
-              <Search className="absolute left-4 h-5 w-5 text-slate-400 pointer-events-none" />
+    <div className="flex flex-col">
+      {/* Hero */}
+      <section className="relative isolate overflow-hidden bg-ink pb-12 pt-14 text-white sm:pt-20 lg:min-h-[700px]">
+        <Image
+          src={heroPhoto}
+          alt=""
+          fill
+          priority
+          placeholder="blur"
+          sizes="100vw"
+          className="-z-20 object-cover object-[70%_center] lg:object-center"
+        />
+        <div
+          className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(27,26,58,.9)_0%,rgba(27,26,58,.8)_55%,rgba(27,26,58,.94)_100%)] lg:bg-[linear-gradient(90deg,rgba(27,26,58,.96)_0%,rgba(27,26,58,.86)_38%,rgba(75,63,228,.38)_70%,rgba(75,63,228,.14)_100%)]"
+          aria-hidden="true"
+        />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex max-w-[640px] animate-pk-rise flex-col gap-6">
+            <span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3.5 py-2 text-sm font-bold text-[#7CF0C9] backdrop-blur">
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              Your files are processed on your device
+            </span>
+            <h1 className="text-[44px] font-extrabold leading-[1.03] text-white sm:text-6xl lg:text-[68px]">
+              Every PDF job, done right in your browser.
+            </h1>
+            <p className="max-w-[540px] text-lg leading-relaxed text-[#DCDAFF] sm:text-[19px]">
+              Merge, compress, sign, convert and read scanned pages with {TOOLS.length} free tools. Nothing to install and nothing uploaded.
+            </p>
+            <form
+              role="search"
+              onSubmit={goToCatalog}
+              className="pk-light-field flex max-w-[540px] items-center gap-2.5 rounded-full bg-white py-1.5 pl-5 pr-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,.6)]"
+            >
+              <Search className="h-5 w-5 flex-none text-[#6E6C8E]" aria-hidden="true" />
+              <label htmlFor="home-tool-search" className="sr-only">Find a PDF tool</label>
               <input
-                type="text"
+                id="home-tool-search"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search PDF tools (e.g., merge, sign, password protect)..."
-                className="w-full rounded-xl border border-slate-300 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-900 shadow-sm placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                placeholder="What do you need to do? Try “compress”"
+                className="min-h-[44px] min-w-0 flex-1 bg-transparent text-base text-ink placeholder:text-[#6E6C8E] focus:outline-none"
               />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 text-xs font-medium text-slate-400 hover:text-slate-600"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Fast Highlights */}
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3 max-w-3xl mx-auto text-left">
-            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-50 text-brand-600">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-900">Instant Execution</p>
-                <p className="text-xs text-slate-500">Zero wait times or queues</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-teal-50 text-teal-600">
-                <Lock className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-900">End-to-End Privacy</p>
-                <p className="text-xs text-slate-500">Documents never leave device</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-50 text-brand-600">
-                <FileCheck2 className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-900">Legally Sound</p>
-                <p className="text-xs text-slate-500">ESIGN & UETA compliance prep</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Primary Workflows */}
-      <section className="py-12 bg-slate-50 border-b border-slate-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Merge PDF Feature Banner */}
-            <div className="rounded-2xl border border-brand-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between hover:border-brand-300 hover:shadow-md transition">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-brand-100 bg-brand-50 text-brand-600">
-                    <Combine className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
-                  </div>
-                  <span className="inline-block rounded-md bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
-                    Ready &amp; Functional
-                  </span>
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-slate-900">
-                  Merge Multiple PDFs Instantly
-                </h2>
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                  Combine multi-page reports, presentations, and receipts directly in your browser. Reorder files before export with zero quality loss.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs font-medium text-teal-700">Powered by pdf-lib</span>
-                <Link
-                  href="/tools/merge-pdf"
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-brand-700 transition"
-                >
-                  <span>Launch Merge Tool</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Electronic Signatures Preview */}
-            <div className="rounded-2xl border border-teal-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between hover:border-teal-300 hover:shadow-md transition">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-teal-100 bg-teal-50 text-teal-600">
-                    <PenTool className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
-                  </div>
-                  <span className="inline-block rounded-md bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">
-                    Document Workflow
-                  </span>
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-slate-900">
-                  Sign PDFs &amp; Generate NDAs
-                </h2>
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                  Prepare standardized agreements and collect digital signatures with tamper-evident audit trails and localized state-law compliance.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <Link
-                  href="/nda-generator"
-                  className="text-xs font-semibold text-slate-600 hover:text-slate-900"
-                >
-                  Create Mutual NDA &rarr;
-                </Link>
-                <Link
-                  href="/tools/sign-pdf"
-                  className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-teal-700 transition"
-                >
-                  <span>Sign PDF Online</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          
-            {/* Video Compressor & NDA eSign Banner */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-700">
-                    <Video className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
-                  </div>
-                  <span className="inline-block rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    New Tool
-                  </span>
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-slate-900">
-                  Video Compressor
-                </h2>
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                  Reduce MP4, MOV, and WebM sizes by up to 80% entirely in your browser. No cloud uploads ever.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <Link href="/nda-esign" className="text-xs font-semibold text-slate-600 hover:text-slate-900">NDA &amp; eSign &rarr;</Link>
-                <Link
-                  href="/video-compressor"
-                  className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-slate-900 transition"
-                >
-                  <span>Try Compressor</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Categorized Tools Directory */}
-      <section className="py-16 bg-white flex-1" id="tools-catalog">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                PDF Tools Directory
-              </h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Browse our client-side utility suite designed for professionals and teams.
-              </p>
-            </div>
-
-            {/* Category tabs */}
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('all')}
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                  selectedCategory === 'all'
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                All Tools ({TOOLS.length})
+              <button type="submit" className="min-h-[44px] rounded-full bg-brand-600 px-5 text-[15px] font-bold text-white transition hover:bg-brand-700">
+                Find tool
               </button>
-              {TOOL_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                    selectedCategory === cat.id
-                      ? 'bg-brand-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {cat.name}
-                </button>
+            </form>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-sm font-semibold text-[#DCDAFF]">Popular:</span>
+              {popularTools.map((t) => (
+                <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full bg-white/15 px-3.5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25">
+                  {t.title}
+                </Link>
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Tool Cards Grid */}
+        {/* Live-looking compress card (decorative) */}
+        <div
+          className="pk-card absolute bottom-[180px] right-[6%] hidden w-[340px] items-center gap-3.5 rounded-2xl border border-white/30 bg-white/15 p-4 text-white shadow-[0_24px_50px_-22px_rgba(0,0,0,.6)] backdrop-blur-md lg:flex"
+          style={{ animationDelay: '.6s, 1.4s' }}
+          aria-hidden="true"
+        >
+          <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-sun text-ink">
+            <Minimize2 className="h-5 w-5" strokeWidth={2.4} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex justify-between text-sm font-bold">
+              <span>annual-report.pdf</span>
+              <span className="text-sun">−73%</span>
+            </span>
+            <span className="mt-2 block h-2 overflow-hidden rounded-full bg-white/25">
+              <span className="pk-loop block h-full rounded-full bg-sun" />
+            </span>
+            <span className="mt-1.5 block text-[13px] text-[#DCDAFF]">Shrinking images, text kept sharp</span>
+          </span>
+        </div>
+
+        {/* Trust strip */}
+        <div className="mx-auto mt-14 max-w-7xl px-4 sm:px-6 lg:mt-32 lg:px-8">
+          <div className="grid gap-5 rounded-3xl border border-white/15 bg-white/10 px-6 py-6 backdrop-blur-md sm:grid-cols-3 sm:px-8">
+            {[
+              { icon: Monitor, title: 'Works in your browser', text: 'Chrome, Edge, Safari and Firefox' },
+              { icon: Lock, title: 'Files stay on your device', text: 'PDF tools run locally, nothing is uploaded' },
+              { icon: Zap, title: `${TOOLS.length} tools, free to use`, text: 'No watermark on your files' },
+            ].map(({ icon: Icon, title, text }) => (
+              <div key={title} className="flex items-center gap-3.5">
+                <Icon className="h-7 w-7 flex-none text-sun" strokeWidth={2} aria-hidden="true" />
+                <div>
+                  <p className="font-bold">{title}</p>
+                  <p className="text-sm text-[#DCDAFF]">{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Tools catalog */}
+      <section ref={catalogRef} id="tools-catalog" className="scroll-mt-24 bg-[#FFFBF0] py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-6">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+              <h2 className="text-4xl font-extrabold text-ink sm:text-[46px]">Pick a tool and drop your file</h2>
+              <p className="text-lg text-ink-soft">
+                {searchQuery ? `${filteredTools.length} tools match “${searchQuery}”.` : 'Grouped by what you want to do.'}
+              </p>
+            </div>
+            <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="group" aria-label="Tool categories">
+                {[{ id: 'all', name: `All tools (${TOOLS.length})` }, ...TOOL_CATEGORIES.map((c) => ({ id: c.id, name: c.name.replace(' PDF', '') }))].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    aria-pressed={selectedCategory === cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`pk-cat inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] px-4 text-sm font-bold transition ${
+                      selectedCategory === cat.id
+                        ? 'border-ink bg-ink text-white'
+                        : 'border-[#ECEBF8] bg-white text-ink-soft hover:border-brand-600 hover:text-ink'
+                    }`}
+                  >
+                    <span className={`h-2.5 w-2.5 rounded-full ${CATEGORY_DOT[cat.id] ?? 'bg-sun'}`} aria-hidden="true" />
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {filteredTools.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredTools.map((tool) => (
+            <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
+              {visibleTools.map((tool) => (
                 <ToolCard key={tool.id} tool={tool} />
               ))}
             </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center">
-              <FolderOpen className="mx-auto h-12 w-12 text-slate-400" />
-              <p className="mt-4 text-base font-medium text-slate-900">No tools matched your search</p>
-              <p className="mt-1 text-sm text-slate-500">
-                Try searching for another keyword like &quot;merge&quot;, &quot;sign&quot;, or &quot;split&quot;.
-              </p>
+          ) : null}
+          {filteredTools.length > 0 && collapsed ? (
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="min-h-[48px] rounded-full border-[1.5px] border-[#D9D7F2] px-7 font-bold text-ink transition hover:border-brand-600 hover:text-brand-600"
+              >
+                Show all {TOOLS.length} tools
+              </button>
+            </div>
+          ) : null}
+          {filteredTools.length === 0 && (
+            <div className="rounded-3xl border-2 border-dashed border-[#DCD9FF] p-12 text-center">
+              <FolderOpen className="mx-auto h-12 w-12 text-brand-400" aria-hidden="true" />
+              <p className="mt-4 text-lg font-bold text-ink">No tool matches “{searchQuery}”</p>
+              <p className="mt-1 text-ink-muted">Try a word like merge, sign, split or compress.</p>
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedCategory('all');
+                  setShowAll(true);
                 }}
-                className="mt-4 text-sm font-semibold text-brand-600 hover:underline"
+                className="mt-5 min-h-[44px] rounded-full bg-brand-600 px-5 font-bold text-white hover:bg-brand-700"
               >
-                Reset filters
+                Show all tools
               </button>
             </div>
           )}
         </div>
       </section>
 
-      {/* Security & Architecture Highlights */}
-      <section className="bg-slate-50 border-t border-slate-200 py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Why Legal and Finance Teams Choose pdfkitfree
-            </h2>
-            <p className="mt-3 text-base text-slate-600">
-              Traditional cloud converters store your files on external disks before processing. pdfkitfree keeps the entire document lifecycle local to your browser session.
+      {/* How it works */}
+      <section className="pk-steps relative overflow-hidden bg-brand-600 py-20 text-white sm:py-24">
+        <span className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#6C61EE]" aria-hidden="true" />
+        <span className="absolute -bottom-28 right-10 h-64 w-64 rounded-full bg-sun/90" aria-hidden="true" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-4xl font-extrabold text-white sm:text-[46px]">Three steps, no upload</h2>
+          <ol className="mt-12 grid gap-8 md:grid-cols-3">
+            <li className="flex flex-col gap-4">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sun font-display text-xl font-extrabold">1</span>
+              <h3 className="text-2xl font-bold text-white">Drop your PDF</h3>
+              <p className="leading-relaxed text-[#DCDAFF]">Drag a file onto the page or pick it from your computer or phone.</p>
+              <div className="flex h-[150px] items-center justify-center rounded-2xl border-2 border-dashed border-white/50 bg-white/10">
+                <Upload className="h-11 w-11 text-white" strokeWidth={1.8} aria-hidden="true" />
+              </div>
+            </li>
+            <li className="flex flex-col gap-4">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sun font-display text-xl font-extrabold">2</span>
+              <h3 className="text-2xl font-bold text-white">Your browser does the work</h3>
+              <p className="leading-relaxed text-[#DCDAFF]">The file is processed on your device, so it stays private and fast.</p>
+              <div className="flex h-[150px] flex-col justify-center gap-2.5 rounded-2xl bg-white p-5 text-ink shadow-lift" aria-hidden="true">
+                <span className="text-sm font-bold">Shrinking images 12 of 18</span>
+                <span className="block h-2.5 overflow-hidden rounded-full bg-[#ECEBF7]">
+                  <span className="pk-sheen block h-full w-2/3 rounded-full bg-gradient-to-r from-teal-500 to-brand-600" />
+                </span>
+                <span className="text-[13px] text-ink-muted">About 4 seconds left</span>
+              </div>
+            </li>
+            <li className="flex flex-col gap-4">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sun font-display text-xl font-extrabold">3</span>
+              <h3 className="text-2xl font-bold text-white">Download the result</h3>
+              <p className="leading-relaxed text-[#DCDAFF]">Save it, or keep going with another tool on the same file.</p>
+              <div className="flex h-[150px] items-center gap-4 rounded-2xl bg-white p-5 text-ink shadow-lift" aria-hidden="true">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500">
+                  <Download className="h-7 w-7 text-white" strokeWidth={2.6} />
+                </span>
+                <span>
+                  <span className="block font-bold">annual-report.pdf</span>
+                  <span className="block text-[13px] text-ink-muted">4.8 MB, ready</span>
+                </span>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      {/* Feature spotlight */}
+      <section className="py-20 sm:py-24">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+          <div className="relative flex min-h-[440px] flex-col gap-5 overflow-hidden rounded-[28px] bg-brand-600 p-8 text-white sm:p-10 sm:pb-48">
+            <h2 className="max-w-[420px] text-3xl font-extrabold sm:text-[38px] sm:leading-tight">Sign contracts and send NDAs without printing</h2>
+            <p className="max-w-[440px] text-[17px] leading-relaxed text-[#DCDAFF]">
+              Create a mutual NDA, place signature fields and share a signing link. Every step is recorded in an audit trail.
             </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/nda-generator" className="inline-flex min-h-[48px] items-center rounded-full bg-sun px-6 font-bold text-ink transition hover:bg-sun-300">
+                Create an NDA
+              </Link>
+              <Link href="/tools/sign-pdf" className="inline-flex min-h-[48px] items-center rounded-full border-[1.5px] border-white/40 px-6 font-bold text-white transition hover:bg-white/10">
+                Sign a PDF
+              </Link>
+            </div>
+            <div className="absolute -bottom-8 -right-8 hidden w-[320px] -rotate-[4deg] rounded-2xl bg-white p-5 shadow-lift sm:block" aria-hidden="true">
+              <span className="mb-2.5 block h-2.5 w-3/5 rounded-md bg-[#ECEBF7]" />
+              <span className="mb-2.5 block h-2.5 w-[85%] rounded-md bg-[#ECEBF7]" />
+              <span className="mb-2.5 block h-2.5 w-3/4 rounded-md bg-[#ECEBF7]" />
+              <span className="mt-3.5 flex items-center justify-between rounded-[10px] border-2 border-dashed border-brand-600 p-2.5">
+                <svg width="120" height="34" viewBox="0 0 200 54" fill="none"><path d="M6 40c14-22 22-30 26-24s-10 26-2 26 18-30 26-30-4 26 6 26 14-22 22-22 2 18 12 18 16-14 26-14" stroke="#1B1A3A" strokeWidth="3" strokeLinecap="round" /></svg>
+                <span className="text-[13px] font-bold text-brand-600">Sign here</span>
+              </span>
+            </div>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-teal-600 mb-4">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <h3 className="text-base font-semibold text-slate-900">GDPR & Confidentiality Ready</h3>
-              <p className="mt-2 text-sm text-slate-600">
-                No storage servers, no database leaks, and zero retention logs. What happens in your browser stays strictly in your browser.
-              </p>
+          <div className="relative flex min-h-[440px] flex-col gap-5 overflow-hidden rounded-[28px] bg-sun p-8 sm:p-10 sm:pb-48">
+            <h2 className="max-w-[420px] text-3xl font-extrabold text-ink sm:text-[38px] sm:leading-tight">Ask questions about any PDF</h2>
+            <p className="max-w-[440px] text-[17px] leading-relaxed text-[#4A3F12]">
+              The AI assistant summarizes long documents, finds dates and amounts, and explains clauses in plain words.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/ai" className="inline-flex min-h-[48px] items-center rounded-full bg-ink px-6 font-bold text-white transition hover:bg-brand-900">
+                Try the AI assistant
+              </Link>
+              <Link href="/video-compressor" className="inline-flex min-h-[48px] items-center gap-2 rounded-full border-[1.5px] border-ink/30 px-6 font-bold text-ink transition hover:bg-white/40">
+                <Video className="h-4 w-4" aria-hidden="true" /> Compress a video
+              </Link>
             </div>
+            <div className="absolute -bottom-6 -right-5 hidden w-[340px] flex-col gap-2.5 rounded-2xl bg-white p-5 shadow-lift sm:flex" aria-hidden="true">
+              <span className="self-end rounded-[14px_14px_4px_14px] bg-brand-100 px-3 py-2.5 text-sm font-semibold">When does this lease end?</span>
+              <span className="rounded-[14px_14px_14px_4px] bg-mist px-3 py-2.5 text-sm leading-normal">On 31 March 2027. Notice is due 60 days before, see page 4.</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 mb-4">
-                <Zap className="h-6 w-6" />
-              </div>
-              <h3 className="text-base font-semibold text-slate-900">Zero Bandwidth Bottlenecks</h3>
-              <p className="mt-2 text-sm text-slate-600">
-                Because files aren&apos;t uploaded to remote servers, large 200MB PDFs combine at the speed of your local CPU and RAM.
-              </p>
+      {/* CTA */}
+      <section className="pb-20 sm:pb-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="relative flex flex-wrap items-center justify-between gap-8 overflow-hidden rounded-[32px] bg-ink px-8 py-14 sm:px-12 sm:py-16">
+            <span className="absolute -right-20 -top-20 h-[280px] w-[280px] rounded-full bg-sun" aria-hidden="true" />
+            <span className="absolute -bottom-16 right-36 h-[140px] w-[140px] rounded-full bg-brand-600" aria-hidden="true" />
+            <div className="relative">
+              <h2 className="max-w-[620px] text-4xl font-extrabold text-white sm:text-[44px] sm:leading-tight">Your next PDF is ten seconds away.</h2>
+              <p className="mt-3 text-lg text-[#C9C7EA]">Free, private and ready in your browser.</p>
             </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-teal-600 mb-4">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <h3 className="text-base font-semibold text-slate-900">No Hidden Subscriptions</h3>
-              <p className="mt-2 text-sm text-slate-600">
-                Enjoy essential document tasks without unexpected paywalls or artificial daily limits.
-              </p>
-            </div>
+            <a
+              href="#tools-catalog"
+              className="relative inline-flex min-h-[56px] items-center rounded-full bg-white px-8 text-[17px] font-bold text-ink transition hover:bg-sun"
+            >
+              Choose a tool
+            </a>
           </div>
         </div>
       </section>

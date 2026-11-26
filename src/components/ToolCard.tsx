@@ -1,8 +1,19 @@
 import React from 'react';
 import Link from 'next/link';
 import { ToolDefinition } from '@/lib/tools';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { getToolIconConfig } from '@/lib/tool-icons';
+
+/** One soft colour per tool group, so the grid reads by category at a glance. */
+const CATEGORY_TINT: Record<ToolDefinition['category'], string> = {
+  organize: 'bg-[#EEEDFF] hover:bg-[#E4E2FF] dark:bg-[#211E4A] dark:hover:bg-[#28245A]',
+  optimize: 'bg-[#DDF6EC] hover:bg-[#CFF2E3] dark:bg-[#132E2E] dark:hover:bg-[#173838]',
+  'convert-to': 'bg-[#FFF1CC] hover:bg-[#FFE9B3] dark:bg-[#2C2720] dark:hover:bg-[#363026]',
+  'convert-from': 'bg-[#FFE6DD] hover:bg-[#FFDACD] dark:bg-[#2D1E2A] dark:hover:bg-[#372432]',
+  edit: 'bg-[#F1E9FF] hover:bg-[#E8DCFF] dark:bg-[#261D47] dark:hover:bg-[#2E2356]',
+  security: 'bg-[#E2E8FF] hover:bg-[#D6DFFF] dark:bg-[#1B2347] dark:hover:bg-[#212B56]',
+  other: 'bg-[#E0F2FE] hover:bg-[#D0EBFD] dark:bg-[#14283A] dark:hover:bg-[#183046]',
+};
 
 interface ToolCardProps {
   tool: ToolDefinition;
@@ -11,51 +22,30 @@ interface ToolCardProps {
 export function ToolCard({ tool }: ToolCardProps) {
   const iconConfig = getToolIconConfig(tool.id || tool.slug);
   const IconComponent = iconConfig.icon;
-  const href = `/tools/${tool.slug}`;
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md">
-      <div>
-        <div className="flex items-center justify-between">
-          <div
-            className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-colors ${iconConfig.bgClass}`}
-            aria-label={iconConfig.label}
-          >
-            <IconComponent
-              className={`h-6 w-6 transition-transform duration-200 group-hover:scale-110 ${iconConfig.colorClass}`}
-              strokeWidth={2}
-              aria-hidden="true"
-            />
-          </div>
-          {tool.badge && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-              <Sparkles className="h-3 w-3" />
-              {tool.badge}
-            </span>
-          )}
-        </div>
-
-        <h3 className="mt-4 text-lg font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">
-          {tool.title}
-        </h3>
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed line-clamp-2">
-          {tool.shortDescription}
-        </p>
-      </div>
-
-      <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-          {tool.isImplemented ? 'Ready to use' : 'In development'}
+    <Link
+      href={`/tools/${tool.slug}`}
+      className={`group relative flex flex-col gap-3 rounded-[22px] border-[1.5px] border-transparent p-6 transition duration-200 hover:-translate-y-1 hover:border-brand-600 hover:shadow-lift dark:hover:border-sun focus-visible:-translate-y-1 ${CATEGORY_TINT[tool.category] ?? 'bg-white'}`}
+    >
+      <div className="flex items-start justify-between">
+        <span className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-white/10">
+          <IconComponent
+            className={`h-6 w-6 transition-transform duration-200 group-hover:scale-110 ${iconConfig.colorClass}`}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
         </span>
-        <Link
-          href={href}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 group-hover:text-brand-700"
-          aria-label={`Open ${tool.title}`}
-        >
-          <span>Open Tool</span>
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Link>
+        {tool.badge && (
+          <span className="rounded-full bg-sun-100 px-2.5 py-1 text-xs font-bold text-sun-700">{tool.badge}</span>
+        )}
       </div>
-    </div>
+      <h3 className="mt-1 text-[19px] font-bold text-ink">{tool.title}</h3>
+      <p className="line-clamp-2 text-[15px] leading-relaxed text-ink-muted">{tool.shortDescription}</p>
+      <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-bold text-brand-600">
+        {tool.isImplemented ? 'Open tool' : 'Coming soon'}
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+      </span>
+    </Link>
   );
 }
