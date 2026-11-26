@@ -140,7 +140,7 @@ export default function SignPdfPage() {
               </div>
               <h4 className="font-semibold text-slate-900">Download Completed File</h4>
               <p className="mt-2 text-xs text-slate-600 leading-relaxed">
-                Obtain a flattened, tamper-evident PDF ready to distribute to all signing parties.
+                Download the signed PDF, ready to send to everyone who needs a copy.
               </p>
             </div>
           </div>

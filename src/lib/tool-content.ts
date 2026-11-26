@@ -223,19 +223,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'organize-pdf': {
     introParagraph:
-      'Reorder, duplicate, move, and organize PDF pages visually with drag-and-drop ease. PDFKitFree Organize PDF provides an interactive thumbnail workspace where you can curate multi-page publications before finalizing.',
+      'Put the pages of a PDF in the right order. Each page appears as a thumbnail with arrows to move it earlier or later, and the reordered file downloads in seconds without leaving your browser.',
     howToSteps: [
       {
-        title: 'Upload Your Document',
-        description: 'Load your multi-page PDF into the interactive thumbnail viewer.',
+        title: 'Add your PDF',
+        description: 'Choose the file. Every page appears as a numbered thumbnail.',
       },
       {
-        title: 'Drag & Drop to Reorder',
-        description: 'Click and drag any page thumbnail to its desired destination in the sequence.',
+        title: 'Move pages',
+        description: 'Use the left and right arrows under a thumbnail to move that page earlier or later.',
       },
       {
-        title: 'Export Curated Document',
-        description: 'Download the newly structured PDF with updated page sequencing.',
+        title: 'Save the new order',
+        description: 'Press Save Reordered PDF and download the result.',
       },
     ],
     useCases: [
@@ -254,16 +254,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'Can I delete unwanted pages while organizing?',
-        answer: 'Yes. You can delete superfluous pages directly from the organization preview before saving.',
+        question: 'Can I delete pages here too?',
+        answer: 'Use Remove Pages for that. It works the same way and keeps the rest of the file untouched.',
       },
       {
-        question: 'Can I duplicate a page in the document?',
-        answer: 'Yes. You can duplicate templates, cover sheets, or separator pages across multiple locations in your file.',
+        question: 'Does reordering change quality?',
+        answer: 'No. Pages are moved as they are, so text, images and links stay exactly the same.',
       },
       {
-        question: 'Are large files supported in the organizer?',
-        answer: 'Yes. Our browser-based rendering optimizes thumbnail generation to keep the interface smooth and responsive.',
+        question: 'Is my file uploaded?',
+        answer: 'No. Everything happens in your browser on your own device.',
       },
     ],
     relatedToolSlugs: ['remove-pages', 'extract-pages', 'rotate-pdf', 'merge-pdf'],
@@ -272,19 +272,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'rotate-pdf': {
     introParagraph:
-      'Permanently correct sideways or inverted PDF pages with PDFKitFree Rotate PDF. Whether an office scanner captured landscape sheets vertically or pages were saved upside down, you can orient single pages or entire documents with single-click rotations.',
+      'Fix pages that were scanned sideways or upside down. Rotate the whole document in 90° steps and save a corrected PDF that opens the right way up in every reader.',
     howToSteps: [
       {
-        title: 'Load Your Document',
-        description: 'Select the PDF containing misaligned or inverted pages.',
+        title: 'Add your PDF',
+        description: 'Choose the file with sideways or upside-down pages.',
       },
       {
-        title: 'Rotate Individual or All Pages',
-        description: 'Use the visual rotation controls to turn pages 90°, 180°, or 270° clockwise until properly oriented.',
+        title: 'Rotate',
+        description: 'Press Rotate All 90° Clockwise once for a quarter turn, twice for upside down, three times for a quarter turn the other way.',
       },
       {
-        title: 'Save New Orientation',
-        description: 'Download the corrected PDF with permanent rotation metadata applied.',
+        title: 'Save',
+        description: 'Press Save Rotated PDF and download the corrected file.',
       },
     ],
     useCases: [
@@ -303,16 +303,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'Is the rotation permanent when shared with others?',
-        answer: 'Yes. The updated orientation coordinates are encoded directly into the PDF specification, ensuring it displays properly across Adobe Reader, Chrome, and mobile devices.',
+        question: 'Is the rotation permanent?',
+        answer: 'Yes. The rotation is saved in the file, so it shows correctly in Acrobat, Preview, Chrome and on phones.',
       },
       {
-        question: 'Can I rotate just one specific page in a 20-page document?',
-        answer: 'Yes. You can rotate individual selected pages independently without altering the orientation of the rest of the document.',
+        question: 'Can I rotate just one page?',
+        answer: 'This tool rotates every page. To fix a single page, use Extract Pages to pull it out, rotate it, and put it back with Merge and Organize.',
       },
       {
-        question: 'Does rotating degrade the quality of embedded text?',
-        answer: 'Not at all. Page rotation alters the coordinate matrix and does not re-encode or compress document contents.',
+        question: 'Does rotating reduce quality?',
+        answer: 'No. Rotation does not re-encode text or images.',
       },
     ],
     relatedToolSlugs: ['organize-pdf', 'remove-pages', 'split-pdf', 'merge-pdf'],
@@ -469,19 +469,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'optimize-web-pdf': {
     introParagraph:
-      'Linearize and streamline PDF documents for fast web streaming and instant first-page viewing. Removes redundant object streams, optimizes compression dictionaries, and enables byte-serving so online visitors never wait for complete file downloads.',
+      'Re-save a PDF with a clean, compact internal structure so it opens faster in browsers and on phones. Unused objects are dropped and the file is rewritten in a tidy form, without touching what the pages look like.',
     howToSteps: [
       {
-        title: 'Upload Document',
-        description: 'Choose any PDF you intend to publish online, embed in an iframe, or host on a website.',
+        title: 'Add your PDF',
+        description: 'Choose the file you plan to put on a website or send by link.',
       },
       {
-        title: 'Apply Web Linearization',
-        description: 'The tool restructures the internal object graph so page 1 renders before subsequent pages load.',
+        title: 'Optimize',
+        description: 'The file is rewritten with a compact structure and unused objects removed.',
       },
       {
-        title: 'Download Optimized PDF',
-        description: 'Save your streamlined file, ready for high-performance web deployment.',
+        title: 'Download',
+        description: 'Save the optimized PDF and upload it wherever you need it.',
       },
     ],
     useCases: [
@@ -500,16 +500,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'What is Fast Web View (linearization)?',
-        answer: 'Linearization restructures PDF internal byte offsets so that web browsers can render the first page immediately while the rest of the document streams in the background.',
+        question: 'Does this make the PDF smaller?',
+        answer: 'Often a little, when the original contains leftover or unused data. For big reductions, use Compress PDF, which shrinks images.',
       },
       {
-        question: 'Does web optimization degrade print resolution?',
-        answer: 'No. Text, fonts, and vector paths remain at full resolution. Only object organization and redundant streams are optimized.',
+        question: 'Does it change the look of the pages?',
+        answer: 'No. Text, fonts and images stay exactly as they were.',
       },
       {
-        question: 'Does it reduce total file size?',
-        answer: 'Yes, typically by 10% to 30% through removal of duplicate metadata dictionaries and uncompressed trailers.',
+        question: 'Is it the same as Acrobat "Fast Web View"?',
+        answer: 'Not quite. This tool cleans and compacts the file but does not linearize it, so very large files still download fully before the last pages show.',
       },
     ],
     relatedToolSlugs: ['compress-pdf', 'repair-pdf', 'pdf-to-pdfa', 'flatten-pdf'],
@@ -617,47 +617,47 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'word-to-pdf': {
     introParagraph:
-      'Convert Microsoft Word (.docx, .doc) files and formatted text documents into universal, immutable PDF format. Lock typography, headings, tables, and alignment so documents render identically on Windows, Mac, iOS, and Android.',
+      'Convert Word (.docx) documents to PDF right in your browser, without Microsoft Office. Headings, paragraphs and table text are carried over into a clean, readable PDF. Complex layouts, images and custom fonts are simplified, so for pixel-perfect output export from Word itself.',
     howToSteps: [
       {
-        title: 'Upload Word Document',
-        description: 'Select your .docx or formatted text file from your device.',
+        title: 'Add your DOCX',
+        description: 'Choose a .docx file from your phone or computer.',
       },
       {
-        title: 'Process Layout & Fonts',
-        description: 'The converter extracts styled paragraphs, tables, and typography locally.',
+        title: 'Convert',
+        description: 'The text, headings and tables are read in your browser and laid out on PDF pages.',
       },
       {
-        title: 'Download Read-Only PDF',
-        description: 'Download your standardized PDF ready for professional distribution.',
+        title: 'Download',
+        description: 'Save the PDF and share it.',
       },
     ],
     useCases: [
       {
-        title: 'Sending Job Resumes & CVs',
-        description: 'Ensure hiring managers see your exact font styling and spacing without Word version discrepancies.',
+        title: 'Sending a quick read-only copy',
+        description: 'Turn a draft into a PDF so people can read it on any device without Word.',
       },
       {
-        title: 'Formal Business Invoices & Contracts',
-        description: 'Convert draft Word agreements into immutable PDFs before sending them for signature.',
+        title: 'Applications that only accept PDF',
+        description: 'Many forms and portals reject .docx files. Convert first, then upload.',
       },
       {
-        title: 'Academic Theses & Essays',
-        description: 'Meet university submission requirements mandating non-editable PDF formats.',
+        title: 'Working on a computer without Office',
+        description: 'Convert documents on a shared or school computer without installing anything.',
       },
     ],
     faqs: [
       {
-        question: 'Do I need Microsoft Office installed?',
-        answer: 'No. The conversion executes directly inside your browser without requiring Office or Microsoft 365 licenses.',
+        question: 'Do I need Microsoft Word?',
+        answer: 'No. The conversion runs in your browser.',
       },
       {
-        question: 'Will text alignment and paragraph spacing be preserved?',
-        answer: 'Yes. The conversion engine accurately parses margins, line spacing, and paragraph structures.',
+        question: 'Will it look exactly like Word?',
+        answer: 'The text, headings and tables come across, but fonts, images and complex layouts are simplified. For an exact copy, use File > Save as PDF in Word.',
       },
       {
-        question: 'Are confidential Word documents kept private?',
-        answer: 'Yes. Processing occurs in-browser; your document contents are never transmitted to external cloud servers.',
+        question: 'Is my document uploaded?',
+        answer: 'No. It is converted on your own device.',
       },
     ],
     relatedToolSlugs: ['excel-to-pdf', 'powerpoint-to-pdf', 'pdf-to-word', 'protect-pdf'],
@@ -684,7 +684,7 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     useCases: [
       {
         title: 'Corporate Financial Statements',
-        description: 'Export quarterly Profit & Loss statements and balance sheets into tamper-evident PDF reports.',
+        description: 'Export quarterly Profit & Loss statements and balance sheets into PDF reports that print and share cleanly.',
       },
       {
         title: 'Price Lists & Product Inventories',
@@ -715,47 +715,47 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'powerpoint-to-pdf': {
     introParagraph:
-      'Convert PowerPoint presentations (.pptx, .ppt) and slide decks into crisp, universally readable PDF handouts. Ensure fonts, master slides, and bullet layouts appear exactly as intended without PowerPoint viewer dependencies.',
+      'Turn a PowerPoint (.pptx) file into a PDF with one page per slide. Each slide\'s titles and bullet text are carried over so the deck can be read, printed or shared anywhere. Pictures, backgrounds and slide designs are not copied, so for a visual copy export from PowerPoint itself.',
     howToSteps: [
       {
-        title: 'Choose PowerPoint Deck',
-        description: 'Upload your .pptx presentation file.',
+        title: 'Add your PPTX',
+        description: 'Choose a .pptx presentation.',
       },
       {
-        title: 'Map Slides to Pages',
-        description: 'Each slide is converted sequentially into a dedicated high-definition PDF page.',
+        title: 'Convert',
+        description: 'The text on each slide is placed on its own PDF page.',
       },
       {
-        title: 'Download PDF Presentation',
-        description: 'Save your presentation PDF ready for easy printing or projection.',
+        title: 'Download',
+        description: 'Save the PDF handout.',
       },
     ],
     useCases: [
       {
-        title: 'Investor Pitch Decks',
-        description: 'Distribute pitch decks to venture capital investors in a universal format that opens on mobile phones instantly.',
+        title: 'Text handouts',
+        description: 'Give attendees a printable outline of your talk.',
       },
       {
-        title: 'Conference & Webinar Handouts',
-        description: 'Provide attendees with printable PDF lecture slides that look identical on all devices.',
+        title: 'Reading a deck without PowerPoint',
+        description: 'Open the content of a .pptx on any device.',
       },
       {
-        title: 'Employee Training Materials',
-        description: 'Package onboarding slides into standard corporate training documentation.',
+        title: 'Searching a presentation',
+        description: 'Get the slide text into a searchable PDF.',
       },
     ],
     faqs: [
       {
-        question: 'Will PowerPoint slide animations carry over?',
-        answer: 'PDF is a static page format, so dynamic transitions are converted into the final slide layout state.',
+        question: 'Will the slides look the same as in PowerPoint?',
+        answer: 'No. Only the text is converted. For a visual copy with pictures and design, use File > Export > PDF in PowerPoint or Google Slides.',
       },
       {
-        question: 'Can recipients modify the slide graphics?',
-        answer: 'No. Converting to PDF creates an immutable presentation deliverable that preserves your visual layout.',
+        question: 'How many pages will I get?',
+        answer: 'One PDF page per slide, in order.',
       },
       {
-        question: 'Is slide resolution sharp on retina displays?',
-        answer: 'Yes. Text and vector graphics scale smoothly to 4K projectors and high-DPI displays.',
+        question: 'Is my file uploaded?',
+        answer: 'No. It is converted in your browser.',
       },
     ],
     relatedToolSlugs: ['word-to-pdf', 'excel-to-pdf', 'pdf-to-powerpoint', 'compress-pdf'],
@@ -961,19 +961,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'pdf-to-excel': {
     introParagraph:
-      'Extract structured tables, ledger columns, and financial numbers from PDF statements into editable Excel (.xlsx) and CSV spreadsheets. Stop manually re-keying invoice numbers and bank balances.',
+      'Get tables out of a PDF and into a spreadsheet. The tool reads where each piece of text sits on the page, rebuilds rows and columns, and saves a CSV file that opens in Excel, Google Sheets and Numbers.',
     howToSteps: [
       {
-        title: 'Upload PDF Statement or Report',
-        description: 'Select your financial report, bank statement, or tabular invoice.',
+        title: 'Add your PDF',
+        description: 'Choose a statement, invoice or report with tables.',
       },
       {
-        title: 'Extract Tabular Columns',
-        description: 'The extractor analyzes row alignments, delimiters, and numeric data cells.',
+        title: 'Convert',
+        description: 'Rows and columns are rebuilt from the position of the text on each page.',
       },
       {
-        title: 'Download Spreadsheet Data',
-        description: 'Save your clean CSV or Excel-compatible spreadsheet ready for financial analysis.',
+        title: 'Open in Excel',
+        description: 'Download the CSV and open it in Excel, Google Sheets or Numbers.',
       },
     ],
     useCases: [
@@ -992,16 +992,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'How accurately are spreadsheet columns separated?',
-        answer: 'The parser evaluates horizontal text coordinates to reconstruct distinct table columns without merging cells.',
+        question: 'Why CSV and not .xlsx?',
+        answer: 'CSV opens directly in Excel, Google Sheets and Numbers and imports into accounting tools. Save it as .xlsx from Excel if you need to.',
       },
       {
-        question: 'Can I open the downloaded file in Microsoft Excel?',
-        answer: 'Yes. The output is formatted for direct import into Microsoft Excel, Google Sheets, and financial tools.',
+        question: 'Does it work on scanned PDFs?',
+        answer: 'Scans have no text to read. Run OCR PDF first, then convert the searchable result.',
       },
       {
-        question: 'Are my confidential financial figures kept private?',
-        answer: '100% yes. Table extraction is performed in-memory inside your browser sandbox; no numbers leave your device.',
+        question: 'How accurate are the columns?',
+        answer: 'Clearly spaced tables convert well. Tables with merged cells or text that wraps inside a cell may need a quick tidy-up.',
       },
     ],
     relatedToolSlugs: ['excel-to-pdf', 'pdf-to-word', 'extract-text', 'split-pdf'],
@@ -1010,19 +1010,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'pdf-to-powerpoint': {
     introParagraph:
-      'Convert PDF slide decks and multi-page presentations into PowerPoint (.pptx) presentation slides. Turn static slides into editable presentation assets for your upcoming keynote or pitch.',
+      'Turn a PDF into a real PowerPoint (.pptx) file with one slide per page. Each page is placed as a sharp, high-resolution picture, so the deck looks exactly like the PDF and is ready to present, reorder or add notes to.',
     howToSteps: [
       {
-        title: 'Choose PDF Slide Deck',
-        description: 'Upload your presentation PDF.',
+        title: 'Add your PDF',
+        description: 'Choose the PDF deck or document.',
       },
       {
-        title: 'Map Document Pages to Slides',
-        description: 'Each PDF page is converted sequentially into a presentation slide asset.',
+        title: 'Convert',
+        description: 'Each page is rendered at high resolution and placed on its own slide.',
       },
       {
-        title: 'Export PowerPoint Package',
-        description: 'Download your slides packaged ready for import into PowerPoint or Keynote.',
+        title: 'Open in PowerPoint',
+        description: 'Download the .pptx and open it in PowerPoint, Keynote or Google Slides.',
       },
     ],
     useCases: [
@@ -1041,16 +1041,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'Will each PDF page become an individual slide?',
-        answer: 'Yes. Each page corresponds directly to a distinct presentation slide in correct sequence.',
+        question: 'Can I edit the text on the slides?',
+        answer: 'No. Each page is a picture, which keeps the layout exact. You can add new text boxes, notes and slides around it.',
       },
       {
-        question: 'What resolution are the slides rendered in?',
-        answer: 'Slides are rendered at high-definition resolution so text remains crisp when projected on large screens.',
+        question: 'Does the slide size match the PDF?',
+        answer: 'Yes. The slide shape follows the first page of the PDF.',
       },
       {
-        question: 'Can I reorder slides after conversion?',
-        answer: 'Yes. Once opened in PowerPoint or Google Slides, you can rearrange, delete, or add slides freely.',
+        question: 'Is my file uploaded?',
+        answer: 'No. The conversion happens in your browser.',
       },
     ],
     relatedToolSlugs: ['powerpoint-to-pdf', 'pdf-to-jpg', 'pdf-to-word', 'split-pdf'],
@@ -1059,19 +1059,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'pdf-to-pdfa': {
     introParagraph:
-      'Convert standard PDF files into ISO-compliant PDF/A (PDF for Archiving) formats (PDF/A-1b and PDF/A-2b). Embeds all fonts, color profiles, and metadata so documents remain accessible and visually identical decades into the future.',
+      'Prepare a PDF/A-2b archival copy of a PDF. The tool adds the PDF/A identification metadata, an sRGB colour profile and a document ID, and checks every font. PDF/A requires all fonts to be embedded, so if your original has fonts that are not embedded, you are told which ones instead of being given a file that only claims to comply.',
     howToSteps: [
       {
-        title: 'Select Source PDF',
-        description: 'Choose any document requiring long-term archival standardization.',
+        title: 'Add your PDF',
+        description: 'Choose the document you need to archive or file.',
       },
       {
-        title: 'Apply ISO Archival Standardization',
-        description: 'Embeds font subsets, color profiles, and ISO 19005 compliance markers.',
+        title: 'Prepare',
+        description: 'PDF/A-2b metadata, an sRGB output intent and a file ID are added, and fonts are checked.',
       },
       {
-        title: 'Download Certified PDF/A',
-        description: 'Save your future-proof, legally compliant archival document.',
+        title: 'Download and check',
+        description: 'Save the file. If any fonts are reported as not embedded, re-export from the original app with font embedding turned on.',
       },
     ],
     useCases: [
@@ -1090,16 +1090,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'What is PDF/A and why is it legally required?',
-        answer: 'PDF/A is an ISO-standardized version of the PDF format designed specifically for digital preservation. It prohibits external font dependencies and encryption that could prevent future reading.',
+        question: 'Is the result guaranteed to pass a PDF/A validator?',
+        answer: 'Not always. Fonts that are missing from the original cannot be added afterwards, and some content (such as transparency in PDF/A-1) needs changes only the original app can make. We tell you about missing fonts; for official filings, check the file with a validator such as veraPDF.',
       },
       {
-        question: 'Can PDF/A files be opened in standard PDF viewers?',
-        answer: 'Yes. Any modern PDF reader (such as Adobe Acrobat, Apple Preview, or Chrome) opens PDF/A files normally.',
+        question: 'What is PDF/A?',
+        answer: 'An ISO standard version of PDF for long-term archiving. It requires embedded fonts and colour information so the file looks the same in decades.',
       },
       {
-        question: 'Does PDF/A embedding increase file size?',
-        answer: 'Slightly, because all vector font definitions and color spaces are permanently embedded inside the file.',
+        question: 'Will it still open normally?',
+        answer: 'Yes. A PDF/A file opens in every PDF reader.',
       },
     ],
     relatedToolSlugs: ['flatten-pdf', 'validate-signature', 'optimize-web-pdf', 'protect-pdf'],
@@ -1109,19 +1109,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
   // 5. EDIT PDF
   'add-text-pdf': {
     introParagraph:
-      'Type and place custom text, notes, labels, or fill out blank form fields directly onto your PDF pages. Choose font size, family, color, and drag your text blocks to any page coordinate in real time with client-side privacy.',
+      'Add text to a PDF: a name, a date, a label or a short note. Choose the page (or all pages), one of nine positions, the text size and the colour, and download the updated file.',
     howToSteps: [
       {
-        title: 'Open PDF Document',
-        description: 'Select the file you need to add text or notes to.',
+        title: 'Add your PDF',
+        description: 'Choose the file.',
       },
       {
-        title: 'Type & Position Text',
-        description: 'Enter your custom text, choose font styling and color, and place it on the canvas.',
+        title: 'Type and place',
+        description: 'Type your text, then choose the page, position, size and colour.',
       },
       {
-        title: 'Save Edited PDF',
-        description: 'Download your updated PDF with newly stamped text integrated into the page tree.',
+        title: 'Download',
+        description: 'Press Add Text to PDF and save the result.',
       },
     ],
     useCases: [
@@ -1140,16 +1140,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'Can I change font size, color, and font style?',
-        answer: 'Yes. You can select standard typography, custom font sizes, and color palettes.',
+        question: 'Can I choose exactly where the text goes?',
+        answer: 'Choose from nine positions (corners, edges and centre) with a half-inch margin. Free placement by dragging is not available yet.',
       },
       {
-        question: 'Does this overwrite or erase existing document text?',
-        answer: 'No. The newly typed text is rendered as an overlay on top of the existing page without altering background content.',
+        question: 'Does the text print?',
+        answer: 'Yes. It becomes part of the page and prints like the rest of the document.',
       },
       {
-        question: 'Will the added text be visible when printed?',
-        answer: 'Yes. Added text becomes a permanent part of the vector page description and prints crisply.',
+        question: 'Is my file uploaded?',
+        answer: 'No. Everything happens in your browser.',
       },
     ],
     relatedToolSlugs: ['add-image-pdf', 'annotate-pdf', 'add-watermark', 'sign-pdf'],
@@ -1158,23 +1158,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'add-image-pdf': {
     introParagraph:
-      'Insert company logos, signature stamps, photos, or certification badges into any page of your PDF document. Move, scale, and align graphics with real-time visual canvas controls.',
+      'Put a logo, stamp, photo or badge on a PDF. Choose one page or every page, one of nine positions and how wide the image should be.',
     howToSteps: [
       {
-        title: 'Upload Source PDF',
-        description: 'Open the document you want to decorate or stamp.',
+        title: 'Add your PDF',
+        description: 'Choose the file.',
       },
       {
-        title: 'Choose Image Stamp (PNG or JPG)',
-        description: 'Select your company logo, official seal, or photo.',
+        title: 'Choose an image',
+        description: 'Pick a PNG, JPG or WebP, then choose the page, position and width.',
       },
       {
-        title: 'Position & Scale Graphic',
-        description: 'Drag the image to your desired location and adjust its dimensions.',
-      },
-      {
-        title: 'Export Stamped PDF',
-        description: 'Download the finalized document with embedded imagery.',
+        title: 'Download',
+        description: 'Press Stamp Image onto PDF and save the result.',
       },
     ],
     useCases: [
@@ -1193,16 +1189,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'Can I use transparent PNG images?',
-        answer: 'Yes. PNG transparency alpha channels are fully supported so logos blend seamlessly into white paper backgrounds.',
+        question: 'Is PNG transparency kept?',
+        answer: 'Yes. Transparent parts of a PNG stay transparent on the page.',
       },
       {
-        question: 'Can I resize the image after uploading?',
-        answer: 'Yes. You can scale the image larger or smaller using interactive sizing controls.',
+        question: 'Can I resize the image?',
+        answer: 'Yes. Set the width as a percentage of the page; the height follows automatically.',
       },
       {
-        question: 'Does inserting an image reduce its clarity?',
-        answer: 'No. The image is embedded at its native resolution to ensure high-quality printing.',
+        question: 'Is my file uploaded?',
+        answer: 'No. The image and PDF stay on your device.',
       },
     ],
     relatedToolSlugs: ['add-text-pdf', 'add-watermark', 'sign-pdf', 'annotate-pdf'],
@@ -1211,47 +1207,47 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'annotate-pdf': {
     introParagraph:
-      'Draw freehand, highlight critical sentences, draw callout arrows, and underline clauses on your PDF. An intuitive visual markup workspace running directly in your browser with high-precision brush tools.',
+      'Add comments to a PDF for review or feedback. Each comment is saved two ways: as a real PDF comment that appears in the comments panel of Acrobat, Preview, Chrome and Edge, and as a yellow note on the page so it also shows when printed.',
     howToSteps: [
       {
-        title: 'Open Document in Annotator',
-        description: 'Load the PDF you need to review or markup.',
+        title: 'Add your PDF',
+        description: 'Choose the document you are reviewing.',
       },
       {
-        title: 'Select Brush, Highlighter, or Shapes',
-        description: 'Highlight key paragraphs, draw margin notes, or sketch callout rectangles.',
+        title: 'Write your comment',
+        description: 'Type the comment and choose the page and position.',
       },
       {
-        title: 'Save Annotated Document',
-        description: 'Download the marked-up PDF with all visual revisions rendered.',
+        title: 'Download',
+        description: 'Press Add Annotation and save the commented PDF.',
       },
     ],
     useCases: [
       {
-        title: 'Grading Essays & Academic Papers',
-        description: 'Professors and teachers can highlight errors, underline strong arguments, and write margin feedback.',
+        title: 'Contract review',
+        description: 'Flag a clause for the other side with a comment they will see in any PDF reader.',
       },
       {
-        title: 'Legal Contract Review',
-        description: 'Highlight indemnity clauses and flag ambiguous terms for counterparties during contract negotiations.',
+        title: 'Feedback on drafts',
+        description: 'Leave notes on reports, essays or designs.',
       },
       {
-        title: 'Collaborative Architectural Review',
-        description: 'Circle engineering clashes on construction blueprints with callout markers.',
+        title: 'Notes for yourself',
+        description: 'Mark pages you need to come back to.',
       },
     ],
     faqs: [
       {
-        question: 'Are my annotations viewable in Adobe Acrobat and Preview?',
-        answer: 'Yes. Annotations are standard PDF graphical objects viewable across all PDF reader software.',
+        question: 'Will the comment show in Adobe Acrobat?',
+        answer: 'Yes. It is a standard PDF comment, so it appears in the comments panel of Acrobat, Preview and browser PDF viewers.',
       },
       {
-        question: 'Can I highlight text with different translucent colors?',
-        answer: 'Yes. Highlighting tools feature customizable opacity so underlying text remains completely legible.',
+        question: 'Can I draw or highlight freehand?',
+        answer: 'Not yet. This tool adds written comments.',
       },
       {
-        question: 'Does annotating require uploading my file to a server?',
-        answer: 'No. The drawing canvas operates entirely client-side in your browser memory.',
+        question: 'Is my file uploaded?',
+        answer: 'No. Everything happens in your browser.',
       },
     ],
     relatedToolSlugs: ['add-text-pdf', 'add-image-pdf', 'flatten-pdf', 'redact-pdf'],
@@ -1260,19 +1256,19 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'add-watermark': {
     introParagraph:
-      'Stamp custom diagonal or horizontal text watermarks (e.g., CONFIDENTIAL, DRAFT, SAMPLE) or company logos across every page of your PDF with customizable opacity and rotation angles.',
+      'Stamp a text watermark such as CONFIDENTIAL, DRAFT or SAMPLE diagonally across every page of a PDF. Choose the words and how see-through the watermark should be.',
     howToSteps: [
       {
-        title: 'Choose PDF to Watermark',
-        description: 'Select the file requiring copyright or sensitivity marking.',
+        title: 'Add your PDF',
+        description: 'Choose the file to mark.',
       },
       {
-        title: 'Configure Watermark Text & Style',
-        description: 'Enter your custom watermark string, select font size, rotation angle (45° or horizontal), and opacity.',
+        title: 'Set the watermark',
+        description: 'Type the text and set the opacity.',
       },
       {
-        title: 'Apply & Download',
-        description: 'Download your document with uniform watermarks stamped across all pages.',
+        title: 'Download',
+        description: 'Press Apply Watermark and save the marked PDF.',
       },
     ],
     useCases: [
@@ -1291,16 +1287,16 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
     ],
     faqs: [
       {
-        question: 'Will watermarks obscure the text underneath?',
-        answer: 'No. Adjustable opacity controls allow you to keep watermarks visible without blocking reading legibility.',
+        question: 'Does it go on every page?',
+        answer: 'Yes. The watermark is added diagonally across the centre of each page.',
       },
       {
-        question: 'Can I apply watermarks to all pages simultaneously?',
-        answer: 'Yes. The watermark engine iterates across all pages in the document automatically.',
+        question: 'Can people remove it?',
+        answer: 'It is part of the page content, so it cannot be switched off like a comment, but it can be removed with PDF editing software. Combine it with Protect PDF for more control.',
       },
       {
-        question: 'Can recipients easily strip the watermark?',
-        answer: 'When combined with our Flatten PDF tool, watermarks become permanently merged into the page canvas.',
+        question: 'Can I use a logo instead of text?',
+        answer: 'Use Add Image to PDF with all pages selected to place a logo on every page.',
       },
     ],
     relatedToolSlugs: ['protect-pdf', 'flatten-pdf', 'add-page-numbers', 'redact-pdf'],
@@ -1703,47 +1699,47 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'compare-pdf': {
     introParagraph:
-      'Compare two PDF documents side-by-side to spot revisions, altered clauses, inserted pages, and typographical differences. Ensure counterparties have not introduced unauthorized changes before signing.',
+      'Check what changed between two versions of a document. The tool reads the text of both PDFs page by page and lists exactly which lines were added or removed, with a downloadable report of every change.',
     howToSteps: [
       {
-        title: 'Upload Original PDF (Doc A)',
-        description: 'Select the baseline agreement or draft version.',
+        title: 'Add the first version',
+        description: 'Choose the original or earlier PDF.',
       },
       {
-        title: 'Upload Revised PDF (Doc B)',
-        description: 'Select the counterparty revision or updated deliverable.',
+        title: 'Add the second version',
+        description: 'Choose the revised PDF.',
       },
       {
-        title: 'Review Differences Side-by-Side',
-        description: 'Inspect visual alignment, page counts, and structural modifications with synchronous controls.',
+        title: 'Review the changes',
+        description: 'See which pages changed and which lines were added or removed, then download the full report.',
       },
     ],
     useCases: [
       {
-        title: 'Contract Negotiation & Redlining',
-        description: 'Verify that counterparties did not alter standard terms when returning a signed agreement.',
+        title: 'Contract revisions',
+        description: 'Confirm the other side did not quietly change a clause before you sign.',
       },
       {
-        title: 'Architectural Blueprint Revisions',
-        description: 'Compare revised CAD schematics against original drawings to spot structural additions.',
+        title: 'Report updates',
+        description: 'See what changed between draft and final versions.',
       },
       {
-        title: 'Academic Proofreading',
-        description: 'Check author page proofs against the final journal publication to ensure no typesetting errors occurred.',
+        title: 'Proofreading',
+        description: 'Check a typeset proof against the approved version.',
       },
     ],
     faqs: [
       {
-        question: 'Can I compare PDFs with different numbers of pages?',
-        answer: 'Yes. The comparison tool identifies discrepancies in total page length and flags missing or inserted sheets.',
+        question: 'Does it compare images and layout?',
+        answer: 'No. It compares the text. A change only in a picture or in spacing will not be listed.',
       },
       {
-        question: 'Does the tool show visual differences?',
-        answer: 'Yes. Both documents are rendered side-by-side so you can visually verify layout and text positioning.',
+        question: 'What if pages were added?',
+        answer: 'Pages that exist in only one file are listed separately.',
       },
       {
-        question: 'Is comparing legal documents safe from data leaks?',
-        answer: 'Entirely safe. Both files remain in local browser RAM; neither document is transmitted to a cloud server.',
+        question: 'Are my files uploaded?',
+        answer: 'No. Both files stay in your browser.',
       },
     ],
     relatedToolSlugs: ['extract-text', 'validate-signature', 'sign-pdf', 'merge-pdf'],

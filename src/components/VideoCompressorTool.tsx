@@ -42,6 +42,10 @@ interface VideoCompressorToolProps {
 
 const AUDIO_BPS = 128000;
 const MAX_TARGET_RETRIES = 2;
+/** Hosting platforms such as Vercel reject request bodies over about 4.5 MB, so larger files cannot reach the server converter. */
+const SERVER_UPLOAD_LIMIT_BYTES = 4 * 1024 * 1024;
+const TOO_BIG_FOR_SERVER =
+  'Your browser cannot read this video format, and files over 4 MB in this format cannot be sent to our converter. Save or export it as MP4 first (most phones and editors can), then try again.';
 
 export function VideoCompressorTool({ targetBytes, targetLabel }: VideoCompressorToolProps = {}) {
   const [file, setFile] = useState<File | null>(null);
@@ -196,6 +200,9 @@ export function VideoCompressorTool({ targetBytes, targetLabel }: VideoCompresso
     // Browser cannot natively decode container or codec (e.g. MKV, AVI, ProRes, HEVC, MPEG-4).
     // Automatically fallback to our server-side FFmpeg worker engine for exact metadata inspection.
     try {
+      if (selectedFile.size > SERVER_UPLOAD_LIMIT_BYTES) {
+        throw new Error(TOO_BIG_FOR_SERVER);
+      }
       setProcessingStatus('Inspecting media container with FFmpeg worker...');
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -220,7 +227,9 @@ export function VideoCompressorTool({ targetBytes, targetLabel }: VideoCompresso
       const error = err as Error;
       setIsReadingMetadata(false);
       setErrorMessage(
-        `Unable to extract video metadata: ${error.message || 'Corrupt or unsupported container'}. Please verify the file integrity.`
+        error.message === TOO_BIG_FOR_SERVER
+          ? TOO_BIG_FOR_SERVER
+          : `Unable to extract video metadata: ${error.message || 'Corrupt or unsupported container'}. Please verify the file integrity.`
       );
     }
   };
@@ -317,6 +326,11 @@ export function VideoCompressorTool({ targetBytes, targetLabel }: VideoCompresso
 
   const handleServerWorkerCompression = async (bitrateScale = 1, attempt = 0): Promise<void> => {
     if (!file) return;
+    if (file.size > SERVER_UPLOAD_LIMIT_BYTES) {
+      setErrorMessage(TOO_BIG_FOR_SERVER);
+      setIsProcessing(false);
+      return;
+    }
     setProcessingStatus(
       attempt > 0
         ? `A little over ${targetLabel}, compressing again (try ${attempt + 1} of ${MAX_TARGET_RETRIES + 1})...`

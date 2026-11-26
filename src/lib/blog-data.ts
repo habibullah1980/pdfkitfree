@@ -242,7 +242,7 @@ export const BLOG_POSTS: BlogPost[] = [
     content: [
       'In the modern business landscape, paperless document execution is not merely a convenience—it is an operational requirement. The US ESIGN Act (2000) and the EU eIDAS regulation provide clear legal standing for digital execution of agreements.',
       'Key elements required for enforceable electronic signatures include demonstrated intent to sign, explicit consent to do business electronically, clear attribution to the signatory, and preservation of document integrity after signing.',
-      'Our signing infrastructure pairs standard cryptographic hashing with tamper-evident PDF metadata, creating verifiable audit trails designed to withstand scrutiny.'
+      'PDFKitFree Sign PDF places a visible signature, date and initials on the document. Where you need cryptographic proof that a file was not changed after signing, use a certificate-based digital signature from a trust service provider.'
     ],
     faqs: [
       {
