@@ -6,6 +6,7 @@ import { TOOLS, TOOL_CATEGORIES } from '@/lib/tools';
 import { ToolCard } from '@/components/ToolCard';
 import Image from 'next/image';
 import heroPhoto from '@/assets/hero-office.jpg';
+import { DemoVideo } from '@/components/landing/DemoVideo';
 import { FolderOpen, Lock, Minimize2, Monitor, Search, ShieldCheck, Upload, Zap, Download, Video } from 'lucide-react';
 
 const POPULAR = ['compress-pdf', 'merge-pdf', 'pdf-to-word', 'sign-pdf'];
@@ -161,6 +162,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <DemoVideo />
 
       {/* Tools catalog */}
       <section ref={catalogRef} id="tools-catalog" className="scroll-mt-24 bg-[#FFFBF0] py-20 sm:py-24">

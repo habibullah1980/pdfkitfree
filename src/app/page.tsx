@@ -46,8 +46,24 @@ export default function HomePage() {
     sameAs: [],
   };
 
+  const videoSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: 'PDFKitFree in 37 seconds',
+    description:
+      'A short screen recording of PDFKitFree: compressing a PDF, merging files, signing a document and shrinking a photo under 50 KB.',
+    thumbnailUrl: 'https://www.pdfkitfree.online/videos/pdfkitfree-demo-poster.jpg',
+    contentUrl: 'https://www.pdfkitfree.online/videos/pdfkitfree-demo.mp4',
+    uploadDate: '2026-11-26',
+    duration: 'PT37S',
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
