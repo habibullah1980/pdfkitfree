@@ -16,6 +16,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/video-compressor`, lastModified: currentDate, changeFrequency: 'daily' as const, priority: 0.9 },
     { url: `${baseUrl}/nda-esign`, lastModified: currentDate, changeFrequency: 'daily' as const, priority: 0.9 },
     { url: `${baseUrl}/sign-pdf`, lastModified: currentDate, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...['/qr-code-generator', '/heic-to-jpg', '/heic-to-png', '/resize-image'].map((p) => ({
+      url: `${baseUrl}${p}`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly' as const,
+      priority: 0.85,
+    })),
     { url: `${baseUrl}/nda-generator`, lastModified: currentDate, changeFrequency: 'weekly' as const, priority: 0.8 },
     { url: `${baseUrl}/blog`, lastModified: currentDate, changeFrequency: 'daily' as const, priority: 0.8 },
     { url: `${baseUrl}/about`, lastModified: currentDate, changeFrequency: 'monthly' as const, priority: 0.5 },

@@ -24,6 +24,9 @@ export const SITE_CONFIG = {
       { label: 'Video Compressor', href: '/video-compressor' },
       { label: 'NDA & eSign', href: '/nda-esign' },
       { label: 'NDA Generator', href: '/nda-generator' },
+      { label: 'QR Code Generator', href: '/qr-code-generator' },
+      { label: 'HEIC to JPG', href: '/heic-to-jpg' },
+      { label: 'Resize Image', href: '/resize-image' },
     ],
     company: [
       { label: 'Pricing Plans', href: '/pricing' },

@@ -15,13 +15,15 @@ export interface SizeLandingProps {
   steps: [string, string][];
   faqs: { q: string; a: string }[];
   others: { href: string; label: string }[];
-  ownLevel: { href: string; label: string };
+  ownLevel?: { href: string; label: string };
+  /** Heading above the `others` links. */
+  othersTitle?: string;
   children: React.ReactNode;
 }
 
 /** Shared layout for the "compress X to N size" landing pages. */
 export function SizeLanding(props: SizeLandingProps) {
-  const { heading, intro, path, privacyNote, breadcrumbs, steps, faqs, others, ownLevel, children } = props;
+  const { heading, intro, path, privacyNote, breadcrumbs, steps, faqs, others, ownLevel, othersTitle = 'Other sizes', children } = props;
   const faqJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -82,7 +84,7 @@ export function SizeLanding(props: SizeLandingProps) {
         </section>
 
         <section className="mb-6">
-          <h2 className="text-2xl font-extrabold text-ink">Other sizes</h2>
+          <h2 className="text-2xl font-extrabold text-ink">{othersTitle}</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {others.map((o) => (
               <Link
@@ -93,9 +95,11 @@ export function SizeLanding(props: SizeLandingProps) {
                 {o.label}
               </Link>
             ))}
-            <Link href={ownLevel.href} className="rounded-full bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700">
-              {ownLevel.label}
-            </Link>
+            {ownLevel && (
+              <Link href={ownLevel.href} className="rounded-full bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700">
+                {ownLevel.label}
+              </Link>
+            )}
           </div>
         </section>
       </div>
