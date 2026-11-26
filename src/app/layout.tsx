@@ -45,9 +45,9 @@ export const metadata: Metadata = {
     siteName: 'PDFKitFree',
   },
   twitter: {
+    // No title/description here: X falls back to each page's own og:title and
+    // og:description. Setting them here made every page share the home page text.
     card: 'summary_large_image',
-    title: 'Free PDF Tools Online: Merge, Compress, Sign & Convert | PDFKitFree',
-    description: SITE_CONFIG.description,
     creator: SITE_CONFIG.creator,
   },
   ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
