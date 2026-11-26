@@ -4,26 +4,34 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0f172a;
+  --foreground: #1B1A3A;
 
   /* Centralized Brand Design Tokens */
-  --primary: #4b49ac;
-  --light-blue: #98dbff;
-  --supporting-blue: #7DA0FA;
-  --lavender: #7978e3;
+  --primary: #4B3FE4;
+  --primary-hover: #3326C4;
+  --sun: #FFC83D;
+  --mint: #2CC59A;
+  --ink: #1B1A3A;
+  --mist: #F7F6FF;
+  --light-blue: #CFCBFF;
+  --supporting-blue: #8F86F5;
+  --lavender: #6C61EE;
   --coral: #f3797e;
-  --primary-hover: #413e96;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 /* Accessible visible keyboard focus */
 :focus-visible {
-  outline: 2px solid #4b49ac;
+  outline: 3px solid #FFC83D;
   outline-offset: 2px;
 }
 
@@ -33,3 +41,43 @@ body {
   }
 }
 
+
+/* Signature stroke that draws itself (hero card) */
+.pk-sig path {
+  stroke-dasharray: 420;
+  stroke-dashoffset: 420;
+  animation: pk-draw 1.6s 1.2s ease-out forwards;
+}
+
+/* Progress fill with a moving sheen */
+.pk-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.pk-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.5) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: pk-shine 1.4s linear infinite;
+}
+
+.pk-card {
+  animation: pk-pop .6s cubic-bezier(.2,.9,.3,1.3) both, pk-float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .pk-sig path { stroke-dashoffset: 0; }
+}
+
+@keyframes pk-pop { from { opacity: 0; transform: scale(.75) translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pk-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@keyframes pk-draw { to { stroke-dashoffset: 0; } }
+@keyframes pk-shine { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes pk-fill { from { width: 0; } }

@@ -371,7 +371,7 @@ export default function AccountSettingsPage() {
     return (
       <div className="mx-auto max-w-md my-16 text-center space-y-4">
         <p className="text-sm text-slate-600">Please sign in to view your account settings.</p>
-        <Link href="/login?returnUrl=/settings" className="inline-block rounded-xl bg-[#4b49ac] px-5 py-2 text-xs font-bold text-white">
+        <Link href="/login?returnUrl=/settings" className="inline-block rounded-xl bg-[#4B3FE4] px-5 py-2 text-xs font-bold text-white">
           Sign In
         </Link>
       </div>
@@ -393,7 +393,7 @@ export default function AccountSettingsPage() {
 
         {/* Plan badge */}
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-[#4b49ac]/10 px-3 py-1 text-xs font-bold uppercase text-[#4b49ac]">
+          <span className="rounded-full bg-[#4B3FE4]/10 px-3 py-1 text-xs font-bold uppercase text-[#4B3FE4]">
             {user.subscription?.planId || 'Free'} Tier
           </span>
           <Link
@@ -418,7 +418,7 @@ export default function AccountSettingsPage() {
           onClick={() => setActiveTab('security')}
           className={`py-2.5 px-4 border-b-2 transition ${
             activeTab === 'security'
-              ? 'border-[#4b49ac] text-[#4b49ac]'
+              ? 'border-[#4B3FE4] text-[#4B3FE4]'
               : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -428,7 +428,7 @@ export default function AccountSettingsPage() {
           onClick={() => setActiveTab('sessions')}
           className={`py-2.5 px-4 border-b-2 transition ${
             activeTab === 'sessions'
-              ? 'border-[#4b49ac] text-[#4b49ac]'
+              ? 'border-[#4B3FE4] text-[#4B3FE4]'
               : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -438,7 +438,7 @@ export default function AccountSettingsPage() {
           onClick={() => setActiveTab('billing')}
           className={`py-2.5 px-4 border-b-2 transition ${
             activeTab === 'billing'
-              ? 'border-[#4b49ac] text-[#4b49ac]'
+              ? 'border-[#4B3FE4] text-[#4B3FE4]'
               : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -448,7 +448,7 @@ export default function AccountSettingsPage() {
           onClick={() => setActiveTab('privacy')}
           className={`py-2.5 px-4 border-b-2 transition ${
             activeTab === 'privacy'
-              ? 'border-[#4b49ac] text-[#4b49ac]'
+              ? 'border-[#4B3FE4] text-[#4B3FE4]'
               : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -503,7 +503,7 @@ export default function AccountSettingsPage() {
               {phoneMsg && <p className="text-teal-700 font-medium">{phoneMsg}</p>}
 
               {devOtpPreview && (
-                <div className="p-2 rounded-lg bg-[#98dbff]/30 text-[#2f2d66] text-[11px] font-mono">
+                <div className="p-2 rounded-lg bg-[#CFCBFF]/30 text-[#221A7A] text-[11px] font-mono">
                   Sandbox SMS OTP Preview: <strong>{devOtpPreview}</strong>
                 </div>
               )}
@@ -521,7 +521,7 @@ export default function AccountSettingsPage() {
                     <button
                       type="submit"
                       disabled={phoneLoading}
-                      className="rounded-xl bg-[#4b49ac] px-4 py-2 text-xs font-bold text-white hover:bg-[#413e96] disabled:opacity-50"
+                      className="rounded-xl bg-[#4B3FE4] px-4 py-2 text-xs font-bold text-white hover:bg-[#3326C4] disabled:opacity-50"
                     >
                       {phoneLoading ? 'Sending...' : 'Send SMS OTP'}
                     </button>
@@ -599,7 +599,7 @@ export default function AccountSettingsPage() {
                 <button
                   type="submit"
                   disabled={profileLoading}
-                  className="rounded-xl bg-[#4b49ac] px-4 py-2 font-bold text-white hover:bg-[#413e96] disabled:opacity-50"
+                  className="rounded-xl bg-[#4B3FE4] px-4 py-2 font-bold text-white hover:bg-[#3326C4] disabled:opacity-50"
                 >
                   {profileLoading ? 'Saving...' : 'Save Profile Changes'}
                 </button>
@@ -633,7 +633,7 @@ export default function AccountSettingsPage() {
                 type="button"
                 onClick={handleStartMfaSetup}
                 disabled={mfaLoading}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4b49ac] py-2.5 text-xs font-bold text-white hover:bg-[#413e96]"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4B3FE4] py-2.5 text-xs font-bold text-white hover:bg-[#3326C4]"
               >
                 <KeyRound className="h-4 w-4" />
                 <span>{mfaLoading ? 'Generating Secret...' : 'Set Up Two-Factor Authentication'}</span>
@@ -644,7 +644,7 @@ export default function AccountSettingsPage() {
               <div className="space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
                 <div className="space-y-1">
                   <span className="font-bold text-slate-800 block">1. Authenticator Setup Key</span>
-                  <p className="font-mono text-xs bg-white p-2 rounded-lg border border-slate-200 select-all font-bold text-[#4b49ac]">
+                  <p className="font-mono text-xs bg-white p-2 rounded-lg border border-slate-200 select-all font-bold text-[#4B3FE4]">
                     {mfaSecret}
                   </p>
                   <span className="text-[10px] text-slate-500">
@@ -801,7 +801,7 @@ export default function AccountSettingsPage() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/pricing"
-                  className="rounded-xl bg-[#4b49ac] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#413e96] transition"
+                  className="rounded-xl bg-[#4B3FE4] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#3326C4] transition"
                 >
                   Change Plan / Upgrade
                 </Link>
@@ -891,7 +891,7 @@ export default function AccountSettingsPage() {
                   {invoices.map((inv) => (
                     <tr key={inv.id} className="hover:bg-slate-50 transition">
                       <td className="py-3.5 px-4 font-mono font-medium text-slate-600">{inv.id}</td>
-                      <td className="py-3.5 px-4 uppercase font-semibold text-[#4b49ac]">
+                      <td className="py-3.5 px-4 uppercase font-semibold text-[#4B3FE4]">
                         {inv.planId} ({inv.billingInterval})
                       </td>
                       <td className="py-3.5 px-4 font-bold text-slate-900">
@@ -936,7 +936,7 @@ export default function AccountSettingsPage() {
             </p>
             <button
               onClick={handleExportData}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#4b49ac] px-4 py-2.5 font-bold text-white hover:bg-[#413e96]"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#4B3FE4] px-4 py-2.5 font-bold text-white hover:bg-[#3326C4]"
             >
               <Download className="h-4 w-4" />
               <span>Export Account Data (JSON)</span>

@@ -314,8 +314,8 @@ export default function PricingPage() {
       <div className="mx-auto max-w-7xl space-y-12">
         {/* Header Section */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#98dbff] bg-[#98dbff]/15 px-3.5 py-1 text-xs font-bold text-[#4b49ac]">
-            <Sparkles className="h-4 w-4 text-[#7978e3]" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#CFCBFF] bg-[#CFCBFF]/15 px-3.5 py-1 text-xs font-bold text-[#4B3FE4]">
+            <Sparkles className="h-4 w-4 text-[#6C61EE]" />
             <span>Transparent, Fair Pricing for Private PDF Tools</span>
           </div>
 
@@ -336,7 +336,7 @@ export default function PricingPage() {
                 onClick={() => setBillingInterval('monthly')}
                 className={`rounded-lg px-5 py-2 text-xs font-bold transition-all ${
                   billingInterval === 'monthly'
-                    ? 'bg-[#4b49ac] text-white shadow-md'
+                    ? 'bg-[#4B3FE4] text-white shadow-md'
                     : 'text-slate-700 hover:text-slate-900'
                 }`}
               >
@@ -347,12 +347,12 @@ export default function PricingPage() {
                 onClick={() => setBillingInterval('yearly')}
                 className={`flex items-center gap-1.5 rounded-lg px-5 py-2 text-xs font-bold transition-all ${
                   billingInterval === 'yearly'
-                    ? 'bg-[#4b49ac] text-white shadow-md'
+                    ? 'bg-[#4B3FE4] text-white shadow-md'
                     : 'text-slate-700 hover:text-slate-900'
                 }`}
               >
                 <span>Annual Billing</span>
-                <span className="rounded-full bg-[#98dbff] px-2 py-0.5 text-[10px] font-extrabold text-[#4b49ac]">
+                <span className="rounded-full bg-[#CFCBFF] px-2 py-0.5 text-[10px] font-extrabold text-[#4B3FE4]">
                   Save ~33%
                 </span>
               </button>
@@ -366,7 +366,7 @@ export default function PricingPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Plan:</span>
-                <span className="rounded-full bg-[#4b49ac]/10 px-2.5 py-0.5 text-xs font-bold text-[#4b49ac] uppercase">
+                <span className="rounded-full bg-[#4B3FE4]/10 px-2.5 py-0.5 text-xs font-bold text-[#4B3FE4] uppercase">
                   {user.subscription.planId}
                 </span>
                 <span
@@ -422,7 +422,7 @@ export default function PricingPage() {
         {/* Pricing Cards Grid */}
         {loadingPlans ? (
           <div className="flex justify-center py-24">
-            <Loader2 className="h-8 w-8 animate-spin text-[#4b49ac]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#4B3FE4]" />
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 max-w-7xl mx-auto items-stretch">
@@ -436,13 +436,13 @@ export default function PricingPage() {
                   key={plan.id}
                   className={`relative flex flex-col justify-between rounded-3xl p-8 transition-all ${
                     isPopular
-                      ? 'border-2 border-[#4b49ac] bg-white shadow-2xl scale-[1.02] z-10'
+                      ? 'border-2 border-[#4B3FE4] bg-white shadow-2xl scale-[1.02] z-10'
                       : 'border border-slate-200 bg-white shadow-md hover:shadow-lg'
                   }`}
                 >
                   {plan.badge && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                      <span className="rounded-full bg-[#4b49ac] px-4 py-1 text-xs font-black tracking-wide text-white uppercase shadow-md">
+                      <span className="rounded-full bg-[#4B3FE4] px-4 py-1 text-xs font-black tracking-wide text-white uppercase shadow-md">
                         {plan.badge}
                       </span>
                     </div>
@@ -468,7 +468,7 @@ export default function PricingPage() {
                     </div>
 
                     {billingInterval === 'yearly' && plan.monthlyPrice > 0 && (
-                      <p className="text-[11px] font-semibold text-[#4b49ac]">
+                      <p className="text-[11px] font-semibold text-[#4B3FE4]">
                         Billed annually (${plan.yearlyPrice}/yr) • Saves 33%
                       </p>
                     )}
@@ -495,7 +495,7 @@ export default function PricingPage() {
                         isCurrent
                           ? 'bg-slate-100 text-slate-400 cursor-default'
                           : isPopular
-                          ? 'bg-[#4b49ac] text-white hover:bg-[#413e96] shadow-md'
+                          ? 'bg-[#4B3FE4] text-white hover:bg-[#3326C4] shadow-md'
                           : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
                       }`}
                     >
@@ -540,8 +540,8 @@ export default function PricingPage() {
                 <tr>
                   <th className="py-3 px-4">Feature / Limit</th>
                   <th className="py-3 px-4 text-center">Free ($0)</th>
-                  <th className="py-3 px-4 text-center text-[#4b49ac]">Pro ($4.99/mo)</th>
-                  <th className="py-3 px-4 text-center text-[#7978e3]">Business ($12/user)</th>
+                  <th className="py-3 px-4 text-center text-[#4B3FE4]">Pro ($4.99/mo)</th>
+                  <th className="py-3 px-4 text-center text-[#6C61EE]">Business ($12/user)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -554,14 +554,14 @@ export default function PricingPage() {
                 <tr>
                   <td className="py-3.5 px-4 font-semibold">Maximum File Size Limit</td>
                   <td className="py-3.5 px-4 text-center">25 MB</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-[#4b49ac]">200 MB</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-[#7978e3]">1,000 MB (1 GB)</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[#4B3FE4]">200 MB</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[#6C61EE]">1,000 MB (1 GB)</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-semibold">Video Compression File Size Limit</td>
                   <td className="py-3.5 px-4 text-center">50 MB</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-[#4b49ac]">500 MB</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-[#7978e3]">2,000 MB (2 GB)</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[#4B3FE4]">500 MB</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[#6C61EE]">2,000 MB (2 GB)</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-semibold">Protected NDA Generation &amp; eSigning</td>
@@ -572,8 +572,8 @@ export default function PricingPage() {
                 <tr>
                   <td className="py-3.5 px-4 font-semibold">AI Document Analysis Credits</td>
                   <td className="py-3.5 px-4 text-center text-slate-400">—</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-[#4b49ac]">50 / month</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-[#7978e3]">200 / user / mo</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[#4B3FE4]">50 / month</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[#6C61EE]">200 / user / mo</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-semibold">Team Workspaces &amp; Shared Templates</td>
@@ -621,7 +621,7 @@ export default function PricingPage() {
                     className="flex w-full items-center justify-between text-left text-sm font-bold text-slate-900 focus:outline-none"
                   >
                     <span>{faq.q}</span>
-                    <span className="text-[#4b49ac] font-bold text-lg">{isOpen ? '−' : '+'}</span>
+                    <span className="text-[#4B3FE4] font-bold text-lg">{isOpen ? '−' : '+'}</span>
                   </button>
                   {isOpen && (
                     <p className="mt-3 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
@@ -635,9 +635,9 @@ export default function PricingPage() {
         </div>
 
         {/* Bottom CTA & Privacy Banner */}
-        <div className="mx-auto max-w-5xl rounded-3xl bg-[#4b49ac] p-8 sm:p-12 text-white shadow-xl text-center space-y-4">
+        <div className="mx-auto max-w-5xl rounded-3xl bg-[#4B3FE4] p-8 sm:p-12 text-white shadow-xl text-center space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3.5 py-1 text-xs font-semibold backdrop-blur-sm">
-            <Lock className="h-3.5 w-3.5 text-[#98dbff]" />
+            <Lock className="h-3.5 w-3.5 text-[#CFCBFF]" />
             <span>Zero Data Extraction Guarantee</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-black">
@@ -649,7 +649,7 @@ export default function PricingPage() {
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/tools"
-              className="rounded-xl bg-white px-6 py-3 text-xs font-bold text-[#4b49ac] shadow hover:bg-slate-100 transition"
+              className="rounded-xl bg-white px-6 py-3 text-xs font-bold text-[#4B3FE4] shadow hover:bg-slate-100 transition"
             >
               Explore Free PDF Tools
             </Link>
@@ -669,7 +669,7 @@ export default function PricingPage() {
           <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl text-slate-900 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#4b49ac] text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#4B3FE4] text-white">
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <h3 className="text-base font-black">Secure Checkout</h3>
@@ -706,7 +706,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex justify-between border-t border-slate-200 pt-2 font-black text-sm">
                   <span>Total Due Today:</span>
-                  <span className="text-[#4b49ac]">
+                  <span className="text-[#4B3FE4]">
                     $
                     {(billingInterval === 'yearly'
                       ? checkoutModal.plan.yearlyPrice
@@ -727,12 +727,12 @@ export default function PricingPage() {
                     onClick={() => handleChangeProvider('stripe')}
                     className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition ${
                       selectedProvider === 'stripe'
-                        ? 'border-[#4b49ac] bg-[#4b49ac]/10 shadow-sm'
+                        ? 'border-[#4B3FE4] bg-[#4B3FE4]/10 shadow-sm'
                         : 'border-slate-200 bg-white hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                      <CreditCard className="h-4 w-4 text-[#4b49ac]" />
+                      <CreditCard className="h-4 w-4 text-[#4B3FE4]" />
                       <span>Cards / Stripe</span>
                     </div>
                     <span className="text-[10px] text-slate-500 mt-1">Visa, MC, Amex</span>
@@ -743,7 +743,7 @@ export default function PricingPage() {
                     onClick={() => handleChangeProvider('paypal')}
                     className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition ${
                       selectedProvider === 'paypal'
-                        ? 'border-[#7DA0FA] bg-[#7DA0FA]/15 shadow-sm'
+                        ? 'border-[#8F86F5] bg-[#8F86F5]/15 shadow-sm'
                         : 'border-slate-200 bg-white hover:bg-slate-50'
                     }`}
                   >
@@ -758,9 +758,9 @@ export default function PricingPage() {
 
               {/* Sandbox notice when live API keys are not supplied */}
               {checkoutModal.isSandbox && (
-                <div className="rounded-xl border border-[#98dbff] bg-[#98dbff]/20 p-3.5 text-slate-700 space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-[#2f2d66]">
-                    <ShieldCheck className="h-4 w-4 text-[#4b49ac]" />
+                <div className="rounded-xl border border-[#CFCBFF] bg-[#CFCBFF]/20 p-3.5 text-slate-700 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-[#221A7A]">
+                    <ShieldCheck className="h-4 w-4 text-[#4B3FE4]" />
                     <span>Verified Sandbox Gateway Active</span>
                   </div>
                   <p className="text-[11px] leading-relaxed text-slate-600">
@@ -790,7 +790,7 @@ export default function PricingPage() {
                     type="button"
                     onClick={handleConfirmSandboxPayment}
                     disabled={checkoutModal.submitting}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#4b49ac] py-3 text-xs font-bold text-white shadow-md hover:bg-[#413e96] transition disabled:opacity-50"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#4B3FE4] py-3 text-xs font-bold text-white shadow-md hover:bg-[#3326C4] transition disabled:opacity-50"
                   >
                     {checkoutModal.submitting ? (
                       <>
@@ -820,7 +820,7 @@ export default function PricingPage() {
                       setCheckoutModal({ open: false });
                       window.location.reload();
                     }}
-                    className="w-full rounded-xl bg-[#4b49ac] py-2.5 text-xs font-bold text-white shadow"
+                    className="w-full rounded-xl bg-[#4B3FE4] py-2.5 text-xs font-bold text-white shadow"
                   >
                     Close &amp; Return to Dashboard
                   </button>

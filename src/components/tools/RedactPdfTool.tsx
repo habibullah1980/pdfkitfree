@@ -252,7 +252,7 @@ export function RedactPdfTool() {
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
           >
             <Upload className="h-4 w-4" />
             Select PDF file

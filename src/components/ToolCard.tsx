@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ToolDefinition } from '@/lib/tools';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { getToolIconConfig } from '@/lib/tool-icons';
 
 interface ToolCardProps {
@@ -11,51 +11,30 @@ interface ToolCardProps {
 export function ToolCard({ tool }: ToolCardProps) {
   const iconConfig = getToolIconConfig(tool.id || tool.slug);
   const IconComponent = iconConfig.icon;
-  const href = `/tools/${tool.slug}`;
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md">
-      <div>
-        <div className="flex items-center justify-between">
-          <div
-            className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-colors ${iconConfig.bgClass}`}
-            aria-label={iconConfig.label}
-          >
-            <IconComponent
-              className={`h-6 w-6 transition-transform duration-200 group-hover:scale-110 ${iconConfig.colorClass}`}
-              strokeWidth={2}
-              aria-hidden="true"
-            />
-          </div>
-          {tool.badge && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-              <Sparkles className="h-3 w-3" />
-              {tool.badge}
-            </span>
-          )}
-        </div>
-
-        <h3 className="mt-4 text-lg font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">
-          {tool.title}
-        </h3>
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed line-clamp-2">
-          {tool.shortDescription}
-        </p>
-      </div>
-
-      <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-          {tool.isImplemented ? 'Ready to use' : 'In development'}
+    <Link
+      href={`/tools/${tool.slug}`}
+      className="group relative flex flex-col gap-3 rounded-[20px] border-[1.5px] border-[#EEEDF8] bg-white p-6 transition duration-200 hover:-translate-y-1 hover:border-brand-600 hover:shadow-lift focus-visible:-translate-y-1"
+    >
+      <div className="flex items-start justify-between">
+        <span className={`flex h-[52px] w-[52px] items-center justify-center rounded-2xl border transition-colors ${iconConfig.bgClass}`}>
+          <IconComponent
+            className={`h-6 w-6 transition-transform duration-200 group-hover:scale-110 ${iconConfig.colorClass}`}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
         </span>
-        <Link
-          href={href}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 group-hover:text-brand-700"
-          aria-label={`Open ${tool.title}`}
-        >
-          <span>Open Tool</span>
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Link>
+        {tool.badge && (
+          <span className="rounded-full bg-sun-100 px-2.5 py-1 text-xs font-bold text-sun-700">{tool.badge}</span>
+        )}
       </div>
-    </div>
+      <h3 className="mt-1 text-[19px] font-bold text-ink">{tool.title}</h3>
+      <p className="line-clamp-2 text-[15px] leading-relaxed text-ink-muted">{tool.shortDescription}</p>
+      <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-bold text-brand-600">
+        {tool.isImplemented ? 'Open tool' : 'Coming soon'}
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+      </span>
+    </Link>
   );
 }

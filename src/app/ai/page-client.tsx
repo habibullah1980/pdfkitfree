@@ -294,7 +294,7 @@ export default function AiAssistantPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4b49ac] text-white shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4B3FE4] text-white shadow-sm">
               <Sparkles className="h-5 w-5" />
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
@@ -347,7 +347,7 @@ export default function AiAssistantPage() {
           <div className="space-y-4">
             <button
               onClick={handleStartNewChat}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4b49ac] py-2.5 px-4 text-xs font-bold text-white shadow-sm hover:bg-[#413e96] transition"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4B3FE4] py-2.5 px-4 text-xs font-bold text-white shadow-sm hover:bg-[#3326C4] transition"
             >
               <Sparkles className="h-4 w-4" />
               <span>New Document Chat</span>
@@ -360,9 +360,9 @@ export default function AiAssistantPage() {
               </span>
 
               {docFile ? (
-                <div className="p-2.5 rounded-xl bg-[#4b49ac]/10 border border-[#4b49ac]/20 space-y-1">
+                <div className="p-2.5 rounded-xl bg-[#4B3FE4]/10 border border-[#4B3FE4]/20 space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-[#4b49ac] truncate max-w-[170px]">
+                    <p className="text-xs font-bold text-[#4B3FE4] truncate max-w-[170px]">
                       {docFile.name}
                     </p>
                     <button
@@ -391,10 +391,10 @@ export default function AiAssistantPage() {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingPdf}
-                    className="w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 rounded-xl hover:border-[#4b49ac] hover:bg-[#4b49ac]/5 transition cursor-pointer text-center"
+                    className="w-full flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 rounded-xl hover:border-[#4B3FE4] hover:bg-[#4B3FE4]/5 transition cursor-pointer text-center"
                   >
                     {uploadingPdf ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-[#4b49ac]" />
+                      <Loader2 className="h-5 w-5 animate-spin text-[#4B3FE4]" />
                     ) : (
                       <>
                         <Upload className="h-5 w-5 text-slate-400 mb-1" />
@@ -413,7 +413,7 @@ export default function AiAssistantPage() {
                   type="checkbox"
                   checked={compareMode}
                   onChange={(e) => setCompareMode(e.target.checked)}
-                  className="rounded accent-[#4b49ac]"
+                  className="rounded accent-[#4B3FE4]"
                 />
               </div>
 
@@ -468,7 +468,7 @@ export default function AiAssistantPage() {
                     onClick={() => handleSelectConversation(c)}
                     className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer text-xs transition ${
                       currentConvId === c.id
-                        ? 'bg-white border border-[#4b49ac] font-bold text-[#4b49ac] shadow-sm'
+                        ? 'bg-white border border-[#4B3FE4] font-bold text-[#4B3FE4] shadow-sm'
                         : 'hover:bg-white text-slate-600'
                     }`}
                   >
@@ -501,7 +501,7 @@ export default function AiAssistantPage() {
             </div>
             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
               <div
-                className="bg-[#4b49ac] h-full rounded-full transition-all"
+                className="bg-[#4B3FE4] h-full rounded-full transition-all"
                 style={{ width: `${Math.min((userCredits.used / userCredits.limit) * 100, 100)}%` }}
               />
             </div>
@@ -516,25 +516,25 @@ export default function AiAssistantPage() {
             <button
               onClick={() => handleSendMessage('Please provide a comprehensive executive summary of this document.', 'summarize')}
               disabled={loading || !docFile}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700 hover:bg-[#4b49ac]/10 hover:text-[#4b49ac] transition disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700 hover:bg-[#4B3FE4]/10 hover:text-[#4B3FE4] transition disabled:opacity-50"
             >
-              <FileCheck2 className="h-3 w-3 text-[#4b49ac]" />
+              <FileCheck2 className="h-3 w-3 text-[#4B3FE4]" />
               <span>Summarize</span>
             </button>
             <button
               onClick={() => handleSendMessage('Extract all key dates, payment amounts, and parties involved.', 'extract')}
               disabled={loading || !docFile}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700 hover:bg-[#4b49ac]/10 hover:text-[#4b49ac] transition disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700 hover:bg-[#4B3FE4]/10 hover:text-[#4B3FE4] transition disabled:opacity-50"
             >
-              <Zap className="h-3 w-3 text-[#7DA0FA]" />
+              <Zap className="h-3 w-3 text-[#8F86F5]" />
               <span>Extract Dates & Amounts</span>
             </button>
             <button
               onClick={() => handleSendMessage('Explain the most difficult or legalistic clauses in plain language.', 'clauses')}
               disabled={loading || !docFile}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700 hover:bg-[#4b49ac]/10 hover:text-[#4b49ac] transition disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-700 hover:bg-[#4B3FE4]/10 hover:text-[#4B3FE4] transition disabled:opacity-50"
             >
-              <FileQuestion className="h-3 w-3 text-[#7978e3]" />
+              <FileQuestion className="h-3 w-3 text-[#6C61EE]" />
               <span>Plain Language Clauses</span>
             </button>
             {compareMode && docFile2 && (
@@ -553,7 +553,7 @@ export default function AiAssistantPage() {
           <div className="flex-1 overflow-y-auto my-4 space-y-4 pr-2 max-h-[460px]">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-8 space-y-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4b49ac]/10 text-[#4b49ac]">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4B3FE4]/10 text-[#4B3FE4]">
                   <Sparkles className="h-7 w-7" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900">
@@ -573,7 +573,7 @@ export default function AiAssistantPage() {
                   }`}
                 >
                   {m.role === 'assistant' && (
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#4b49ac] text-white flex-shrink-0 mt-0.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#4B3FE4] text-white flex-shrink-0 mt-0.5">
                       <Sparkles className="h-3.5 w-3.5" />
                     </div>
                   )}
@@ -581,7 +581,7 @@ export default function AiAssistantPage() {
                   <div
                     className={`max-w-xl rounded-2xl p-4 space-y-2 ${
                       m.role === 'user'
-                        ? 'bg-[#4b49ac] text-white rounded-br-none shadow-sm'
+                        ? 'bg-[#4B3FE4] text-white rounded-br-none shadow-sm'
                         : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-bl-none shadow-sm'
                     }`}
                   >
@@ -614,7 +614,7 @@ export default function AiAssistantPage() {
 
             {loading && (
               <div className="flex gap-3 items-center text-xs text-slate-500 p-2">
-                <Loader2 className="h-4 w-4 animate-spin text-[#4b49ac]" />
+                <Loader2 className="h-4 w-4 animate-spin text-[#4B3FE4]" />
                 <span>Analyzing document contents and cross-referencing citations...</span>
               </div>
             )}
@@ -648,13 +648,13 @@ export default function AiAssistantPage() {
                     : 'Ask a question or upload a PDF above...'
                 }
                 disabled={loading}
-                className="flex-1 rounded-xl border border-slate-300 py-3 px-4 text-xs text-slate-900 focus:border-[#4b49ac] focus:outline-none focus:ring-1 focus:ring-[#4b49ac]"
+                className="flex-1 rounded-xl border border-slate-300 py-3 px-4 text-xs text-slate-900 focus:border-[#4B3FE4] focus:outline-none focus:ring-1 focus:ring-[#4B3FE4]"
               />
 
               <button
                 type="submit"
                 disabled={loading || (!inputQuery.trim() && !docFile)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#4b49ac] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#413e96] transition disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#4B3FE4] px-5 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#3326C4] transition disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 <span>Send</span>

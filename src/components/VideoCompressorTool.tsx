@@ -531,7 +531,7 @@ export function VideoCompressorTool() {
               handleSelectFile(e.dataTransfer.files[0]);
             }
           }}
-          className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-10 sm:p-16 text-center transition hover:border-brand-400 hover:bg-brand-50/70"
+          className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[#CFCBFF] bg-white p-10 sm:p-16 text-center transition hover:border-brand-600 hover:bg-brand-50"
         >
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-brand-600 shadow-sm border border-brand-100 mb-4">
             <Film className="h-8 w-8" />
@@ -548,7 +548,7 @@ export function VideoCompressorTool() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition"
             >
               <Upload className="h-4 w-4" />
               <span>Choose Video File</span>
@@ -859,7 +859,7 @@ export function VideoCompressorTool() {
                         type="button"
                         disabled={isReadingMetadata}
                         onClick={handleCompressVideo}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 py-3.5 px-4 text-sm font-bold text-white shadow hover:bg-brand-700 transition disabled:opacity-50"
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 py-3.5 px-4 text-sm font-bold text-white shadow hover:bg-brand-700 transition disabled:opacity-50"
                       >
                         <Cpu className="h-4 w-4" />
                         <span>Compress Video Now</span>
@@ -913,7 +913,7 @@ export function VideoCompressorTool() {
                     <a
                       href={compressedUrl}
                       download={downloadFilename}
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 py-3 px-5 text-sm font-bold text-white shadow hover:bg-teal-700 transition"
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 py-3 px-5 text-sm font-bold text-white shadow hover:bg-teal-700 transition"
                     >
                       <Download className="h-4 w-4" />
                       <span>Download Compressed Video</span>

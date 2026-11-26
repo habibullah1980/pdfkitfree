@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Bricolage_Grotesque, Figtree } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -9,7 +9,8 @@ import { CookieConsent } from '@/components/CookieConsent';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { AuthProvider } from '@/contexts/AuthContext';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const figtree = Figtree({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-display', weight: ['500', '700', '800'], display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_CONFIG.url),
@@ -78,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${figtree.variable} ${bricolage.variable}`}>
       <head>
         {/* Verification meta tag placeholder for Google Search Console */}
         <meta
@@ -88,7 +89,7 @@ export default function RootLayout({
         {/* Verification meta tag for Bing Webmaster Tools */}
         <meta name="msvalidate.01" content="DAFB040EA71026356781552808195EAC" />
       </head>
-      <body className="min-h-screen flex flex-col bg-white text-slate-900 antialiased font-sans">
+      <body className="min-h-screen flex flex-col bg-white text-ink antialiased font-sans">
         <GoogleAnalytics />
         <AuthProvider>
           <Header />
