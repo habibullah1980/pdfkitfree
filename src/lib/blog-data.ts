@@ -270,6 +270,174 @@ export const BLOG_POSTS: BlogPost[] = [
       'When merging PDF documents, verify consistent page sizing and orientations before finalizing. Using an interactive merge preview lets you easily reorder files before generating the final combined asset.',
       'PDFKitFree provides seamless drag-and-drop merging that lets you combine documents in seconds with zero waiting queue or upload bottlenecks.'
     ]
+  },
+  {
+    slug: 'how-to-compress-pdf-to-100kb',
+    title: 'How to Compress a PDF to 100 KB (or Any Size) for Online Forms',
+    seoTitle: 'How to Compress PDF to 100 KB for Online Forms | PDFKitFree',
+    excerpt: 'Job portals, exam boards and visa sites often reject files over 100 KB or 200 KB. Here is how to get your PDF under the limit without blurry text.',
+    date: '2026-11-26',
+    readTime: '4 min read',
+    category: 'Tutorials',
+    author: 'PDFKitFree Editorial Team',
+    primaryToolSlug: 'compress-pdf',
+    primaryToolName: 'Compress PDF',
+    relatedToolSlugs: ['jpg-to-pdf', 'split-pdf', 'remove-pages'],
+    content: [
+      'Many online application forms set a strict upload limit, often 100 KB, 200 KB or 500 KB per document. A phone scan of a single page can easily be 2 to 5 MB, so the upload fails.',
+      'The good news is that most of that size is the scanned image, not the text. Shrinking the image carefully gets almost any one or two page scan under 100 KB while keeping it readable.',
+    ],
+    sections: [
+      {
+        heading: 'The quick way: pick your target size',
+        body: [
+          'Open the Compress PDF to 100 KB page (there are also pages for 50 KB, 200 KB, 500 KB, 1 MB and more).',
+          'Drop your PDF into the box. The page tells you straight away if the file is already under the limit.',
+          'Press Compress. The tool starts with gentle settings and only uses stronger ones if the file is still too big, so you get the sharpest result that fits.',
+          'Download the new PDF. If a file cannot reach the target, for example a long text-only document, you see the smallest size it reached instead of a broken file.',
+        ],
+      },
+      {
+        heading: 'Tips when the file is still too big',
+        body: [
+          'Remove pages you do not need with Remove Pages. Every page of a scan adds size.',
+          'Split a long document into separate uploads with Split PDF if the form allows several files.',
+          'Scan in black and white or greyscale instead of colour when the form does not need colour.',
+          'If you are starting from photos, turn them into a PDF with JPG to PDF first, then compress.',
+        ],
+      },
+      {
+        heading: 'Is it safe for ID cards and certificates?',
+        body: [
+          'Yes. The compression runs inside your browser, on your own phone or computer. The document is never uploaded to a server, which matters for passports, CNICs, mark sheets and bank statements.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Will the text become blurry?', answer: 'Real text in the PDF is not changed. Scanned pages are images, so they get softer at very small sizes, but the tool always tries the gentlest setting first.' },
+      { question: 'Does it work on a phone?', answer: 'Yes, it works in Chrome, Safari, Edge and Firefox on Android and iPhone.' },
+    ],
+  },
+  {
+    slug: 'how-to-make-scanned-pdf-searchable',
+    title: 'How to Make a Scanned PDF Searchable (Free OCR in Your Browser)',
+    seoTitle: 'Make a Scanned PDF Searchable with Free OCR | PDFKitFree',
+    excerpt: 'A scanned PDF is just pictures of pages, so you cannot search or copy its text. OCR fixes that. Here is how to do it for free without uploading the file.',
+    date: '2026-11-26',
+    readTime: '4 min read',
+    category: 'Tutorials',
+    author: 'PDFKitFree Editorial Team',
+    primaryToolSlug: 'ocr-pdf',
+    primaryToolName: 'OCR PDF',
+    relatedToolSlugs: ['pdf-to-word', 'compress-pdf', 'merge-pdf'],
+    content: [
+      'When you scan a contract or a book chapter, the PDF holds an image of each page. Pressing Ctrl+F finds nothing, and you cannot copy a sentence into an email.',
+      'Optical character recognition (OCR) reads the letters in those images and adds an invisible text layer on top of each page. The PDF looks exactly the same, but now you can search, select and copy the text.',
+    ],
+    sections: [
+      {
+        heading: 'Step by step',
+        body: [
+          'Open the OCR PDF tool and choose your scanned PDF.',
+          'Press Run OCR. Each page is read on your device; pages that already contain text are skipped to save time.',
+          'Download the searchable PDF, or download the recognised text as a .txt file, or use Copy text to paste it anywhere.',
+        ],
+      },
+      {
+        heading: 'Getting the best results',
+        body: [
+          'Scan at 300 dpi if you can, and keep pages straight. Clear, high-contrast scans give the most accurate text.',
+          'OCR currently reads English text. Handwriting and very small print may not be recognised.',
+          'Always proofread important numbers such as amounts and dates after OCR.',
+        ],
+      },
+      {
+        heading: 'Why browser OCR is more private',
+        body: [
+          'Most online OCR services upload your document to their servers. PDFKitFree runs the OCR engine inside your browser, so the file and its text never leave your device.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Will OCR change how my PDF looks?', answer: 'No. The text layer is invisible, so the pages look the same as before.' },
+      { question: 'How long does it take?', answer: 'Usually a few seconds per page on a modern computer, a little longer on phones.' },
+    ],
+  },
+  {
+    slug: 'how-to-redact-a-pdf-properly',
+    title: 'How to Redact a PDF Properly (So the Text Is Really Gone)',
+    seoTitle: 'How to Redact a PDF Properly, Free | PDFKitFree',
+    excerpt: 'Drawing a black box over text is not redaction: the words are often still there underneath. Here is how to remove sensitive information for real.',
+    date: '2026-11-26',
+    readTime: '4 min read',
+    category: 'Security',
+    author: 'PDFKitFree Editorial Team',
+    primaryToolSlug: 'redact-pdf',
+    primaryToolName: 'Redact PDF',
+    relatedToolSlugs: ['protect-pdf', 'flatten-pdf', 'compress-pdf'],
+    content: [
+      'Every year, court filings and company reports leak private details because someone covered text with a black rectangle. The rectangle hides the words on screen, but the text is still in the file and can be copied out.',
+      'Proper redaction removes the content itself. PDFKitFree does this by turning each redacted page into a flattened image with the covered areas blacked out, so there is no hidden text left to recover.',
+    ],
+    sections: [
+      {
+        heading: 'Step by step',
+        body: [
+          'Open Redact PDF and choose your file.',
+          'Drag on the page to cover an area, or type words and phrases to find and mark every match automatically.',
+          'Check every page using Next page and Previous page. Hover a box to remove it if you marked too much.',
+          'Download the redacted document and open it to confirm the text cannot be selected under the black boxes.',
+        ],
+      },
+      {
+        heading: 'What to redact',
+        body: [
+          'Names, phone numbers, addresses, ID and passport numbers, bank details, signatures, and anything covered by a confidentiality agreement.',
+          'Remember metadata too: author names and old titles can be stored in the file properties.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Can redaction be undone?', answer: 'Not from the redacted file. Keep your original somewhere safe in case you need it later.' },
+      { question: 'Is the file uploaded?', answer: 'No. Redaction runs in your browser and the document stays on your device.' },
+    ],
+  },
+  {
+    slug: 'how-to-sign-pdf-on-phone',
+    title: 'How to Sign a PDF on Your Phone Without Printing',
+    seoTitle: 'How to Sign a PDF on iPhone or Android, Free | PDFKitFree',
+    excerpt: 'No printer, no scanner, no app to install. Sign a PDF with your finger on iPhone or Android in under a minute.',
+    date: '2026-11-26',
+    readTime: '3 min read',
+    category: 'Productivity & Tutorials',
+    author: 'PDFKitFree Editorial Team',
+    primaryToolSlug: 'sign-pdf',
+    primaryToolName: 'Sign PDF',
+    relatedToolSlugs: ['merge-pdf', 'compress-pdf', 'protect-pdf'],
+    content: [
+      'Someone emails you a form to sign and you are away from your desk. Printing, signing, scanning and emailing it back takes ages. You can do the whole thing on your phone instead.',
+    ],
+    sections: [
+      {
+        heading: 'Step by step',
+        body: [
+          'Open the Sign PDF tool in Chrome or Safari on your phone and choose the PDF from your files or email attachments.',
+          'Draw your signature with your finger, or type your name to create one.',
+          'Place the signature on the right page and line, resize it if needed, and add the date.',
+          'Download the signed PDF and send it back.',
+        ],
+      },
+      {
+        heading: 'Is an electronic signature legal?',
+        body: [
+          'In many countries, including under the US ESIGN Act and the EU eIDAS rules, a simple electronic signature is valid for most everyday agreements. Some documents, such as wills or property deeds, may still need a wet signature or witnesses. Check with the other party if you are unsure.',
+        ],
+      },
+    ],
+    faqs: [
+      { question: 'Do I need an account?', answer: 'No. Signing a PDF is free and does not need a sign-up.' },
+      { question: 'Is the document uploaded?', answer: 'No. The PDF stays on your phone while you sign it.' },
+    ],
   }
 ];
 

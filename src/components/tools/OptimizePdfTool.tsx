@@ -16,15 +16,31 @@ import { compressPdfImages } from '@/lib/pdf-image-compress';
 
 interface OptimizePdfToolProps {
   toolType: 'compress' | 'repair' | 'web';
+  /** When set, keep compressing with stronger settings until the file is at most this many bytes. */
+  targetBytes?: number;
+  /** Human label for the target, e.g. "100 KB". */
+  targetLabel?: string;
 }
 
-export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
+/** Settings tried in order when aiming for a target size, from gentle to strongest. */
+const TARGET_LADDER = [
+  { maxDimension: 2000, quality: 0.72 },
+  { maxDimension: 1600, quality: 0.6 },
+  { maxDimension: 1240, quality: 0.5 },
+  { maxDimension: 1000, quality: 0.42 },
+  { maxDimension: 820, quality: 0.34 },
+  { maxDimension: 640, quality: 0.28 },
+];
+
+export function OptimizePdfTool({ toolType, targetBytes, targetLabel }: OptimizePdfToolProps) {
   const [file, setFile] = useState<File | null>(null);
   const [originalSize, setOriginalSize] = useState<number>(0);
   const [newSize, setNewSize] = useState<number>(0);
   const [progressText, setProgressText] = useState<string | null>(null);
   const [imageStats, setImageStats] = useState<{ found: number; recompressed: number } | null>(null);
   const [progress, setProgress] = useState<{ stage: 'read' | 'images' | 'save'; done: number; total: number; secondsLeft: number | null } | null>(null);
+  const [targetMet, setTargetMet] = useState<boolean | null>(null);
+  const [pass, setPass] = useState<{ n: number; of: number } | null>(null);
   const [compressionLevel, setCompressionLevel] = useState<'recommended' | 'extreme' | 'low'>('recommended');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -77,6 +93,8 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
     setIsProcessing(true);
     setErrorMessage(null);
     setDownloadUrl(null);
+    setTargetMet(null);
+    setPass(null);
     setProgress({ stage: 'read', done: 0, total: 0, secondsLeft: null });
     const startedAt = performance.now();
 
@@ -85,7 +103,31 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
       const base = file.name.replace(/\.[^/.]+$/, '');
       let finalBytes: Uint8Array;
 
-      if (toolType === 'compress' && compressionLevel !== 'low') {
+      if (toolType === 'compress' && targetBytes) {
+        // Aim for a size: try stronger settings until the file fits, keep the smallest result.
+        let best: Uint8Array = new Uint8Array(buffer);
+        if (buffer.byteLength > targetBytes) {
+          for (let i = 0; i < TARGET_LADDER.length; i++) {
+            setPass({ n: i + 1, of: TARGET_LADDER.length });
+            const passStart = performance.now();
+            const result = await compressPdfImages(buffer, {
+              ...TARGET_LADDER[i],
+              onProgress: (done, total) => {
+                setProgressText(total > 0 ? `Try ${i + 1}: image ${done} of ${total}` : `Try ${i + 1}`);
+                const elapsed = (performance.now() - passStart) / 1000;
+                const secondsLeft = done > 0 && total > done ? Math.max(1, Math.round((elapsed / done) * (total - done))) : null;
+                setProgress({ stage: total > 0 && done >= total ? 'save' : 'images', done, total, secondsLeft });
+              },
+            });
+            setImageStats({ found: result.imagesFound, recompressed: result.imagesRecompressed });
+            if (result.bytes.length < best.length) best = result.bytes;
+            // No images means stronger settings cannot help.
+            if (best.length <= targetBytes || result.imagesFound === 0) break;
+          }
+        }
+        setTargetMet(best.length <= targetBytes);
+        finalBytes = best;
+      } else if (toolType === 'compress' && compressionLevel !== 'low') {
         // Downscale and re-encode embedded photos/scans; text and vectors stay untouched.
         const settings = compressionLevel === 'extreme'
           ? { maxDimension: 1240, quality: 0.5 }
@@ -118,6 +160,7 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
       }
       setProgressText(null);
       setProgress(null);
+      setPass(null);
 
       // If output is larger than original file and tool is compress, keep original bytes
       let effectiveBytes = finalBytes;
@@ -208,7 +251,18 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
             </button>
           </div>
 
-          {toolType === 'compress' && (
+          {toolType === 'compress' && targetBytes && (
+            <div className="mb-6 rounded-2xl border-[1.5px] border-brand-200 bg-brand-50 p-5">
+              <p className="text-lg font-extrabold text-ink">Target: under {targetLabel}</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+                {originalSize <= targetBytes
+                  ? `Good news: this file is already under ${targetLabel}.`
+                  : `We start gently and use stronger settings only if needed, so the file stays as sharp as possible. Text stays sharp, photos get softer.`}
+              </p>
+            </div>
+          )}
+
+          {toolType === 'compress' && !targetBytes && (
             <div className="mb-6">
               <h3 className="mb-3.5 text-xl font-bold text-ink">How small should it be?</h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" role="radiogroup" aria-label="Compression level">
@@ -275,7 +329,9 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
                 return (
                   <>
                     <div className="flex items-baseline justify-between">
-                      <p className="font-display text-xl font-bold text-ink">Compressing…</p>
+                      <p className="font-display text-xl font-bold text-ink">
+                        Compressing…{pass && pass.n > 1 && <span className="ml-2 text-base font-semibold text-ink-muted">stronger try {pass.n} of {pass.of}</span>}
+                      </p>
                       <p className="font-display text-3xl font-extrabold text-brand-600">{pct}%</p>
                     </div>
                     <div className="mt-4 h-3.5 overflow-hidden rounded-full bg-[#EEEDF8]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Compression progress">
@@ -360,6 +416,11 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
               </div>
               <div className="min-w-[200px] flex-1">
                 <h4 className="font-display text-2xl font-extrabold text-ink">Done. You saved {formatFileSize(originalSize - newSize)}</h4>
+                {targetBytes && targetMet !== null && (
+                  <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-bold ${targetMet ? 'bg-teal-50 text-teal-800' : 'bg-amber-50 text-amber-800'}`}>
+                    {targetMet ? `Under ${targetLabel}, ready to upload` : `Smallest we could reach is ${formatFileSize(newSize)}, above ${targetLabel}`}
+                  </p>
+                )}
                 <p className="mt-2 leading-relaxed text-ink-soft">
                   Text, links and fonts are unchanged.
                   {imageStats && imageStats.recompressed > 0 && ` ${imageStats.recompressed} image${imageStats.recompressed === 1 ? ' was' : 's were'} made smaller.`}
@@ -403,13 +464,15 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
             <CheckCircle className="h-6 w-6" aria-hidden="true" />
           </div>
           <h4 className="text-xl font-bold text-ink">
-            {toolType === 'compress' && 'Nothing more to shrink'}
+            {toolType === 'compress' && (targetBytes && originalSize <= targetBytes ? `Already under ${targetLabel}` : 'Nothing more to shrink')}
             {toolType === 'repair' && 'PDF repaired'}
             {toolType === 'web' && 'PDF optimized for the web'}
           </h4>
           {toolType === 'compress' ? (
             <p className="mx-auto mt-2 max-w-md text-sm text-ink-soft">
-              {imageStats && imageStats.found === 0 ? 'This PDF has no images to compress' : 'This PDF could not be made smaller'}, so your original file ({formatFileSize(originalSize)}) is unchanged.
+              {targetBytes && originalSize <= targetBytes
+                ? `This file is already under ${targetLabel}, so you can use it as it is (${formatFileSize(originalSize)}).`
+                : `${imageStats && imageStats.found === 0 ? 'This PDF has no images to compress' : 'This PDF could not be made smaller'}, so your original file (${formatFileSize(originalSize)}) is unchanged.`}
             </p>
           ) : (
             <p className="mt-1 text-sm text-ink-soft">

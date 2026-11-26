@@ -49,14 +49,14 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+        <nav className="hidden items-center gap-1 xl:flex" aria-label="Main navigation">
           {SITE_CONFIG.navLinks.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
+                className={`relative whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
                   isActive
                     ? 'bg-brand-50 text-brand-600'
                     : 'text-[#3D3B63] hover:text-brand-600'
@@ -69,7 +69,7 @@ export function Header() {
         </nav>
 
         {/* Desktop Auth & CTA */}
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 xl:flex">
           <ThemeToggle />
 
           {isAuthenticated && user ? (
@@ -194,7 +194,7 @@ export function Header() {
         </div>
 
         {/* Mobile menu button */}
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 xl:hidden">
           <ThemeToggle />
           <button
             type="button"
@@ -210,7 +210,7 @@ export function Header() {
 
       {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
-        <div className="border-b border-slate-200 bg-white px-4 pt-2 pb-6 md:hidden">
+        <div className="border-b border-slate-200 bg-white px-4 pt-2 pb-6 xl:hidden">
           <div className="space-y-1">
             {SITE_CONFIG.navLinks.map((item) => (
               <Link

@@ -5,8 +5,8 @@ export const SITE_CONFIG = {
   name: 'pdfkitfree',
   domain: appDomain,
   url: appUrl,
-  description: 'Fast, secure, browser-first PDF utility suite and electronic document workflows. Merge, split, edit, and sign PDFs privately without uploading your documents to third-party servers.',
-  ogImage: `${appUrl}/og-image.png`,
+  description: '38 free PDF tools that run in your browser: merge, compress, split, sign, convert to Word or JPG, OCR and more. No sign-up, no watermark, nothing uploaded.',
+  ogImage: `${appUrl}/opengraph-image`,
   creator: '@pdfkitfree',
   navLinks: [
     { label: 'PDF Tools', href: '/tools' },
@@ -30,6 +30,14 @@ export const SITE_CONFIG = {
       { label: 'About Us', href: '/about' },
       { label: 'Blog', href: '/blog' },
       { label: 'Contact Support', href: '/contact' },
+    ],
+    popular: [
+      { label: 'Compress PDF to 100 KB', href: '/compress-pdf-to/100kb' },
+      { label: 'Compress PDF to 200 KB', href: '/compress-pdf-to/200kb' },
+      { label: 'Compress PDF to 500 KB', href: '/compress-pdf-to/500kb' },
+      { label: 'Compress PDF to 1 MB', href: '/compress-pdf-to/1mb' },
+      { label: 'Make a scanned PDF searchable', href: '/tools/ocr-pdf' },
+      { label: 'Redact a PDF', href: '/tools/redact-pdf' },
     ],
     legal: [
       { label: 'Privacy Policy', href: '/privacy' },

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { TOOLS, getToolBySlug } from '@/lib/tools';
 import { getToolSeoData } from '@/lib/tool-content';
 import { getBlogPostBySlug } from '@/lib/blog-data';
+import { ShareTool } from '@/components/ShareTool';
+import { SIZE_TARGETS } from '@/lib/size-targets';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ToolDispatcher } from '@/components/ToolDispatcher';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
@@ -121,10 +123,23 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
           <div>
             <h1 className="text-4xl font-extrabold text-ink sm:text-5xl">{tool.title}</h1>
             <p className="mt-2 max-w-3xl text-base text-ink-soft sm:text-lg">{tool.longDescription}</p>
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-teal-800 shadow-sm">
-              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-              Runs in your browser
-            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-teal-800 shadow-sm">
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                Runs in your browser
+              </p>
+              <ShareTool title={tool.title} path={`/tools/${tool.slug}`} />
+            </div>
+            {tool.slug === 'compress-pdf' && (
+              <nav aria-label="Compress to a size" className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-semibold text-ink-muted">Need an exact size?</span>
+                {SIZE_TARGETS.filter((t) => ['50kb', '100kb', '200kb', '500kb', '1mb'].includes(t.slug)).map((t) => (
+                  <Link key={t.slug} href={`/compress-pdf-to/${t.slug}`} className="rounded-full bg-white px-3 py-1.5 font-bold text-brand-600 shadow-sm hover:bg-brand-50">
+                    Under {t.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
           </div>
         </div>
 

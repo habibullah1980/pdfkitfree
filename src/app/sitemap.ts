@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next';
 import { TOOLS } from '@/lib/tools';
 import { BLOG_POSTS } from '@/lib/blog-data';
 import { SITE_CONFIG } from '@/lib/site-config';
+import { SIZE_TARGETS } from '@/lib/size-targets';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = SITE_CONFIG.url;
@@ -37,5 +38,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...toolPages, ...blogPages];
+  const sizePages = SIZE_TARGETS.map((t) => ({
+    url: `${baseUrl}/compress-pdf-to/${t.slug}`,
+    lastModified: currentDate,
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...toolPages, ...sizePages, ...blogPages];
 }
