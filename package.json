@@ -13,6 +13,7 @@
     "test": "for f in tests/*.test.ts; do echo \"=== $f\"; tsx \"$f\" || exit 1; done"
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@neon/config": "^1.9.1",
     "@neon/env": "^1.6.2",
@@ -23,6 +24,7 @@
     "@tesseract.js-data/eng": "1.0.0",
     "clsx": "^2.1.1",
     "ffprobe-static": "^3.1.0",
+    "gifenc": "^1.0.3",
     "heic-to": "^1.6.7",
     "jszip": "^3.10.2",
     "lucide-react": "^1.56.0",

@@ -27,6 +27,8 @@ export const SITE_CONFIG = {
       { label: 'QR Code Generator', href: '/qr-code-generator' },
       { label: 'HEIC to JPG', href: '/heic-to-jpg' },
       { label: 'Resize Image', href: '/resize-image' },
+      { label: 'Video to MP3', href: '/video-to-mp3' },
+      { label: 'Video to GIF', href: '/video-to-gif' },
     ],
     company: [
       { label: 'Pricing Plans', href: '/pricing' },
