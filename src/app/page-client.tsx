@@ -4,8 +4,9 @@ import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { TOOLS, TOOL_CATEGORIES } from '@/lib/tools';
 import { ToolCard } from '@/components/ToolCard';
-import { HeroStage } from '@/components/home/HeroStage';
-import { FolderOpen, Lock, Monitor, Search, ShieldCheck, Upload, Zap, Download, Video } from 'lucide-react';
+import Image from 'next/image';
+import heroPhoto from '@/assets/hero-office.jpg';
+import { FolderOpen, Lock, Minimize2, Monitor, Search, ShieldCheck, Upload, Zap, Download, Video } from 'lucide-react';
 
 const POPULAR = ['compress-pdf', 'merge-pdf', 'pdf-to-word', 'sign-pdf'];
 
@@ -43,23 +44,36 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="pk-hero overflow-hidden bg-[radial-gradient(900px_520px_at_88%_8%,#FFE7A8_0%,rgba(255,231,168,0)_62%),radial-gradient(760px_520px_at_-5%_105%,#FFD9CC_0%,rgba(255,217,204,0)_60%),linear-gradient(#EEEDFF,#E6E4FF)] pb-12 pt-10 sm:pt-14">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-          <div className="flex flex-col gap-6">
-            <span className="inline-flex items-center gap-2 self-start rounded-full bg-white px-3.5 py-2 text-sm font-bold text-teal-800 shadow-sm">
+      <section className="relative isolate overflow-hidden bg-ink pb-12 pt-14 text-white sm:pt-20 lg:min-h-[700px]">
+        <Image
+          src={heroPhoto}
+          alt=""
+          fill
+          priority
+          placeholder="blur"
+          sizes="100vw"
+          className="-z-20 object-cover object-[70%_center] lg:object-center"
+        />
+        <div
+          className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(27,26,58,.9)_0%,rgba(27,26,58,.8)_55%,rgba(27,26,58,.94)_100%)] lg:bg-[linear-gradient(90deg,rgba(27,26,58,.96)_0%,rgba(27,26,58,.86)_38%,rgba(75,63,228,.38)_70%,rgba(75,63,228,.14)_100%)]"
+          aria-hidden="true"
+        />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex max-w-[640px] animate-pk-rise flex-col gap-6">
+            <span className="inline-flex items-center gap-2 self-start rounded-full bg-white/10 px-3.5 py-2 text-sm font-bold text-[#7CF0C9] backdrop-blur">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Your files are processed on your device
             </span>
-            <h1 className="text-[44px] font-extrabold leading-[1.03] text-ink sm:text-6xl lg:text-[66px]">
+            <h1 className="text-[44px] font-extrabold leading-[1.03] text-white sm:text-6xl lg:text-[68px]">
               Every PDF job, done right in your browser.
             </h1>
-            <p className="max-w-[520px] text-lg leading-relaxed text-ink-soft sm:text-[19px]">
+            <p className="max-w-[540px] text-lg leading-relaxed text-[#DCDAFF] sm:text-[19px]">
               Merge, compress, sign, convert and read scanned pages with {TOOLS.length} free tools. Nothing to install and nothing uploaded.
             </p>
             <form
               role="search"
               onSubmit={goToCatalog}
-              className="flex max-w-[520px] items-center gap-2.5 rounded-full border-[1.5px] border-[#E3E1F5] bg-white py-1.5 pl-5 pr-1.5 shadow-glow"
+              className="pk-light-field flex max-w-[540px] items-center gap-2.5 rounded-full bg-white py-1.5 pl-5 pr-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,.6)]"
             >
               <Search className="h-5 w-5 flex-none text-[#6E6C8E]" aria-hidden="true" />
               <label htmlFor="home-tool-search" className="sr-only">Find a PDF tool</label>
@@ -76,20 +90,40 @@ export default function HomePage() {
               </button>
             </form>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="mr-1 text-sm font-semibold text-ink-muted">Popular:</span>
+              <span className="mr-1 text-sm font-semibold text-[#DCDAFF]">Popular:</span>
               {popularTools.map((t) => (
-                <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full bg-white/80 px-3.5 py-2 text-sm font-semibold text-[#3D3B63] transition hover:bg-white hover:text-ink">
+                <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full bg-white/15 px-3.5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25">
                   {t.title}
                 </Link>
               ))}
             </div>
           </div>
-          <HeroStage />
+        </div>
+
+        {/* Live-looking compress card (decorative) */}
+        <div
+          className="pk-card absolute bottom-[180px] right-[6%] hidden w-[340px] items-center gap-3.5 rounded-2xl border border-white/30 bg-white/15 p-4 text-white shadow-[0_24px_50px_-22px_rgba(0,0,0,.6)] backdrop-blur-md lg:flex"
+          style={{ animationDelay: '.6s, 1.4s' }}
+          aria-hidden="true"
+        >
+          <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-sun text-ink">
+            <Minimize2 className="h-5 w-5" strokeWidth={2.4} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex justify-between text-sm font-bold">
+              <span>annual-report.pdf</span>
+              <span className="text-sun">−73%</span>
+            </span>
+            <span className="mt-2 block h-2 overflow-hidden rounded-full bg-white/25">
+              <span className="pk-loop block h-full rounded-full bg-sun" />
+            </span>
+            <span className="mt-1.5 block text-[13px] text-[#DCDAFF]">Shrinking images, text kept sharp</span>
+          </span>
         </div>
 
         {/* Trust strip */}
-        <div className="mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-5 rounded-3xl bg-ink px-6 py-6 text-white sm:grid-cols-3 sm:px-8">
+        <div className="mx-auto mt-14 max-w-7xl px-4 sm:px-6 lg:mt-32 lg:px-8">
+          <div className="grid gap-5 rounded-3xl border border-white/15 bg-white/10 px-6 py-6 backdrop-blur-md sm:grid-cols-3 sm:px-8">
             {[
               { icon: Monitor, title: 'Works in your browser', text: 'Chrome, Edge, Safari and Firefox' },
               { icon: Lock, title: 'Files stay on your device', text: 'PDF tools run locally, nothing is uploaded' },
@@ -99,7 +133,7 @@ export default function HomePage() {
                 <Icon className="h-7 w-7 flex-none text-sun" strokeWidth={2} aria-hidden="true" />
                 <div>
                   <p className="font-bold">{title}</p>
-                  <p className="text-sm text-[#C9C7EA]">{text}</p>
+                  <p className="text-sm text-[#DCDAFF]">{text}</p>
                 </div>
               </div>
             ))}
