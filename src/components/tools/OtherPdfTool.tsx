@@ -15,6 +15,7 @@ import {
   GitCompare,
   CheckSquare
 } from 'lucide-react';
+import { openPdfDocument } from '@/lib/pdfjs-client';
 
 interface OtherPdfToolProps {
   toolType: 'extract-text' | 'extract-images' | 'compare' | 'fill-form' | 'ocr';
@@ -98,9 +99,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
 
     try {
       const buffer = await file.arrayBuffer();
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const doc = await openPdfDocument(buffer);
       const base = file.name.replace(/\.[^/.]+$/, '');
 
       if (toolType === 'extract-text' || toolType === 'ocr') {
@@ -155,7 +154,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
         }
 
         const bufferB = await secondFile.arrayBuffer();
-        const docB = await pdfjsLib.getDocument({ data: bufferB }).promise;
+        const docB = await openPdfDocument(bufferB);
 
         // Extract text from both docs
         let textA = '';

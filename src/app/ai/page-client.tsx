@@ -20,6 +20,7 @@ import {
   FileCheck2,
   Columns,
 } from 'lucide-react';
+import { openPdfDocument } from '@/lib/pdfjs-client';
 
 interface Citation {
   pageNumber?: number;
@@ -161,12 +162,8 @@ export default function AiAssistantPage() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      // Dynamically load pdfjs in browser
-      const pdfjs = await import('pdfjs-dist');
-      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-
-      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-      const pdf = await loadingTask.promise;
+      // Parse in the browser with the self-hosted pdf.js worker
+      const pdf = await openPdfDocument(arrayBuffer);
 
       let extractedFullText = '';
       const numPages = pdf.numPages;

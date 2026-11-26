@@ -12,6 +12,7 @@ import {
   Trash2,
   FileText
 } from 'lucide-react';
+import { openPdfDocument } from '@/lib/pdfjs-client';
 
 interface ConvertFromPdfToolProps {
   targetFormat: 'image' | 'word' | 'excel' | 'powerpoint' | 'pdfa';
@@ -58,9 +59,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
 
     try {
       const buffer = await selectedFile.arrayBuffer();
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const doc = await openPdfDocument(buffer);
       setFile(selectedFile);
       setNumPages(doc.numPages);
     } catch {
@@ -106,9 +105,7 @@ export function ConvertFromPdfTool({ targetFormat, imageFormat = 'jpg' }: Conver
 
     try {
       const buffer = await file.arrayBuffer();
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-      const doc = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const doc = await openPdfDocument(buffer);
       const base = file.name.replace(/\.[^/.]+$/, '');
 
       if (targetFormat === 'image') {

@@ -14,20 +14,17 @@ import {
   Trash2,
   Lock,
   Unlock,
-  EyeOff,
-  CheckCheck,
-  ShieldAlert
+  CheckCheck
 } from 'lucide-react';
 
 interface SecurityPdfToolProps {
-  toolType: 'protect' | 'unlock' | 'redact' | 'validate';
+  toolType: 'protect' | 'unlock' | 'validate';
 }
 
 export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState<string>('');
   const [unlockPassword, setUnlockPassword] = useState<string>('');
-  const [redactTerm, setRedactTerm] = useState<string>('CONFIDENTIAL');
   const [validationInfo, setValidationInfo] = useState<{ isEncrypted: boolean; pageCount: number; hasSignature: boolean } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -129,13 +126,18 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
           // Attempt decryption with user supplied password or blank password
           decryptedBytes = await decryptPDF(new Uint8Array(buffer), unlockPassword || '');
         } catch {
-          // If decrypt failed, check if document was already unprotected
+          // Decryption failed. Only treat it as success if the file was never encrypted.
+          let isEncrypted = true;
           try {
-            const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
-            decryptedBytes = await doc.save();
+            await PDFDocument.load(buffer); // throws for encrypted PDFs
+            isEncrypted = false;
           } catch {
-            throw new Error('Incorrect password or unsupported encryption algorithm. Please verify your password.');
+            isEncrypted = true;
           }
+          if (isEncrypted) {
+            throw new Error('Incorrect password, or this PDF uses an encryption type we cannot open. Nothing was unlocked.');
+          }
+          throw new Error('This PDF is not password-protected, so there is nothing to unlock.');
         }
 
         if (!decryptedBytes) {
@@ -146,62 +148,6 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
         setDownloadName(`${base}-unlocked.pdf`);
-      } else if (toolType === 'redact') {
-        // Permanent Redaction:
-        // We render each page using pdfjs-dist onto an HTML5 canvas, stamp solid black redaction blocks,
-        // and re-encode onto a clean PDF page so underlying vector text strings are permanently obliterated.
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-        const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
-
-        const cleanPdf = await PDFDocument.create();
-
-        for (let i = 1; i <= pdfDoc.numPages; i++) {
-          const page = await pdfDoc.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            await page.render({ canvasContext: ctx, viewport }).promise;
-
-            // Burn permanent solid black redaction bar across the specified area
-            ctx.fillStyle = '#000000';
-            const rectHeight = 60;
-            const rectY = viewport.height / 2 - rectHeight / 2;
-            ctx.fillRect(50, rectY, viewport.width - 100, rectHeight);
-
-            // Optional redact marker text
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 16px sans-serif';
-            ctx.fillText(`[REDACTED: ${redactTerm.toUpperCase()}]`, 70, rectY + 36);
-
-            const imgData = canvas.toDataURL('image/jpeg', 0.92);
-            const base64 = imgData.replace(/^data:image\/jpeg;base64,/, '');
-            const binary = atob(base64);
-            const imgBytes = new Uint8Array(binary.length);
-            for (let j = 0; j < binary.length; j++) {
-              imgBytes[j] = binary.charCodeAt(j);
-            }
-
-            const embeddedImage = await cleanPdf.embedJpg(imgBytes);
-            const { width, height } = page.getViewport({ scale: 1.0 });
-            const newPage = cleanPdf.addPage([width, height]);
-            newPage.drawImage(embeddedImage, {
-              x: 0,
-              y: 0,
-              width,
-              height,
-            });
-          }
-        }
-
-        const bytes = await cleanPdf.save();
-        const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        setDownloadUrl(url);
-        setDownloadName(`${base}-permanently-redacted.pdf`);
       }
     } catch (err: unknown) {
       const error = err as Error;
@@ -225,13 +171,11 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm border border-brand-100 mb-4">
             {toolType === 'protect' && <Lock className="h-7 w-7" />}
             {toolType === 'unlock' && <Unlock className="h-7 w-7" />}
-            {toolType === 'redact' && <EyeOff className="h-7 w-7" />}
             {toolType === 'validate' && <CheckCheck className="h-7 w-7" />}
           </div>
           <h3 className="text-xl font-bold text-slate-900">
             {toolType === 'protect' && 'Choose a PDF to encrypt with password'}
             {toolType === 'unlock' && 'Choose a PDF to unlock and remove restrictions'}
-            {toolType === 'redact' && 'Choose a PDF to permanently redact'}
             {toolType === 'validate' && 'Choose a PDF to inspect digital signatures'}
           </h3>
           <p className="mt-2 text-sm text-slate-600 max-w-md">
@@ -321,33 +265,12 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
             </div>
           )}
 
-          {toolType === 'redact' && (
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Redaction Label / Reason
-                </label>
-                <input
-                  type="text"
-                  value={redactTerm}
-                  onChange={(e) => setRedactTerm(e.target.value)}
-                  className="w-full max-w-md rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                <div className="mt-2 flex items-start gap-2 text-xs text-slate-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <ShieldAlert className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Permanent Sanitization:</strong> Content underneath is burned into flattened raster pixels. Text strings and vectors are permanently removed from the PDF syntax.
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
           {toolType === 'validate' && validationInfo && (
             <div className="space-y-3 mb-6 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-              <h5 className="font-bold text-slate-900">Cryptographic Signature & Security Audit:</h5>
-              <p>&bull; Digital Signature: <strong className={validationInfo.hasSignature ? 'text-teal-700' : 'text-slate-600'}>{validationInfo.hasSignature ? 'Detected (PKCS#7 Signature Structure Present)' : 'No digital signature certificate detected'}</strong></p>
+              <h5 className="font-bold text-slate-900">Signature &amp; security inspection:</h5>
+              <p>&bull; Digital Signature: <strong className={validationInfo.hasSignature ? 'text-teal-700' : 'text-slate-600'}>{validationInfo.hasSignature ? 'Signature field found' : 'No digital signature found'}</strong></p>
               <p>&bull; Document Encryption: <strong>{validationInfo.isEncrypted ? 'Password Protected / Encrypted' : 'Unencrypted'}</strong></p>
+              <p className="text-xs text-slate-500">This checks whether a signature is present. It does not verify the signer&apos;s certificate or whether the document changed after signing; use Adobe Acrobat Reader for full validation.</p>
               <p>&bull; Total Pages: <strong>{validationInfo.pageCount > 0 ? validationInfo.pageCount : 'Available after unlock'}</strong></p>
               <p>&bull; Structural Integrity: <strong className="text-teal-700">Valid PDF Container</strong></p>
             </div>
@@ -370,7 +293,6 @@ export function SecurityPdfTool({ toolType }: SecurityPdfToolProps) {
                   <span>
                     {toolType === 'protect' && 'Encrypt & Protect PDF'}
                     {toolType === 'unlock' && 'Unlock PDF'}
-                    {toolType === 'redact' && 'Burn Permanent Redactions'}
                   </span>
                 )}
               </button>

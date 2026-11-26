@@ -12,6 +12,7 @@ import { ConvertToPdfTool } from '@/components/tools/ConvertToPdfTool';
 import { ConvertFromPdfTool } from '@/components/tools/ConvertFromPdfTool';
 import { EditPdfTool } from '@/components/tools/EditPdfTool';
 import { SecurityPdfTool } from '@/components/tools/SecurityPdfTool';
+import { RedactPdfTool } from '@/components/tools/RedactPdfTool';
 import { OtherPdfTool } from '@/components/tools/OtherPdfTool';
 import { NdaUploadWorkspace } from '@/components/NdaUploadWorkspace';
 
@@ -92,7 +93,7 @@ export function ToolDispatcher({ tool }: ToolDispatcherProps) {
     case 'unlock-pdf':
       return <SecurityPdfTool toolType="unlock" />;
     case 'redact-pdf':
-      return <SecurityPdfTool toolType="redact" />;
+      return <RedactPdfTool />;
     case 'validate-signature':
       return <SecurityPdfTool toolType="validate" />;
 

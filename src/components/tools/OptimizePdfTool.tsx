@@ -13,6 +13,7 @@ import {
   Sparkles,
   Info
 } from 'lucide-react';
+import { compressPdfImages } from '@/lib/pdf-image-compress';
 
 interface OptimizePdfToolProps {
   toolType: 'compress' | 'repair' | 'web';
@@ -22,6 +23,8 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
   const [file, setFile] = useState<File | null>(null);
   const [originalSize, setOriginalSize] = useState<number>(0);
   const [newSize, setNewSize] = useState<number>(0);
+  const [progressText, setProgressText] = useState<string | null>(null);
+  const [imageStats, setImageStats] = useState<{ found: number; recompressed: number } | null>(null);
   const [compressionLevel, setCompressionLevel] = useState<'recommended' | 'extreme' | 'low'>('recommended');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,6 +61,7 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
     if (!selectedFile) return;
     setErrorMessage(null);
     setDownloadUrl(null);
+    setImageStats(null);
 
     if (!selectedFile.type.includes('pdf') && !selectedFile.name.toLowerCase().endsWith('.pdf')) {
       setErrorMessage('Please select a valid PDF file.');
@@ -78,58 +82,33 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
       const base = file.name.replace(/\.[^/.]+$/, '');
       let finalBytes: Uint8Array;
 
-      if (toolType === 'compress' && compressionLevel === 'extreme') {
-        // Extreme compression: re-rasterize and recompress pages with high-efficiency JPEG
-        try {
-          const pdfjsLib = await import('pdfjs-dist');
-          pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
-          const srcDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
-          const newDoc = await PDFDocument.create();
-
-          for (let i = 1; i <= srcDoc.numPages; i++) {
-            const page = await srcDoc.getPage(i);
-            const viewport = page.getViewport({ scale: 1.2 });
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.fillStyle = '#FFFFFF';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              await page.render({ canvasContext: ctx, viewport }).promise;
-              const jpegUrl = canvas.toDataURL('image/jpeg', 0.65);
-              const base64 = jpegUrl.replace(/^data:image\/jpeg;base64,/, '');
-              const bin = atob(base64);
-              const imgBytes = new Uint8Array(bin.length);
-              for (let j = 0; j < bin.length; j++) {
-                imgBytes[j] = bin.charCodeAt(j);
-              }
-
-              const embedded = await newDoc.embedJpg(imgBytes);
-              const { width, height } = page.getViewport({ scale: 1.0 });
-              const p = newDoc.addPage([width, height]);
-              p.drawImage(embedded, { x: 0, y: 0, width, height });
-            }
-          }
-          finalBytes = await newDoc.save({ useObjectStreams: true });
-        } catch {
-          // Fallback to standard object stream compression if canvas fails
-          const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
-          finalBytes = await doc.save({ useObjectStreams: true });
-        }
-      } else {
-        // Recommended / Low / Repair / Web:
-        // Cleans xref tables, strips unreferenced objects, uses object streams
-        const doc = await PDFDocument.load(buffer, { 
-          ignoreEncryption: true,
-          updateMetadata: toolType === 'repair' ? false : true 
+      if (toolType === 'compress' && compressionLevel !== 'low') {
+        // Downscale and re-encode embedded photos/scans; text and vectors stay untouched.
+        const settings = compressionLevel === 'extreme'
+          ? { maxDimension: 1240, quality: 0.5 }
+          : { maxDimension: 2000, quality: 0.72 };
+        const result = await compressPdfImages(buffer, {
+          ...settings,
+          onProgress: (done, total) => setProgressText(total > 0 ? `Compressing images: ${done} of ${total}` : null),
         });
-
+        setImageStats({ found: result.imagesFound, recompressed: result.imagesRecompressed });
+        finalBytes = result.bytes;
+      } else {
+        // Lossless / Repair / Web: rebuild the file structure (xref, object streams, unused objects)
+        const doc = await PDFDocument.load(buffer, {
+          ignoreEncryption: true,
+          throwOnInvalidObject: false,
+          updateMetadata: toolType === 'repair' ? false : true,
+        });
+        if (toolType === 'repair' && doc.getPageCount() === 0) {
+          throw new Error('No readable pages could be recovered from this file.');
+        }
         finalBytes = await doc.save({
           useObjectStreams: true,
           addDefaultPage: false,
         });
       }
+      setProgressText(null);
 
       // If output is larger than original file and tool is compress, keep original bytes
       let effectiveBytes = finalBytes;
@@ -226,9 +205,9 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { id: 'extreme', title: 'Extreme Compression', desc: 'Maximum file size reduction' },
-                  { id: 'recommended', title: 'Recommended', desc: 'Balanced stream & metadata compression' },
-                  { id: 'low', title: 'Lossless', desc: 'Preserves 100% original pixel data' },
+                  { id: 'extreme', title: 'Extreme', desc: 'Smallest file. Photos get softer; text stays sharp' },
+                  { id: 'recommended', title: 'Recommended', desc: 'Good quality, much smaller images' },
+                  { id: 'low', title: 'Lossless', desc: 'Only removes unused data. Images untouched' },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -272,7 +251,7 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Processing document...</span>
+                  <span aria-live="polite">{progressText || 'Processing document...'}</span>
                 </>
               ) : (
                 <>
@@ -310,7 +289,7 @@ export function OptimizePdfTool({ toolType }: OptimizePdfToolProps) {
           {toolType === 'compress' && newSize >= originalSize ? (
             <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3.5 py-1 text-xs text-slate-700">
               <Info className="h-3.5 w-3.5 text-slate-500" />
-              <span>Document is already at maximum compression ({formatFileSize(originalSize)})</span>
+              <span>{imageStats && imageStats.found === 0 ? 'This PDF has no images to compress' : 'This PDF could not be made smaller'}; your original file ({formatFileSize(originalSize)}) is unchanged.</span>
             </div>
           ) : (
             <p className="text-sm text-slate-600 mt-1">
