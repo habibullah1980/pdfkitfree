@@ -11,7 +11,6 @@ export const SITE_CONFIG = {
   navLinks: [
     { label: 'PDF Tools', href: '/tools' },
     { label: 'AI Assistant', href: '/ai' },
-    { label: 'Video Compressor', href: '/video-compressor' },
     { label: 'NDA & eSign', href: '/nda-esign' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Blog', href: '/blog' },
