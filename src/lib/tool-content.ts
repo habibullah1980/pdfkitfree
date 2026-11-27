@@ -912,50 +912,60 @@ export const TOOL_SEO_DATA: Record<string, ToolSeoContent> = {
 
   'pdf-to-word': {
     introParagraph:
-      'Extract editable text, headings, and paragraph blocks from PDF documents into editable Word (.doc / .docx) files. Reclaim uneditable contracts, research papers, and legacy memos for quick revision without manual retyping.',
+      'Turn a PDF into an editable Word document that still looks like the original. The converter reads where every word, line, table and picture sits on each page and rebuilds it in Word: same page size and margins, same fonts, sizes and colours, real Word tables with their borders and shading, pictures and logos in place, headers and footers with live page numbers. Scanned pages are read with text recognition. Everything happens in your browser, so your document is never uploaded.',
     howToSteps: [
       {
-        title: 'Select PDF File',
-        description: 'Choose the document you need to convert into an editable Word document.',
+        title: 'Choose your PDF',
+        description: 'Drop in the file you want to edit. It stays on your device.',
       },
       {
-        title: 'Extract Content & Layout',
-        description: 'The parser extracts text streams, headings, and paragraph boundaries.',
+        title: 'Rebuild the layout',
+        description: 'Text, tables, columns, images, headers and footers are rebuilt page by page. Scanned pages are read with OCR.',
       },
       {
-        title: 'Download Editable Word File',
-        description: 'Download your .doc file and open it in Word, Google Docs, or LibreOffice.',
+        title: 'Download the .docx',
+        description: 'Open it in Microsoft Word, Google Docs, LibreOffice or Pages and edit it like any other document.',
       },
     ],
     useCases: [
       {
-        title: 'Revising Expired Contracts',
-        description: 'Quickly modify terms in old contract PDFs when the original Word source file has been lost.',
+        title: 'Editing contracts and letters',
+        description: 'Change names, dates or terms in an agreement when the original Word file is lost.',
       },
       {
-        title: 'Updating Old Resumes & CVs',
-        description: 'Extract formatted text from your previous resume PDF to update job history.',
+        title: 'Updating a CV or resume',
+        description: 'Keep the layout, sidebar and photo of your old CV and just update your job history.',
       },
       {
-        title: 'Quoting Long Research Reports',
-        description: 'Extract multi-page excerpts into your working essay or proposal draft.',
+        title: 'Reusing invoices and reports',
+        description: 'Tables, totals and logos come across as real Word tables and pictures you can edit.',
       },
     ],
     faqs: [
       {
-        question: 'Can I edit the downloaded file in Microsoft Word and Google Docs?',
-        answer: 'Yes. The output file opens seamlessly in Microsoft Word, Google Docs, Apple Pages, and LibreOffice.',
+        question: 'Will the Word file look exactly like my PDF?',
+        answer:
+          'Most business documents, reports, letters, invoices and CVs come out very close to the original: page size, fonts, colours, tables, images, columns, headers and footers are all kept. PDFs are not designed to be edited, though, so very complex pages (posters, magazine spreads, forms with overlapping boxes) may need small touch-ups. If a font is not installed on your computer, Word shows a similar one.',
       },
       {
-        question: 'How are paragraph breaks and headings preserved?',
-        answer: 'The extractor reconstructs semantic line breaks and structural spacing between document paragraphs.',
+        question: 'Can I edit the file in Microsoft Word and Google Docs?',
+        answer: 'Yes. The result is a standard .docx file with real editable text and tables. It opens in Microsoft Word, Google Docs, LibreOffice and Apple Pages.',
       },
       {
-        question: 'What if my PDF is a photo of paper?',
-        answer: 'For scanned documents containing image-only text, use our OCR Scanned PDF tool to transcribe characters first.',
+        question: 'What happens with scanned PDFs?',
+        answer:
+          'Pages that are only a picture of paper are read with text recognition (OCR) on your device and turned into editable text. OCR can misread blurry or handwritten text, so give it a quick proofread.',
+      },
+      {
+        question: 'Is my document uploaded?',
+        answer: 'No. The conversion runs entirely in your browser. Nothing is sent to our servers or to any other service.',
+      },
+      {
+        question: 'Are charts and drawn logos kept?',
+        answer: 'Yes. Charts, diagrams and logos drawn as vector graphics are placed in the Word file as sharp pictures in the same position.',
       },
     ],
-    relatedToolSlugs: ['word-to-pdf', 'extract-text', 'ocr-pdf', 'pdf-to-excel'],
+    relatedToolSlugs: ['word-to-pdf', 'ocr-pdf', 'pdf-to-excel', 'compress-pdf'],
     relatedBlogSlug: 'why-client-side-pdf-tools-are-safer',
   },
 
