@@ -106,6 +106,7 @@ const EXPECT: Record<string, Expect> = {
   '08-mixed-image-text': { minImages: 2, minRecall: 0.98 },
   '09-financial-statement': { bold: 'Gross profit', minRecall: 0.99 },
   '10-page-sizes': { minTables: 1, landscapePages: [2, 4], minRecall: 0.98 },
+  '11-invoice-rounded': { minTables: 1, minRecall: 0.92, colour: '62479A' },
 };
 
 async function main() {

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { makeSafeText } from '@/lib/pdf-safe-text';
 import { SignatureCreator } from './SignatureCreator';
 import { 
   FileText, 
@@ -245,6 +246,7 @@ export function SharedSignerWorkspace({
       const pdfDoc = await PDFDocument.load(pdfArrayBuffer);
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const safe = makeSafeText(helveticaFont);
 
       // Process fields page by page
       for (const field of fields) {
@@ -276,7 +278,7 @@ export function SharedSignerWorkspace({
             height: drawHeight,
           });
         } else if (field.type === 'initials') {
-          targetPage.drawText(field.content, {
+          targetPage.drawText(safe(field.content), {
             x: Math.max(0, drawX + 4),
             y: Math.max(0, drawY + (drawHeight * 0.25)),
             size: 13,
@@ -284,7 +286,7 @@ export function SharedSignerWorkspace({
             color: rgb(0.1, 0.2, 0.5),
           });
         } else if (field.type === 'date') {
-          targetPage.drawText(field.content, {
+          targetPage.drawText(safe(field.content), {
             x: Math.max(0, drawX + 4),
             y: Math.max(0, drawY + (drawHeight * 0.25)),
             size: 11,
@@ -292,7 +294,7 @@ export function SharedSignerWorkspace({
             color: rgb(0.2, 0.2, 0.2),
           });
         } else if (field.type === 'text') {
-          targetPage.drawText(field.content, {
+          targetPage.drawText(safe(field.content), {
             x: Math.max(0, drawX + 4),
             y: Math.max(0, drawY + (drawHeight * 0.25)),
             size: 11,

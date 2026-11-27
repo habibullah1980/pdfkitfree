@@ -247,6 +247,42 @@ export function findGrids(rules: Rule[]): Grid[] {
   return grids;
 }
 
+/**
+ * Shaded cells that touch each other (a table drawn with fills and white gaps instead of lines)
+ * give invisible rules along their edges, so findGrids sees the table.
+ */
+export function tileEdges(rects: { x0: number; y0: number; x1: number; y1: number; color: string }[]): Rule[] {
+  const cand = rects.filter((r) => !isNearWhite(r.color) && r.x1 - r.x0 > 4 && r.y1 - r.y0 > 4);
+  const tol = 3.5;
+  const touches = (a: Box, b: Box) => {
+    const yOv = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+    const xOv = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
+    const side = (Math.abs(a.x1 - b.x0) <= tol || Math.abs(b.x1 - a.x0) <= tol) && yOv >= Math.min(a.y1 - a.y0, b.y1 - b.y0) * 0.8;
+    const stack = (Math.abs(a.y1 - b.y0) <= tol || Math.abs(b.y1 - a.y0) <= tol) && xOv >= Math.min(a.x1 - a.x0, b.x1 - b.x0) * 0.8;
+    return side || stack;
+  };
+  const par = cand.map((_, i) => i);
+  const find = (i: number): number => (par[i] === i ? i : (par[i] = find(par[i])));
+  const deg = cand.map(() => 0);
+  for (let i = 0; i < cand.length; i++)
+    for (let j = i + 1; j < cand.length; j++)
+      if (touches(cand[i], cand[j])) {
+        par[find(j)] = find(i);
+        deg[i]++;
+        deg[j]++;
+      }
+  const size = new Map<number, number>();
+  cand.forEach((_, i) => size.set(find(i), (size.get(find(i)) || 0) + 1));
+  const out: Rule[] = [];
+  cand.forEach((r, i) => {
+    if (!deg[i] || (size.get(find(i)) || 0) < 4) return;
+    const v = { width: 0, color: 'none', virtual: true };
+    out.push({ orient: 'h', pos: r.y0, a: r.x0, b: r.x1, ...v }, { orient: 'h', pos: r.y1, a: r.x0, b: r.x1, ...v });
+    out.push({ orient: 'v', pos: r.x0, a: r.y0, b: r.y1, ...v }, { orient: 'v', pos: r.x1, a: r.y0, b: r.y1, ...v });
+  });
+  return out;
+}
+
 function hasEdge(rules: Rule[], orient: 'h' | 'v', pos: number, a: number, b: number): Rule | null {
   const mid = (a + b) / 2;
   const len = b - a;
@@ -274,7 +310,8 @@ function spansToSegments(spans: TextSpan[]): Seg[] {
       if (Math.abs(main.baseline - s.baseline) <= tol) return true;
       // small raised/lowered text overlapping the line box
       const ov = Math.min(spanBottom(main), spanBottom(s)) - Math.max(spanTop(main), spanTop(s));
-      return s.size < main.size * 0.85 && ov > s.size * 0.5 && r.some((q) => Math.abs(q.x1 - s.x0) < main.size || Math.abs(s.x1 - q.x0) < main.size);
+      const near = Math.min(main.size, s.size * 1.2);
+      return s.size < main.size * 0.85 && ov > s.size * 0.5 && r.some((q) => Math.abs(q.x1 - s.x0) < near || Math.abs(s.x1 - q.x0) < near);
     });
     if (row) row.push(s);
     else rows.push([s]);
@@ -534,7 +571,7 @@ function buildTable(grid: Grid, content: RegionContent, ctx: LayoutContext): Tab
   }
   for (let r = 0; r < nr; r++) for (let c = 0; c < nc; c++) if (!owner[r][c]) owner[r][c] = { r0: r, r1: r, c0: c, c1: c };
 
-  const border = (rule: Rule | null): Border | null => (rule ? { width: rule.width, color: rule.color } : null);
+  const border = (rule: Rule | null): Border | null => (rule && !rule.virtual ? { width: rule.width, color: rule.color } : null);
   const rows: Row[] = [];
   for (let r = 0; r < nr; r++) {
     const cells: Cell[] = [];
@@ -620,8 +657,9 @@ export function layoutRegion(content: RegionContent, container: Box, ctx: Layout
   let rest: RegionContent = { ...content, rules: mergeRules(content.rules) };
   const items: Item[] = [];
 
-  // 1. ruled tables / framed boxes (largest first so nested ones are handled inside)
-  const grids = findGrids(rest.rules).sort((a, b) => boxArea(b.box) - boxArea(a.box));
+  // 1. ruled tables / framed boxes (largest first so nested ones are handled inside).
+  // Tables drawn as touching shaded cells (no lines) get invisible edges from those cells.
+  const grids = findGrids(rest.rules.concat(tileEdges(rest.rects))).sort((a, b) => boxArea(b.box) - boxArea(a.box));
   const taken: Box[] = [];
   for (const g of grids) {
     if (taken.some((t) => contains(t, g.box, 2))) continue;
@@ -648,7 +686,7 @@ export function layoutRegion(content: RegionContent, container: Box, ctx: Layout
     if (!inside.length) return true;
     const maxSize = Math.max(...inside.map((s) => s.size));
     const oneLine = inside.every((s) => Math.abs(s.baseline - inside[0].baseline) < maxSize * 0.4);
-    if (oneLine && r.y1 - r.y0 < maxSize * 2.2 && r.x1 - r.x0 < (Math.max(...inside.map((s) => s.x1)) - Math.min(...inside.map((s) => s.x0))) + maxSize * 3) {
+    if (oneLine && r.y1 - r.y0 < maxSize * 2.2 && r.x1 - r.x0 < (Math.max(...inside.map((s) => s.x1)) - Math.min(...inside.map((s) => s.x0))) + maxSize * 1.2) {
       inside.forEach((s) => ((s as TextSpan & { highlight?: string }).highlight = r.color));
       return false;
     }
@@ -719,6 +757,12 @@ function lineCount(items: Item[]) {
 function verticalSplit(items: Item[], bounds: Box): number[] | null {
   const width = bounds.x1 - bounds.x0;
   const sizes = items.filter((i) => i.type === 'seg').map((i) => (i as { seg: Seg }).seg.size);
+  const body = median(sizes);
+  // a single line counts as a column when it is a big title (e.g. "INVOICE" beside a logo)
+  const isTitle = (side: Item[]) => {
+    const segs = side.filter((i) => i.type === 'seg').map((i) => (i as { seg: Seg }).seg);
+    return segs.length > 0 && segs.length === side.length && Math.min(...segs.map((g) => g.size)) >= Math.max(body * 2, 24);
+  };
   const minGap = Math.max(7, median(sizes) * 0.7);
   const cand = gaps(items, 'x', minGap);
   if (!cand.length) return null;
@@ -729,7 +773,7 @@ function verticalSplit(items: Item[], bounds: Box): number[] | null {
     const side = items.filter((i) => i.box.x0 >= prev - 0.5 && i.box.x1 <= (at === Infinity ? Infinity : at));
     const sideW = Math.max(...side.map((i) => i.box.x1)) - Math.min(...side.map((i) => i.box.x0));
     const hasBlock = side.some((i) => i.type === 'block');
-    const ok = side.length > 0 && (lineCount(side) >= 2 || hasBlock) && (sideW >= width * 0.12 || hasBlock);
+    const ok = side.length > 0 && (lineCount(side) >= 2 || hasBlock || isTitle(side)) && (sideW >= width * 0.12 || hasBlock);
     if (!ok) {
       // merge this side with the next one by skipping the cut
       continue;
@@ -743,7 +787,7 @@ function verticalSplit(items: Item[], bounds: Box): number[] | null {
     const side = items.filter((i) => i.box.x0 >= last);
     const sideW = Math.max(...side.map((i) => i.box.x1)) - Math.min(...side.map((i) => i.box.x0));
     const hasBlock = side.some((i) => i.type === 'block');
-    if (side.length && (lineCount(side) >= 2 || hasBlock) && (sideW >= width * 0.12 || hasBlock)) break;
+    if (side.length && (lineCount(side) >= 2 || hasBlock || isTitle(side)) && (sideW >= width * 0.12 || hasBlock)) break;
     cuts.pop();
   }
   return cuts.length ? cuts : null;

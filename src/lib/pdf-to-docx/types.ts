@@ -58,6 +58,8 @@ export interface Rule {
   b: number;
   width: number;
   color: string;
+  /** Not drawn: an edge implied by touching shaded cells. */
+  virtual?: boolean;
 }
 
 export interface PageImage extends Box {

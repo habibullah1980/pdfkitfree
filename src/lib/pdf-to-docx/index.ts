@@ -126,6 +126,22 @@ async function ocrPage(model: PageModel, opts: ConvertOptions, onP: (p: number) 
 /* Vector drawings -> pictures                                         */
 /* ------------------------------------------------------------------ */
 
+/** Runs of text on one baseline with word-sized gaps (a label, a name, a line fragment). */
+function textRuns(spans: TextSpan[]): { spans: TextSpan[]; text: string }[] {
+  const sorted = [...spans].sort((a, b) => a.baseline - b.baseline || a.x0 - b.x0);
+  const runs: { spans: TextSpan[]; text: string }[] = [];
+  for (const s of sorted) {
+    const run = runs.find((r) => {
+      const last = r.spans[r.spans.length - 1];
+      return Math.abs(last.baseline - s.baseline) <= Math.min(last.size, s.size) * 0.35 && s.x0 - last.x1 <= Math.max(last.size, s.size) * 1.6 && s.x0 >= last.x0;
+    });
+    if (run) run.spans.push(s);
+    else runs.push({ spans: [s], text: '' });
+  }
+  for (const r of runs) r.text = r.spans.map((s) => s.text).join('').replace(/\s+/g, ' ').trim();
+  return runs;
+}
+
 function planGraphics(model: PageModel): Box[] {
   const pageArea = model.width * model.height;
   const gridBoxes = findGrids(mergeRules(model.rules)).map((g) => g.box);
@@ -183,6 +199,7 @@ function planGraphics(model: PageModel): Box[] {
     }
   const groups = new Map<number, typeof boxes>();
   boxes.forEach((b, i) => groups.set(find(i), [...(groups.get(find(i)) || []), b]));
+  const labelRuns = textRuns(model.spans.filter((s) => !s.invisible));
   const regions: Box[] = [];
   for (const members of Array.from(groups.values())) {
     const real = members.filter((b) => !b.conn);
@@ -193,13 +210,16 @@ function planGraphics(model: PageModel): Box[] {
     const conns = members.filter((b) => b.conn && b.x1 - b.x0 <= (core.x1 - core.x0) * 1.3 + 40 && b.y1 - b.y0 <= (core.y1 - core.y0) * 1.3 + 40);
     let c = bb([...real, ...conns]);
     if (c.x1 - c.x0 < 3 && c.y1 - c.y0 < 3) continue;
-    // pull in short labels sitting on or next to the drawing (chart values, axis names)
+    // pull in short labels sitting on or next to the drawing (chart values, axis names);
+    // a label is a whole run of text, never a few letters of a longer word or name
     for (let pass = 0; pass < 2; pass++) {
-      for (const s of model.spans) {
-        if (s.invisible || s.text.trim().length > 12) continue;
-        if (overlaps(spanBox(s), c, s.size * 0.6)) {
-          const b = spanBox(s);
-          c = { x0: Math.min(c.x0, b.x0), y0: Math.min(c.y0, b.y0), x1: Math.max(c.x1, b.x1), y1: Math.max(c.y1, b.y1) };
+      for (const run of labelRuns) {
+        if (run.text.length > 12) continue;
+        if (run.spans.some((s) => overlaps(spanBox(s), c, s.size * 0.6))) {
+          for (const s of run.spans) {
+            const b = spanBox(s);
+            c = { x0: Math.min(c.x0, b.x0), y0: Math.min(c.y0, b.y0), x1: Math.max(c.x1, b.x1), y1: Math.max(c.y1, b.y1) };
+          }
         }
       }
     }
@@ -339,7 +359,19 @@ export async function convertPdfToDocx(pdf: PdfjsDocumentLike, opts: ConvertOpti
         const b = q.orient === 'h' ? { x0: q.a, x1: q.b, y0: q.pos, y1: q.pos } : { x0: q.pos, x1: q.pos, y0: q.a, y1: q.b };
         return !(b.x0 >= r.x0 - 1 && b.x1 <= r.x1 + 1 && b.y0 >= r.y0 - 1 && b.y1 <= r.y1 + 1);
       });
-      m.images.push({ ...r, rgba: img.rgba, width: img.width, height: img.height, opaque: true });
+      const picture = { ...r, rgba: img.rgba, width: img.width, height: img.height, opaque: true };
+      // A small text-free shape on the same line as a label (an empty form field, a badge) is
+      // pinned to its exact place on the page, so it doesn't push the label onto another line.
+      const besideLabel =
+        area(r) < m.width * m.height * 0.04 &&
+        m.spans.some((s) => {
+          const b = spanBox(s);
+          const vOv = Math.min(b.y1, r.y1) - Math.max(b.y0, r.y0);
+          const hGap = Math.max(b.x0 - r.x1, r.x0 - b.x1);
+          return vOv >= Math.min(b.y1 - b.y0, r.y1 - r.y0) * 0.5 && hGap >= 0 && hGap < 40;
+        });
+      if (besideLabel) backgrounds.set(m.index, [...(backgrounds.get(m.index) || []), picture]);
+      else m.images.push(picture);
       report.graphics++;
     }
     if (regions.length && !opts.renderRegion) report.warnings.push(`Some drawings on page ${m.index + 1} could not be converted.`);
