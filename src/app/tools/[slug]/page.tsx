@@ -8,6 +8,7 @@ import { ShareTool } from '@/components/ShareTool';
 import { SIZE_TARGETS, IMAGE_SIZE_TARGETS } from '@/lib/size-targets';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { ToolDispatcher } from '@/components/ToolDispatcher';
+import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { getToolIconConfig } from '@/lib/tool-icons';
 
@@ -157,6 +158,7 @@ export default function IndividualToolPage({ params }: ToolPageProps) {
         <div className="mb-16">
           <ToolDispatcher tool={tool} />
         </div>
+        <FeedbackButton toolName={tool.title} />
 
         {/* SEO Explanations, Instructions, Use Cases & FAQs */}
         <div className="space-y-14">

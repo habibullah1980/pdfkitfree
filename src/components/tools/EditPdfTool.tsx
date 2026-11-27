@@ -1,7 +1,9 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, PDFName, PDFString, rgb, StandardFonts, degrees } from 'pdf-lib';
+import { makeSafeText } from '@/lib/pdf-safe-text';
 import { 
   Upload, 
   File as FileIcon, 
@@ -122,12 +124,13 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
       if (toolType === 'add-text') {
         if (!customText.trim()) throw new Error('Type the text you want to add.');
         const font = await doc.embedFont(StandardFonts.Helvetica);
-        const w = font.widthOfTextAtSize(customText, textSize);
+        const addText = makeSafeText(font)(customText);
+        const w = font.widthOfTextAtSize(addText, textSize);
         const h = font.heightAtSize(textSize);
         for (const i of targetPages) {
           const page = doc.getPage(i);
           const { x, y } = place(page.getWidth(), page.getHeight(), w, h, position);
-          page.drawText(customText, { x, y, size: textSize, font, color: hexToRgb(textColor) });
+          page.drawText(addText, { x, y, size: textSize, font, color: hexToRgb(textColor) });
         }
         setDownloadName(`${base}-text-added.pdf`);
       } else if (toolType === 'add-image') {
@@ -172,15 +175,16 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
         setDownloadName(`${base}-image-stamped.pdf`);
       } else if (toolType === 'watermark') {
         const font = await doc.embedFont(StandardFonts.HelveticaBold);
+        const markText = makeSafeText(font)(watermarkText);
         const total = doc.getPageCount();
 
         for (let i = 0; i < total; i++) {
           const page = doc.getPage(i);
           const { width, height } = page.getSize();
           const textSize = Math.min(width, height) / 10;
-          const textWidth = font.widthOfTextAtSize(watermarkText, textSize);
+          const textWidth = font.widthOfTextAtSize(markText, textSize);
 
-          page.drawText(watermarkText, {
+          page.drawText(markText, {
             x: (width - textWidth) / 2,
             y: height / 2,
             size: textSize,
@@ -221,7 +225,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
         const font = await doc.embedFont(StandardFonts.Helvetica);
         const size = 11;
         const maxLine = 240;
-        const words = noteText.trim().split(/\s+/);
+        const words = makeSafeText(font)(noteText).trim().split(/\s+/);
         const lines: string[] = [];
         let line = '';
         for (const word of words) {
@@ -263,8 +267,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Edit failed: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'Your changes could not be saved.').message);
     } finally {
       setIsProcessing(false);
     }

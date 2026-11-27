@@ -1,7 +1,9 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { makeSafeText } from '@/lib/pdf-safe-text';
 import JSZip from 'jszip';
 import { 
   Upload, 
@@ -319,7 +321,8 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
 
         const font = await doc.embedFont(StandardFonts.Helvetica);
         const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-        const paragraphs = await extractWordParagraphs(files[0].file);
+        const safe = makeSafeText(font);
+        const paragraphs = (await extractWordParagraphs(files[0].file)).map(safe);
 
         const a4Width = 595.28;
         const a4Height = 841.89;
@@ -329,7 +332,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
         let currentY = a4Height - margin;
 
         // Document Title
-        currentPage.drawText(files[0].file.name.replace(/\.[^/.]+$/, ''), {
+        currentPage.drawText(safe(files[0].file.name.replace(/\.[^/.]+$/, '')), {
           x: margin,
           y: currentY,
           size: 16,
@@ -390,7 +393,8 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
 
         const font = await doc.embedFont(StandardFonts.Helvetica);
         const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-        const rows = await extractExcelRows(files[0].file);
+        const safe = makeSafeText(font);
+        const rows = (await extractExcelRows(files[0].file)).map((r) => r.map(safe));
 
         // Landscape A4 for spreadsheets
         const pageW = 841.89;
@@ -399,7 +403,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
         let currentPage = doc.addPage([pageW, pageH]);
         let currentY = pageH - margin;
 
-        currentPage.drawText(`Spreadsheet: ${files[0].file.name}`, {
+        currentPage.drawText(safe(`Spreadsheet: ${files[0].file.name}`), {
           x: margin,
           y: currentY,
           size: 14,
@@ -451,7 +455,8 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
 
         const font = await doc.embedFont(StandardFonts.Helvetica);
         const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-        const slides = await extractPptxSlides(files[0].file);
+        const safe = makeSafeText(font);
+        const slides = (await extractPptxSlides(files[0].file)).map((sl) => sl.map(safe));
 
         // Standard 16:9 widescreen presentation slide (960 x 540 pt)
         const slideW = 960;
@@ -496,6 +501,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
       } else if (sourceType === 'html') {
         const font = await doc.embedFont(StandardFonts.Helvetica);
         const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
+        const safe = makeSafeText(font);
 
         const a4Width = 595.28;
         const a4Height = 841.89;
@@ -504,10 +510,12 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
 
         let plainText = htmlContent;
         if (typeof window !== 'undefined') {
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          plainText = tempDiv.innerText || tempDiv.textContent || 'Exported HTML Document';
+          // DOMParser builds an inert document: scripts and event handlers in the HTML never run
+          const parsed = new DOMParser().parseFromString(htmlContent, 'text/html');
+          parsed.querySelectorAll('script, style, noscript, template').forEach((el) => el.remove());
+          plainText = parsed.body?.innerText || parsed.body?.textContent || 'Exported HTML Document';
         }
+        plainText = safe(plainText);
 
         const lines = plainText.split('\n').filter((l) => l.trim().length > 0);
         let currentY = a4Height - margin;
@@ -533,8 +541,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
       setDownloadUrl(url);
       setDownloadName(`${baseName}-converted.pdf`);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Conversion failed: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'The conversion did not finish.').message);
     } finally {
       setIsProcessing(false);
     }

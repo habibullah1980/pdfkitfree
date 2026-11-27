@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  MessageSquareHeart,
 } from 'lucide-react';
 
 interface Stats {
@@ -783,6 +784,13 @@ export default function SuperAdminPage() {
               <span>{label}</span>
             </button>
           ))}
+          <Link
+            href="/admin/feedback"
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-amber-300 transition hover:bg-slate-800 hover:text-amber-200"
+          >
+            <MessageSquareHeart className="h-4 w-4" />
+            <span>User Feedback</span>
+          </Link>
         </div>
 
         {/* ============================================================ */}

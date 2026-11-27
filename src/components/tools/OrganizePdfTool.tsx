@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { 
@@ -126,8 +127,7 @@ export function OrganizePdfTool({ mode }: OrganizePdfToolProps) {
       else if (mode === 'extract') setDownloadName(`${base}-extracted.pdf`);
       else setDownloadName(`${base}-reordered.pdf`);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Processing failed: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'The pages could not be reorganized.').message);
     } finally {
       setIsProcessing(false);
     }

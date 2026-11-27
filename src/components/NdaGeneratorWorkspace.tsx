@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { makeSafeText } from '@/lib/pdf-safe-text';
 import { SharedSignerWorkspace } from './SharedSignerWorkspace';
 import { 
   Download, 
@@ -131,6 +132,7 @@ Date: _________________________`;
     const pdfDoc = await PDFDocument.create();
     const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
     const timesBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    const safe = makeSafeText(timesRoman);
 
     const textToPrint = activeText;
     const lines = textToPrint.split('\n');
@@ -179,7 +181,7 @@ Date: _________________________`;
       const size = rawLine.startsWith('MUTUAL') || rawLine.startsWith('UNILATERAL') ? 13 : isHeader ? 10 : 9.5;
 
       // Simple word wrapping
-      const words = rawLine.split(' ');
+      const words = safe(rawLine).split(' ');
       let currentLine = '';
 
       for (const word of words) {

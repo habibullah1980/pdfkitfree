@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, degrees } from 'pdf-lib';
 import { 
@@ -105,8 +106,7 @@ export function RotatePdfTool() {
       setDownloadUrl(url);
       setDownloadName(`rotated-${file.name}`);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Failed to rotate PDF: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'The PDF could not be rotated.').message);
     } finally {
       setIsProcessing(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import JSZip from 'jszip';
 import { 
@@ -267,8 +268,7 @@ export function OtherPdfTool({ toolType }: OtherPdfToolProps) {
         setDownloadName(`${base}-filled-form.pdf`);
       }
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Tool operation failed: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'The tool could not finish.').message);
     } finally {
       setIsProcessing(false);
     }

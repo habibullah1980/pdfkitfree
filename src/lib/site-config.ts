@@ -34,6 +34,7 @@ export const SITE_CONFIG = {
       { label: 'About Us', href: '/about' },
       { label: 'Blog', href: '/blog' },
       { label: 'Contact Support', href: '/contact' },
+      { label: 'Send Feedback', href: '/feedback' },
     ],
     popular: [
       { label: 'Compress PDF to 100 KB', href: '/compress-pdf-to/100kb' },

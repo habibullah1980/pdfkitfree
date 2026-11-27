@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { 
@@ -181,8 +182,7 @@ export function OptimizePdfTool({ toolType, targetBytes, targetLabel }: Optimize
       else if (toolType === 'repair') setDownloadName(`${base}-repaired.pdf`);
       else setDownloadName(`${base}-web-optimized.pdf`);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Optimization failed: ${error.message || 'File structure is severely corrupted.'}`);
+      setErrorMessage(friendlyPdfError(err, 'The PDF could not be optimized.').message);
     } finally {
       setIsProcessing(false);
       setProgress(null);

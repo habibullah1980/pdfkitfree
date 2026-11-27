@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { makeSafeText } from '@/lib/pdf-safe-text';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { SignatureCreator } from '@/components/SignatureCreator';
 import { PdfViewerAndSigner } from '@/components/PdfViewerAndSigner';
@@ -182,10 +183,11 @@ export default function NdaSignerPage() {
       // Embed Font for Date and Initials if requested
       if (placementConfig.includeDate || placementConfig.includeInitials) {
         const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const safe = makeSafeText(helveticaFont);
         const fontSize = 9;
 
         if (placementConfig.includeDate) {
-          targetPage.drawText(`Date: ${placementConfig.dateText}`, {
+          targetPage.drawText(safe(`Date: ${placementConfig.dateText}`), {
             x: drawX,
             y: Math.max(2, drawY - 12),
             size: fontSize,
@@ -195,7 +197,7 @@ export default function NdaSignerPage() {
         }
 
         if (placementConfig.includeInitials) {
-          targetPage.drawText(`Initials: ${placementConfig.initialsText}`, {
+          targetPage.drawText(safe(`Initials: ${placementConfig.initialsText}`), {
             x: drawX + drawWidth - 65,
             y: Math.max(2, drawY - 12),
             size: fontSize,
