@@ -7,6 +7,7 @@ import { ToolCard } from '@/components/ToolCard';
 import Image from 'next/image';
 import heroPhoto from '@/assets/hero-office.jpg';
 import { DemoVideo } from '@/components/landing/DemoVideo';
+import { EXTRA_TOOLS } from '@/lib/extra-tools';
 import { FolderOpen, Lock, Minimize2, Monitor, Search, ShieldCheck, Upload, Zap, Download, Video } from 'lucide-react';
 
 const POPULAR = ['compress-pdf', 'merge-pdf', 'pdf-to-word', 'sign-pdf'];
@@ -40,6 +41,12 @@ export default function HomePage() {
       return matchesSearch && matchesCat;
     });
   }, [searchQuery, selectedCategory]);
+
+  const matchingExtras = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return EXTRA_TOOLS;
+    return EXTRA_TOOLS.filter((t) => `${t.label} ${t.description} ${t.keywords}`.toLowerCase().includes(q));
+  }, [searchQuery]);
 
   // Support links like /?q=compress (used by Google's sitelinks search box).
   useEffect(() => {
@@ -98,7 +105,7 @@ export default function HomePage() {
               className="pk-light-field flex max-w-[540px] items-center gap-2.5 rounded-full bg-white py-1.5 pl-5 pr-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,.6)]"
             >
               <Search className="h-5 w-5 flex-none text-[#6E6C8E]" aria-hidden="true" />
-              <label htmlFor="home-tool-search" className="sr-only">Find a PDF tool</label>
+              <label htmlFor="home-tool-search" className="sr-only">Find a tool</label>
               <input
                 id="home-tool-search"
                 type="search"
@@ -116,6 +123,14 @@ export default function HomePage() {
               {popularTools.map((t) => (
                 <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full bg-white/15 px-3.5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25">
                   {t.title}
+                </Link>
+              ))}
+              {[
+                { href: '/video-compressor', label: 'Video Compressor' },
+                { href: '/qr-code-generator', label: 'QR Code' },
+              ].map((t) => (
+                <Link key={t.href} href={t.href} className="rounded-full bg-white/15 px-3.5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25">
+                  {t.label}
                 </Link>
               ))}
             </div>
@@ -172,7 +187,7 @@ export default function HomePage() {
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <h2 className="text-4xl font-extrabold text-ink sm:text-[46px]">Pick a tool and drop your file</h2>
               <p className="text-lg text-ink-soft">
-                {searchQuery ? `${filteredTools.length} tools match “${searchQuery}”.` : 'Grouped by what you want to do.'}
+                {searchQuery ? `${filteredTools.length + matchingExtras.length} tools match “${searchQuery}”.` : 'Grouped by what you want to do.'}
               </p>
             </div>
             <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
@@ -215,7 +230,34 @@ export default function HomePage() {
               </button>
             </div>
           ) : null}
-          {filteredTools.length === 0 && (
+          {matchingExtras.length > 0 && (
+            <div id="video-image-tools" className="mt-14 scroll-mt-24">
+              <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                <h3 className="text-2xl font-extrabold text-ink sm:text-3xl">Video, image &amp; QR tools</h3>
+                <p className="text-ink-soft">Free, no sign-up, and your files stay on your device.</p>
+              </div>
+              <ul className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
+                {matchingExtras.map(({ href, label, description, icon: Icon, group }) => (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className="group flex h-full items-start gap-4 rounded-3xl border-[1.5px] border-[#ECEBF8] bg-white p-5 transition hover:-translate-y-0.5 hover:border-brand-600 hover:shadow-lg"
+                    >
+                      <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                        <Icon className="h-6 w-6" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">{group}</span>
+                        <span className="block text-lg font-bold text-ink group-hover:text-brand-600">{label}</span>
+                        <span className="mt-1 block text-sm leading-relaxed text-ink-muted">{description}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {filteredTools.length === 0 && matchingExtras.length === 0 && (
             <div className="rounded-3xl border-2 border-dashed border-[#DCD9FF] p-12 text-center">
               <FolderOpen className="mx-auto h-12 w-12 text-brand-400" aria-hidden="true" />
               <p className="mt-4 text-lg font-bold text-ink">No tool matches “{searchQuery}”</p>

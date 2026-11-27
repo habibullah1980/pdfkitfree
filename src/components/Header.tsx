@@ -7,6 +7,7 @@ import { SITE_CONFIG } from '@/lib/site-config';
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/brand/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { EXTRA_TOOLS } from '@/lib/extra-tools';
 import { 
   Menu, 
   X, 
@@ -24,6 +25,8 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const toolsMenuRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -33,12 +36,69 @@ export function Header() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setUserDropdownOpen(false);
       }
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
+        setToolsMenuOpen(false);
+      }
+    }
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setToolsMenuOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
     };
   }, []);
+
+  useEffect(() => {
+    setToolsMenuOpen(false);
+  }, [pathname]);
+
+  const extraActive = EXTRA_TOOLS.some((t) => pathname === t.href || pathname.startsWith(t.href.split('/').slice(0, 2).join('/') + '/'));
+  const toolsMenu = (
+    <div className="relative" ref={toolsMenuRef}>
+      <button
+        type="button"
+        onClick={() => setToolsMenuOpen((o) => !o)}
+        aria-expanded={toolsMenuOpen}
+        aria-haspopup="true"
+        aria-controls="more-tools-menu"
+        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
+          extraActive || toolsMenuOpen ? 'bg-brand-50 text-brand-600' : 'text-[#3D3B63] hover:text-brand-600'
+        }`}
+      >
+        Video &amp; Image
+        <ChevronDown className={`h-4 w-4 transition-transform ${toolsMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {toolsMenuOpen && (
+        <div
+          id="more-tools-menu"
+          className="absolute left-1/2 top-full z-50 mt-2 w-[560px] -translate-x-1/2 rounded-3xl border border-[#ECEBF8] bg-white p-3 shadow-xl"
+        >
+          <ul className="grid grid-cols-2 gap-1">
+            {EXTRA_TOOLS.map(({ href, label, description, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={() => setToolsMenuOpen(false)}
+                  className="flex items-start gap-3 rounded-2xl p-3 transition hover:bg-brand-50"
+                >
+                  <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                    <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-bold text-ink">{label}</span>
+                    <span className="mt-0.5 block text-xs leading-snug text-ink-muted">{description}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#F0EFF8] bg-white/90 backdrop-blur-md pk-header">
@@ -50,11 +110,11 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-1 xl:flex" aria-label="Main navigation">
-          {SITE_CONFIG.navLinks.map((item) => {
+          {SITE_CONFIG.navLinks.map((item, idx) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
             return (
+              <React.Fragment key={item.href}>
               <Link
-                key={item.href}
                 href={item.href}
                 className={`relative whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
                   isActive
@@ -64,6 +124,8 @@ export function Header() {
               >
                 {item.label}
               </Link>
+              {idx === 0 && toolsMenu}
+              </React.Fragment>
             );
           })}
         </nav>
@@ -224,6 +286,23 @@ export function Header() {
                 }`}
               >
                 {item.label}
+              </Link>
+            ))}
+          </div>
+
+          <p className="mt-4 px-3 text-xs font-bold uppercase tracking-wider text-ink-muted">Video &amp; image tools</p>
+          <div className="mt-2 grid grid-cols-2 gap-1">
+            {EXTRA_TOOLS.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
+                  pathname === href ? 'bg-brand-50 text-brand-700 font-bold' : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className="h-4 w-4 flex-none text-brand-600" aria-hidden="true" />
+                {label}
               </Link>
             ))}
           </div>
