@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import JSZip from 'jszip';
@@ -533,8 +534,7 @@ export function ConvertToPdfTool({ sourceType }: ConvertToPdfToolProps) {
       setDownloadUrl(url);
       setDownloadName(`${baseName}-converted.pdf`);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Conversion failed: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'The conversion did not finish.').message);
     } finally {
       setIsProcessing(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { 
@@ -105,8 +106,7 @@ export function AddPageNumbersTool() {
       setDownloadUrl(url);
       setDownloadName(`numbered-${file.name}`);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Failed to add numbers: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'Page numbers could not be added.').message);
     } finally {
       setIsProcessing(false);
     }

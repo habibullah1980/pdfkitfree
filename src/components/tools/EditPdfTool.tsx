@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, PDFName, PDFString, rgb, StandardFonts, degrees } from 'pdf-lib';
 import { 
@@ -263,8 +264,7 @@ export function EditPdfTool({ toolType }: EditPdfToolProps) {
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url);
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Edit failed: ${error.message}`);
+      setErrorMessage(friendlyPdfError(err, 'Your changes could not be saved.').message);
     } finally {
       setIsProcessing(false);
     }

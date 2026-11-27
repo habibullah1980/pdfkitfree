@@ -8,7 +8,7 @@ export function friendlyPdfError(err: unknown, fallback = 'Something went wrong 
   const e = err as { name?: string; message?: string } | null;
   const name = e?.name || '';
   const msg = (e?.message || '').toLowerCase();
-  if (name === 'PasswordException' || msg.includes('password')) {
+  if (name === 'PasswordException' || msg.includes('password') || msg.includes('is encrypted')) {
     return {
       message: 'This PDF is password-protected. Unlock it first, then try again.',
       action: { label: 'Unlock PDF', href: '/tools/unlock-pdf' },

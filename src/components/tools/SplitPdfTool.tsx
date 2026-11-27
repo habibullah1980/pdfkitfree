@@ -1,5 +1,6 @@
 'use client';
 
+import { friendlyPdfError } from '@/lib/friendly-errors';
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
@@ -138,8 +139,7 @@ export function SplitPdfTool() {
         setDownloadName(`${baseName}-all-pages.zip`);
       }
     } catch (err: unknown) {
-      const error = err as Error;
-      setErrorMessage(`Split failed: ${error.message || 'Error processing document'}`);
+      setErrorMessage(friendlyPdfError(err, 'The PDF could not be split.').message);
     } finally {
       setIsProcessing(false);
     }
