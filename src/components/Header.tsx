@@ -3,11 +3,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SITE_CONFIG } from '@/lib/site-config';
 import { useAuth } from '@/contexts/AuthContext';
 import { Logo } from '@/components/brand/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { EXTRA_TOOLS } from '@/lib/extra-tools';
+import { NAV_ITEMS, isMenu, type NavMenu } from '@/lib/nav-menus';
 import { 
   Menu, 
   X, 
@@ -25,8 +24,8 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
-  const toolsMenuRef = useRef<HTMLDivElement | null>(null);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -36,12 +35,12 @@ export function Header() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setUserDropdownOpen(false);
       }
-      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
-        setToolsMenuOpen(false);
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setOpenMenu(null);
       }
     }
     function handleKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') setToolsMenuOpen(false);
+      if (event.key === 'Escape') setOpenMenu(null);
     }
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKey);
@@ -52,53 +51,79 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    setToolsMenuOpen(false);
+    setOpenMenu(null);
+    setMobileMenuOpen(false);
   }, [pathname]);
 
-  const extraActive = EXTRA_TOOLS.some((t) => pathname === t.href || pathname.startsWith(t.href.split('/').slice(0, 2).join('/') + '/'));
-  const toolsMenu = (
-    <div className="relative" ref={toolsMenuRef}>
-      <button
-        type="button"
-        onClick={() => setToolsMenuOpen((o) => !o)}
-        aria-expanded={toolsMenuOpen}
-        aria-haspopup="true"
-        aria-controls="more-tools-menu"
-        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
-          extraActive || toolsMenuOpen ? 'bg-brand-50 text-brand-600' : 'text-[#3D3B63] hover:text-brand-600'
-        }`}
-      >
-        Video &amp; Image
-        <ChevronDown className={`h-4 w-4 transition-transform ${toolsMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-      </button>
-      {toolsMenuOpen && (
-        <div
-          id="more-tools-menu"
-          className="absolute left-1/2 top-full z-50 mt-2 w-[560px] -translate-x-1/2 rounded-3xl border border-[#ECEBF8] bg-white p-3 shadow-xl"
+  const isPathActive = (prefixes: string[]) => prefixes.some((p) => pathname === p || pathname.startsWith(p + '/'));
+
+  const renderMenu = (menu: NavMenu) => {
+    const open = openMenu === menu.id;
+    const active = isPathActive(menu.activePrefixes);
+    const panelId = `nav-menu-${menu.id}`;
+    const multi = menu.groups.length > 1;
+    return (
+      <div key={menu.id} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpenMenu(open ? null : menu.id)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
+            active || open ? 'bg-brand-50 text-brand-600' : 'text-[#3D3B63] hover:text-brand-600'
+          }`}
         >
-          <ul className="grid grid-cols-2 gap-1">
-            {EXTRA_TOOLS.map(({ href, label, description, icon: Icon }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  onClick={() => setToolsMenuOpen(false)}
-                  className="flex items-start gap-3 rounded-2xl p-3 transition hover:bg-brand-50"
-                >
-                  <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                    <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-bold text-ink">{label}</span>
-                    <span className="mt-0.5 block text-xs leading-snug text-ink-muted">{description}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
+          {menu.label}
+          <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
+        {open && (
+          <div
+            id={panelId}
+            style={{ width: menu.width }}
+            className={`absolute top-full z-50 mt-2 rounded-3xl border border-[#ECEBF8] bg-white p-3 shadow-xl ${
+              menu.align === 'start' ? 'left-0' : 'left-1/2 -translate-x-1/2'
+            }`}
+          >
+            <div className={multi ? 'grid grid-cols-4 gap-2' : ''}>
+              {menu.groups.map((g) => (
+                <div key={g.title || 'items'}>
+                  {g.title && <p className="px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-ink-muted">{g.title}</p>}
+                  <ul className={!multi && menu.groups[0].items.length > 5 ? 'grid grid-cols-2 gap-1' : 'space-y-0.5'}>
+                    {g.items.map(({ href, label, description, icon: Icon }) => (
+                      <li key={href}>
+                        <Link
+                          href={href}
+                          onClick={() => setOpenMenu(null)}
+                          className={`flex gap-3 rounded-2xl transition hover:bg-brand-50 ${description ? 'items-start p-3' : 'items-center px-3 py-2'}`}
+                        >
+                          <span className={`flex flex-none items-center justify-center rounded-xl bg-brand-50 text-brand-600 ${description ? 'h-9 w-9' : 'h-7 w-7'}`}>
+                            <Icon className={description ? 'h-[18px] w-[18px]' : 'h-4 w-4'} aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-bold text-ink">{label}</span>
+                            {description && <span className="mt-0.5 block text-xs leading-snug text-ink-muted">{description}</span>}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            {menu.footer && (
+              <Link
+                href={menu.footer.href}
+                onClick={() => setOpenMenu(null)}
+                className="mt-2 flex items-center justify-center rounded-2xl bg-brand-50 px-4 py-2.5 text-sm font-bold text-brand-600 transition hover:bg-brand-100"
+              >
+                {menu.footer.label} &rarr;
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#F0EFF8] bg-white/90 backdrop-blur-md pk-header">
@@ -109,25 +134,22 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 xl:flex" aria-label="Main navigation">
-          {SITE_CONFIG.navLinks.map((item, idx) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            return (
-              <React.Fragment key={item.href}>
+        <nav ref={navRef} className="hidden items-center gap-1 xl:flex" aria-label="Main navigation">
+          {NAV_ITEMS.map((item) =>
+            isMenu(item) ? (
+              renderMenu(item)
+            ) : (
               <Link
+                key={item.href}
                 href={item.href}
                 className={`relative whitespace-nowrap rounded-full px-3.5 py-2 text-[15px] font-semibold transition-colors ${
-                  isActive
-                    ? 'bg-brand-50 text-brand-600'
-                    : 'text-[#3D3B63] hover:text-brand-600'
+                  isPathActive([item.href]) ? 'bg-brand-50 text-brand-600' : 'text-[#3D3B63] hover:text-brand-600'
                 }`}
               >
                 {item.label}
               </Link>
-              {idx === 0 && toolsMenu}
-              </React.Fragment>
-            );
-          })}
+            )
+          )}
         </nav>
 
         {/* Desktop Auth & CTA */}
@@ -274,37 +296,51 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="border-b border-slate-200 bg-white px-4 pt-2 pb-6 xl:hidden">
           <div className="space-y-1">
-            {SITE_CONFIG.navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block rounded-md px-3 py-2 text-base font-medium ${
-                  pathname === item.href
-                    ? 'bg-brand-50 text-brand-700 font-bold'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-
-          <p className="mt-4 px-3 text-xs font-bold uppercase tracking-wider text-ink-muted">Video &amp; image tools</p>
-          <div className="mt-2 grid grid-cols-2 gap-1">
-            {EXTRA_TOOLS.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
-                  pathname === href ? 'bg-brand-50 text-brand-700 font-bold' : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <Icon className="h-4 w-4 flex-none text-brand-600" aria-hidden="true" />
-                {label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map((item) =>
+              isMenu(item) ? (
+                <details key={item.id} className="group rounded-md" open={isPathActive(item.activePrefixes)}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100">
+                    {item.label}
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <div className="mb-2 mt-1 grid grid-cols-2 gap-1 pl-2">
+                    {item.groups.flatMap((g) => g.items).map(({ href, label, icon: Icon }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${
+                          pathname === href ? 'bg-brand-50 font-bold text-brand-700' : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 flex-none text-brand-600" aria-hidden="true" />
+                        {label}
+                      </Link>
+                    ))}
+                    {item.footer && (
+                      <Link
+                        href={item.footer.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="col-span-2 rounded-md px-3 py-2 text-sm font-bold text-brand-600 hover:bg-brand-50"
+                      >
+                        {item.footer.label} &rarr;
+                      </Link>
+                    )}
+                  </div>
+                </details>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block rounded-md px-3 py-2 text-base font-medium ${
+                    pathname === item.href ? 'bg-brand-50 text-brand-700 font-bold' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
           </div>
 
           <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
