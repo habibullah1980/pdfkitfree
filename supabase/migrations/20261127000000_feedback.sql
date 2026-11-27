@@ -21,4 +21,6 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 CREATE INDEX IF NOT EXISTS feedback_created_idx ON feedback (created_at DESC);
 CREATE INDEX IF NOT EXISTS feedback_status_idx ON feedback (status);
-CREATE INDEX IF NOT EXISTS feedback_ip_idx ON feedback (ip_hash, created_at DESC);;
+CREATE INDEX IF NOT EXISTS feedback_ip_idx ON feedback (ip_hash, created_at DESC);
+-- No public access: only the app (the table owner) reads and writes it.
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;;
